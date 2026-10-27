@@ -1,0 +1,56 @@
+:root {
+  font-family: "Inter Variable", Inter, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --elevated: #edeff3;
+  --ink: #171c26;
+  --muted: #596373;
+  --line: #dce1e8;
+  --primary: #3659db;
+  --on-primary: #ffffff;
+  --primary-soft: #e9eeff;
+  --canvas: #f1f3f6;
+  --subtle: var(--elevated);
+  --accent: var(--elevated);
+  --success: #197042;
+  --warning: #8a5700;
+  --danger: #b73535;
+  --danger-surface: #fff0ed;
+  --backdrop: #101319a6;
+  --shadow-ink: #10131922;
+  --shadow: 0 8px 28px #1013190a;
+  color: var(--ink);
+  background: var(--bg);
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: #101319;
+  --surface: #1b2029;
+  --elevated: #252c37;
+  --ink: #f5f6fa;
+  --muted: #a5aebd;
+  --line: #343c49;
+  --primary: #6684ff;
+  --on-primary: #101319;
+  --primary-soft: #1d2d53;
+  --canvas: #202732;
+  --success: #80d7a5;
+  --warning: #f5c167;
+  --danger: #ffaaa0;
+  --danger-surface: #35252a;
+  --shadow: 0 8px 28px #0002;
+  color-scheme: dark;
+}
+@theme inline {
+  --color-background: var(--bg);
+  --color-surface: var(--surface);
+  --color-elevated: var(--elevated);
+  --color-foreground: var(--ink);
+  --color-muted: var(--muted);
+  --color-border: var(--line);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+}

@@ -7,7 +7,7 @@ async function activateServiceWorker(page: import('@playwright/test').Page) {
 test('controlled online deep links remain online and fall back only when offline', async ({ page, context }) => {
   await page.goto('/builder'); await expect(page.getByRole('button', { name: 'Studio Track Forest finish' })).toBeEnabled();
   await activateServiceWorker(page);
-  await page.reload(); await expect(page.getByRole('heading', { name: 'Your next ride. Built by you.' })).toBeVisible();
+  await page.reload(); await expect(page.getByRole('heading', { name: 'Bike Builder' })).toBeVisible();
   await page.goto('/catalog'); await expect(page.getByRole('heading', { name: 'The parts make the ride.' })).toBeVisible();
   await context.setOffline(true); await page.goto('/builder');
   await expect(page.getByRole('heading', { name: 'Your workshop is offline.' })).toBeVisible();

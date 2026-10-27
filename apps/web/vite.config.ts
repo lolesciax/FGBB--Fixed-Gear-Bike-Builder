@@ -5,7 +5,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { fileURLToPath } from 'node:url';
 export default defineConfig({
   root: fileURLToPath(new URL('.', import.meta.url)),
-  plugins: [react(), tailwind(), VitePWA({ registerType: 'prompt', includeAssets: ['icon.svg', 'offline.html', 'icons/*.png'], manifest: { name: 'TrackLab — Fixed Gear Workshop', short_name: 'TrackLab', description: 'Your next ride, built by you.', theme_color: '#294f40', background_color: '#f5f5f2', display: 'standalone', start_url: '/', icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' }, { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' }] }, workbox: {
+  plugins: [react(), tailwind(), VitePWA({ registerType: 'prompt', includeAssets: ['icon.svg', 'offline.html', 'icons/*.png'], manifest: { name: 'TrackLab — Fixed Gear Workshop', short_name: 'TrackLab', description: 'Your next ride, built by you.', theme_color: '#3659db', background_color: '#f5f6f8', display: 'standalone', start_url: '/', icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' }, { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' }] }, workbox: {
     navigateFallback: null,
     cleanupOutdatedCaches: true,
     clientsClaim: true,

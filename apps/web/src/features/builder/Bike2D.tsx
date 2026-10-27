@@ -4,7 +4,7 @@ type Props = { configuration: Configuration; catalog: Product[]; active?: Slot; 
 export function Bike2D({ configuration, catalog, active, onSelect, zoom = 1, compact = false }: Props) {
   const uid = useId().replace(/:/g, '');
   const get = (s: Slot) => variantById(catalog, configuration[s])?.variant;
-  const color = get('frameset')?.color || '#294f40';
+  const color = get('frameset')?.color || '#303432';
   const pursuit = get('frameset')?.specs.geometry === 'pursuit';
   const deep = get('wheels')?.specs.rimDepth === 60;
   const tan = get('tires')?.specs.sidewall === 'tan';

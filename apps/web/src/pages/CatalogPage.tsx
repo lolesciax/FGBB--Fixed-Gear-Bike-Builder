@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { slots, type Product } from '@tracklab/domain';
 import { api } from '../services/api';
 import { errorMessage } from '../app/context';
-import { PartThumbnail } from './BuilderPage';
+import { PartThumbnail } from '../features/builder/PartThumbnail';
 export function CatalogPage() {
   const [search, setSearch] = useState(''), [category, setCategory] = useState(''), [page, setPage] = useState(1), [product, setProduct] = useState<Product | null>(null);
   const products = useQuery({ queryKey: ['catalog-search', search, category, page], queryFn: ({ signal }) => api<{ items: Product[]; total: number }>(`/catalog?limit=12&page=${page}${search ? `&q=${encodeURIComponent(search)}` : ''}${category ? `&slot=${category}` : ''}`, { signal }) });

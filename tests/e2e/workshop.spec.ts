@@ -3,7 +3,7 @@ test('guest selection, undo, quota persistence and compatibility rejection', asy
   await page.goto('/builder');
   const acid = page.getByRole('button', { name: 'Studio Track Acid finish' }); await expect(acid).toBeEnabled();
   await acid.click(); await expect(acid).toHaveAttribute('aria-pressed', 'true'); await expect(page.getByText('11 of 12 component changes left', { exact: false })).toBeVisible();
-  await page.getByRole('button', { name: 'Undo last selection' }).click(); await expect(page.getByRole('button', { name: 'Studio Track Forest finish' })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Undo last selection' }).click(); await expect(page.getByRole('button', { name: 'Studio Track Graphite finish' })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Tires', exact: true }).click(); await page.getByRole('button', { name: 'Select Road 28 · tan wall' }).click();
   await page.getByRole('button', { name: 'Frameset', exact: true }).click(); await page.getByRole('button', { name: 'Select Studio Pursuit', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('conflicts with your current parts');
@@ -43,7 +43,9 @@ test('register, save, edit existing build, then duplicate and delete in the gara
 });
 test('mobile workspace, account dialog and dark theme fit the viewport', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 }); await page.goto('/builder');
+  await page.getByRole('button', { name: 'Choose parts', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Studio Track Forest finish' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.getByRole('button', { name: 'Toggle color theme' }).click(); await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click(); await expect(page.getByRole('dialog')).toBeVisible(); await expect.poll(() => page.getByRole('dialog').evaluate(d => d.getBoundingClientRect().width)).toBeLessThan(391);
@@ -64,7 +66,7 @@ test('a guest draft and its name survive catalog browsing without another change
 test('guest exhaustion locks selections while keeping the bicycle, specifications and view controls', async ({ page }) => {
   await page.goto('/builder');
   for (let i = 0; i < 12; i++) {
-    const finish = i % 2 ? 'Forest' : 'Graphite';
+    const finish = i % 2 ? 'Graphite' : 'Forest';
     await page.getByRole('button', { name: `Studio Track ${finish} finish` }).click();
     await expect(page.getByText(`${11 - i} of 12 component changes left`, { exact: false })).toBeVisible();
   }

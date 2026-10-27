@@ -33,6 +33,7 @@
     "validate:deployment": "node scripts/validate-deployment.mjs"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
     "@hookform/resolvers": "^6.0.1",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.2",
@@ -82,6 +83,7 @@
     "globals": "^17.13.0",
     "jsdom": "^27.4.0",
     "mongodb-memory-server": "^11.3.0",
+    "prettier": "^3.9.10",
     "supertest": "^7.3.1",
     "tailwindcss": "^4.3.3",
     "tsup": "^9.0.0",

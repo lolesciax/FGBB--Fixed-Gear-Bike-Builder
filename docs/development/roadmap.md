@@ -21,13 +21,13 @@ The [consolidated specification](../PROJECT_SPEC.md) adds UI/UX acceptance to ev
 | 1 · Foundation and design system | Partially implemented | Established app/API/domain structure, routes and environment parsing | New graphite/blue tokens, readable controls and responsive shell; continue feature extraction |
 | 2 · Authentication, database and security | Implemented but not fully verified | Atlas persistence, sessions, CSRF, account flows, transaction-backed quotas and Redis race tests | New responsive auth/settings presentation; SMTP delivery; complete security review; production Redis remains deferred |
 | 3 · Brand/component catalog | Partially implemented | API-backed demos, unique variants, manufacturer draft, basic editor and archival snapshots | Brand/source/media review, verified variants, provenance, brand filters and structured admin forms; authentic assets require permission |
-| 4 · 2D builder | Partially implemented | SVG configuration, finish changes, view controls, undo/redo, guest draft and quota transitions | Final workspace and mobile sheet; readable inspector/specifications; independent pedals/brakes/accessories slots |
+| 4 · 2D builder | Partially implemented | SVG configuration, finish changes, view controls, undo/redo, guest draft and quota transitions | Further device/accessibility review; independent pedals/brakes/accessories slots |
 | 5 · Compatibility engine | Partially implemented | Three result states, affected slots, missing data and illustrative calculations tested | More real interfaces and verified measurements; integrated accessible status presentation |
 | 6 · 3D builder | Partially implemented | Eleven original schematic GLBs, lazy viewer, orbit/reset, shared state and preview grants tested | Authentic permitted assets, camera presets, selected-part highlighting and more device/performance coverage |
 | 7 · My Garage | Partially implemented | Ownership, CRUD/duplicate, active/history limits, leases, visibility and JSON exports tested | Refined collection details/cards, screenshot export, additional conflict/browser coverage |
 | 8 · Optional verified pricing | Blocked (optional integration) | Provider interface and fail-closed visibility guard; pricing disabled | An approved source/access and exact matching are required; continue other phases independently |
-| 9 · PWA/mobile optimization | Partially implemented | Offline/reconnect, API cache exclusion and deferred 3D downloads tested | Mobile bottom sheet, keyboard/landscape behavior, eight-width matrix, device installation and update UX |
-| 10 · Verification/release | Partially implemented; deployment held | CI runs lint, types, unit/API/Redis, browser, PWA and builds | New visual/accessibility matrix, full release audit and monitoring; deployment awaits explicit user authorization |
+| 9 · PWA/mobile optimization | Partially implemented | Offline/reconnect, API cache exclusion and deferred 3D downloads tested | Physical device/keyboard coverage, device installation and update UX |
+| 10 · Verification/release | Partially implemented; deployment held | CI runs lint, types, unit/API/Redis, browser, PWA and builds | Full cross-page visual/accessibility matrix, release audit and monitoring; deployment awaits explicit user authorization |
 
 ## Verified baseline
 
@@ -42,11 +42,21 @@ On 27 October 2026: Atlas connectivity and transactions passed. A temporary acco
 
 ## Next tasks
 
-1. Apply the graphite/blue design system across the existing shell, builder and shared page components.
-2. Implement the accessible mobile/tablet parts sheet and run the required responsive matrix.
+1. Complete page-specific graphite/blue composition and interaction reviews for landing, catalog, garage, account and admin; the shared foundation and builder are verified below.
+2. Extend mobile keyboard/device and assistive-technology coverage beyond the browser viewport checks.
 3. Extend catalog provenance/review tooling, search/filter presentation and structured administration before publishing manufacturer records.
 4. Extend actual supported component slots, compatibility interfaces and permitted rendering assets without breaking saved builds.
 5. Continue garage, account, camera/PWA and accessibility improvements alongside functional work. Keep deployment held.
+
+## Task · Graphite/blue foundation and adaptive builder — completed and verified
+
+- Integrated the continuation into the consolidated specification and existing phase plan; preserved the original functional requirements. Archived both source briefs and generated desktop/mobile design references.
+- Centralized light/dark CSS and Tailwind semantic tokens. Added locally served Inter, readable metadata, consistent controls, focus treatment, neutral surfaces and blue selection states. Updated app/PWA/offline branding; the new default demo finish is the existing Graphite variant. Saved configurations and all five actual paint choices remain supported.
+- Reworked the desktop rail/canvas/inspector and summary. Extracted the real API-backed selector with search, brand filtering, variants, finishes and specifications. Tablets use a drawer; phones use a native modal bottom sheet with category selection, internal scrolling, explicit close/Done, Escape and focus restoration. Preview/configuration, auth, quotas and save behavior remain shared and functional.
+- Verification: TypeScript, lint, both builds, 37 local unit/API tests, all eight isolated Chromium workflows and both production-preview PWA tests passed. The live Redis integration test was skipped locally without a test Redis service; CI runs it against its own Redis service.
+- Responsive checks cover all eight requested widths in both themes, plus 844x390 landscape, overflow, modal containment, category changes, Escape and focus restoration. Main semantic text/button color pairs exceed 4.5:1; theme preferences survive reload. Existing browser flows cover actual component changes, compatibility rejection, 2D/3D state, registration, saving, garage operations and guest limit behavior.
+- Visual review used Playwright Chromium because no built-in browser-control tool is available. Both generated concepts and current desktop/mobile screenshots were inspected with `view_image`. The functional schematic renderers, actual selected components and honest development/catalog disclosures take precedence over generated photographic imagery and invented data. The summary was expanded after review to show all six selections.
+- Remaining: phase statuses are still partial. More complete page layouts, additional supported slots, manufacturer provenance/admin tooling, camera presets, authentic permitted assets, physical device/keyboard checks and full accessibility review are required. The existing large lazy 3D bundle warning remains. No deployment or database configuration change was made in this milestone.
 
 ## Task · Guest quota identity survives session rotation
 

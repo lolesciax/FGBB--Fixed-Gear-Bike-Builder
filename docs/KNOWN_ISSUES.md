@@ -2,11 +2,11 @@
 
 This is a development application, not a completed public release. This list distinguishes observed implementation gaps from external dependencies.
 
-## Visual and responsive gaps at continuation intake
+## Visual and responsive gaps
 
-- Existing interface uses a green brand palette and several hardcoded green UI colors; the new graphite/blue system is not yet implemented.
-- Existing CSS uses small metadata/control text and some cramped intermediate-width layouts. The full new eight-width responsive matrix has not been verified.
-- Mobile selection is currently an inline inspector below the preview, rather than the required bottom sheet.
+- Graphite/blue tokens, shared controls, typography and the adaptive builder are implemented. Page-specific composition and interaction reviews remain for landing, catalog, garage, account and admin.
+- The builder passed 320/375/430/768/1024/1280/1440/1920px checks in both themes, plus 844x390 landscape. Other routes still need the complete matrix. Semantic text/button token pairs pass AA contrast; this is not a complete accessibility audit.
+- Mobile uses a native modal parts sheet; tablets use a drawer. Escape, explicit close, focus restoration, internal scrolling and viewport bounds are browser-tested. Physical phone keyboard, assistive technology and device coverage remain.
 - Pedals, brakes and accessories are not independent selectable slots yet. Seating currently uses the internal `saddle` slot. Preserve saved configuration compatibility when extending these.
 - Camera presets and explicit selected-component highlighting require further work. Existing orbit/reset/zoom and shared configuration behavior must remain working.
 - Catalog brand filtering, richer garage details, account quota/privacy presentation and structured administrative tables/forms need the continuation's page-by-page review.
