@@ -83,7 +83,7 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
   app.get('/api/session', async (req, res) => {
     const subject = await Subject.findById(req.identity.subject).lean();
     const changes = (subject?.changes ?? []).filter(t => t > Date.now() - DAY), previews = (subject?.previews ?? []).filter(t => t > Date.now() - DAY);
-    res.json({ user: req.identity.user, csrf: req.identity.csrf, mode: config.DEVELOPMENT_EPHEMERAL ? 'ephemeral-development' : 'connected', limits: { builds: config.BUILD_LIMIT, publish: config.PUBLISH_LIMIT, changes: config.GUEST_CHANGES, previews: config.GUEST_PREVIEWS }, usage: { changes: changes.length, previews: previews.length, changesResetAt: changes.length ? new Date(changes[0] + DAY).toISOString() : null, previewsResetAt: previews.length ? new Date(previews[0] + DAY).toISOString() : null } });
+    res.json({ user: req.identity.user, csrf: req.identity.csrf, workspaceKey: privateKey(req.identity.subject, config.SESSION_SECRET), mode: config.DEVELOPMENT_EPHEMERAL ? 'ephemeral-development' : 'connected', limits: { builds: config.BUILD_LIMIT, publish: config.PUBLISH_LIMIT, changes: config.GUEST_CHANGES, previews: config.GUEST_PREVIEWS }, usage: { changes: changes.length, previews: previews.length, changesResetAt: changes.length ? new Date(changes[0] + DAY).toISOString() : null, previewsResetAt: previews.length ? new Date(previews[0] + DAY).toISOString() : null } });
   });
   const authRate = async (req: Request, category: string, limit: number, window: number, email?: string) => {
     await rate.consume(`${category}:ip:${privateKey(req.ip || '', config.SESSION_SECRET)}`, category === 'login' ? 30 : limit, window);

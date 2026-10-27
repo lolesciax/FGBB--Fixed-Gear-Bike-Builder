@@ -42,7 +42,7 @@ On 27 October 2026: Atlas connectivity and transactions passed. A temporary acco
 
 1. Isolate browser test servers and credentials from the local Atlas environment — implemented and verified.
 2. Fix and verify service-worker navigation and initial 3D loading — implemented and verified.
-3. Improve guest draft/allowance transitions and their regression coverage.
+3. Improve guest draft/allowance transitions and their regression coverage — implemented and verified in six browser workflows.
 4. Extend catalog provenance and review tooling before publishing manufacturer records.
 
 ## Task · Guest quota identity survives session rotation
@@ -60,3 +60,13 @@ On 27 October 2026: Atlas connectivity and transactions passed. A temporary acco
 - Added an isolated production-preview test configuration. Both browser checks passed: online deep-link reload plus offline/reconnect behavior; and no initial 3D download or API response caching. TypeScript and lint passed.
 - Added these production-build browser checks to CI after the normal browser workflows. This runs on loopback and does not deploy anything.
 - Remaining dependencies: browser/device installability checks, update notification UX, and responsive selection-sheet work.
+
+## Task · Preserve guest drafts and explain exhausted allowances
+
+- A server-issued workspace scope keeps in-memory drafts bound to the current identity. Internal catalog navigation preserves selections, the draft name and undo/redo history without another bootstrap or component-change request. Registration transfers the current draft and its name into the authenticated workspace.
+- Active 3D grants stay in memory through internal browsing, so returning to the viewer does not consume another grant. Refresh/close behavior remains temporary and is explained in the workspace.
+- At the component-change limit, selections and undo/redo are disabled. The current bicycle, view controls, component browsing, compatibility details, reset timestamp and registration action remain available. Usage is refreshed at its reset time.
+- Navigation away from a saved build with unsaved changes prompts before discarding them. New unsaved drafts remain in memory during internal browsing.
+- Verification: all six isolated Chromium workflows passed, including registration/name transfer, resumed 3D without another grant, catalog round trips, limit locking, retained view/spec controls, and a 390px viewport with no horizontal overflow. TypeScript, lint, both builds and both production-preview PWA checks passed.
+- Visual check: Playwright Chromium was used because no built-in browser-control tool is available. The mobile limit state was inspected with `view_image`; the bicycle remains above the notice and the controls stay within the viewport. Existing layout, typography, palette, component spacing and disclosure treatment were retained. The limit notice is an intentional new state required by the brief.
+- Remaining dependencies: manufacturer catalog provenance/review tooling is the next catalog milestone. No deployment was performed.
