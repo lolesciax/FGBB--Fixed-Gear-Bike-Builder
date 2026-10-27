@@ -14,7 +14,7 @@ import { charge, DAY, withSubject } from './quotas';
 import { defaultConfiguration } from './catalog';
 import type { SendMail } from './mail';
 
-type Identity = { subject: string; csrf: string; sessionId: string; user: { id: string; email: string; name: string; role: string; verified: boolean; theme: string } | null };
+type Identity = { subject: string; guestId: string; csrf: string; sessionId: string; user: { id: string; email: string; name: string; role: string; verified: boolean; theme: string } | null };
 declare module 'express-serve-static-core' { interface Request { identity: Identity; traceId: string } }
 const HOUR = 3600000;
 const idSchema = z.string().regex(/^[a-f\d]{24}$/i);
@@ -38,11 +38,12 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
   app.use((req, res, next) => { req.traceId = randomUUID(); res.setHeader('X-Request-Id', req.traceId); res.setHeader('Cache-Control', 'no-store'); req.setTimeout(15000); next(); });
   const secure = config.NODE_ENV === 'production';
   const cookieName = secure ? '__Host-tracklab' : 'tracklab';
+  const guestCookieName = secure ? '__Host-tracklab-guest' : 'tracklab-guest';
   const cookieOptions = { httpOnly: true, secure, sameSite: config.COOKIE_SAME_SITE, path: '/', maxAge: 30 * DAY } as const;
-  async function newSession(res: Response, userId?: string, guestId = randomToken()) {
+  async function newSession(res: Response, userId: string | undefined, guestId: string) {
     const token = randomToken(), csrf = randomToken();
-    const session = await Session.create({ tokenHash: hash(token), csrf, userId, guestId: userId ? undefined : guestId, expiresAt: new Date(Date.now() + 30 * DAY) });
-    res.cookie(cookieName, sign({ token }, config.SESSION_SECRET), cookieOptions);
+    const session = await Session.create({ tokenHash: hash(token), csrf, userId, guestId, expiresAt: new Date(Date.now() + 30 * DAY) });
+    res.cookie(cookieName, sign({ kind: 'session', token }, config.SESSION_SECRET), cookieOptions);
     return { session, csrf };
   }
   app.get('/api/health', (_req, res) => res.status(mongoose.connection.readyState === 1 ? 200 : 503).json({ success: mongoose.connection.readyState === 1, status: mongoose.connection.readyState === 1 ? 'ready' : 'unavailable' }));
@@ -53,12 +54,25 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
       await rate.consume(`infrastructure:${ipKey}`, 600, 60000);
       let session = null;
       if (req.cookies[cookieName]) {
-        try { const cookie = unsign<{ token: string }>(req.cookies[cookieName], config.SESSION_SECRET); session = await Session.findOne({ tokenHash: hash(cookie.token), expiresAt: { $gt: new Date() } }); } catch (error) { if (!(error instanceof ApiError)) throw error; }
+        try { const cookie = unsign<{ kind?: string; token?: string }>(req.cookies[cookieName], config.SESSION_SECRET); if (cookie && typeof cookie.token === 'string' && /^[A-Za-z0-9_-]{43}$/.test(cookie.token) && (!cookie.kind || cookie.kind === 'session')) session = await Session.findOne({ tokenHash: hash(cookie.token), expiresAt: { $gt: new Date() } }); } catch (error) { if (!(error instanceof ApiError)) throw error; }
       }
-      if (!session) { await rate.consume(`sessions:${ipKey}`, 600, HOUR); session = (await newSession(res)).session; }
+      // Guest usage identity outlives authentication/session rotation. A legacy
+      // server-side guest ID is retained when introducing the separate cookie.
+      let guestId: string | undefined;
+      if (req.cookies[guestCookieName]) {
+        try {
+          const guest = unsign<{ kind: string; id: string; expires: number }>(req.cookies[guestCookieName], config.SESSION_SECRET);
+          if (guest && guest.kind === 'guest' && /^[A-Za-z0-9_-]{43}$/.test(guest.id) && guest.expires > Date.now()) guestId = guest.id;
+        } catch (error) { if (!(error instanceof ApiError)) throw error; }
+      }
+      if (!guestId) {
+        guestId = session?.guestId || randomToken();
+        res.cookie(guestCookieName, sign({ kind: 'guest', id: guestId, expires: Date.now() + 30 * DAY }, config.SESSION_SECRET), cookieOptions);
+      }
+      if (!session) { await rate.consume(`sessions:${ipKey}`, 600, HOUR); session = (await newSession(res, undefined, guestId)).session; }
       const user = session.userId ? await User.findById(session.userId) : null;
       if (session.userId && !user) { await Session.deleteOne({ _id: session._id }); throw new ApiError(401, 'SESSION_EXPIRED', 'Please sign in again.'); }
-      req.identity = { subject: user ? `user:${user._id}` : `guest:${session.guestId}`, csrf: session.csrf, sessionId: String(session._id), user: user ? publicUser(user) : null };
+      req.identity = { subject: user ? `user:${user._id}` : `guest:${guestId}`, guestId, csrf: session.csrf, sessionId: String(session._id), user: user ? publicUser(user) : null };
       if (req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'OPTIONS') {
         if (req.get('Origin') !== config.FRONTEND_URL || req.get('X-CSRF-Token') !== session.csrf) throw new ApiError(403, 'CSRF_INVALID', 'Your security token expired. Refresh the page and try again.');
       }
@@ -87,7 +101,7 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
     const passwordHash = await argon2.hash(input.password, { type: argon2.argon2id });
     const user = await User.create({ email: input.email, name: input.name, passwordHash });
     await Session.deleteOne({ _id: req.identity.sessionId });
-    const { csrf } = await newSession(res, String(user._id));
+    const { csrf } = await newSession(res, String(user._id), req.identity.guestId);
     let emailSent = true;
     try { await recovery(String(user._id), user.email, 'verify'); } catch { emailSent = false; }
     res.status(201).json({ user: publicUser(user), csrf, emailSent });
@@ -99,10 +113,10 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
     const valid = user ? await argon2.verify(user.passwordHash, input.password) : (await argon2.hash(input.password), false);
     if (!user || !valid) throw new ApiError(401, 'INVALID_CREDENTIALS', 'The email or password is incorrect.');
     await Session.deleteOne({ _id: req.identity.sessionId });
-    const { csrf } = await newSession(res, String(user._id));
+    const { csrf } = await newSession(res, String(user._id), req.identity.guestId);
     res.json({ user: publicUser(user), csrf });
   });
-  app.post('/api/auth/logout', async (req, res) => { await Session.deleteOne({ _id: req.identity.sessionId }); const { csrf } = await newSession(res); res.json({ user: null, csrf }); });
+  app.post('/api/auth/logout', async (req, res) => { await Session.deleteOne({ _id: req.identity.sessionId }); const { csrf } = await newSession(res, undefined, req.identity.guestId); res.json({ user: null, csrf }); });
   app.post('/api/auth/forgot-password', async (req, res) => { const { email } = z.object({ email: z.email().transform(v => v.toLowerCase()) }).parse(req.body); await authRate(req, 'recovery', 3, HOUR, email); const user = await User.findOne({ email }); if (user) await recovery(String(user._id), email, 'reset'); res.json({ message: 'If an account exists, a recovery link will be sent.' }); });
   app.post('/api/auth/resend-verification', async (req, res) => { const user = guard(req); await authRate(req, 'verification', 3, HOUR, user.email); if (!user.verified) await recovery(user.id, user.email, 'verify'); res.json({ message: 'If verification is needed, a link will be sent.' }); });
   app.post('/api/auth/verify', async (req, res) => {
@@ -137,9 +151,9 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
     if (!record || !await argon2.verify(record.passwordHash, input.currentPassword)) throw new ApiError(401, 'INVALID_CREDENTIALS', 'Your current password is incorrect.');
     const passwordHash = await argon2.hash(input.password);
     await mongoose.connection.transaction(async session => { await User.updateOne({ _id: user.id }, { $set: { passwordHash } }, { session }); await Session.deleteMany({ userId: user.id }, { session }); await RecoveryToken.deleteMany({ userId: user.id }, { session }); });
-    const { csrf } = await newSession(res, user.id); res.json({ csrf, message: 'Password changed. Other sessions have been revoked.' });
+    const { csrf } = await newSession(res, user.id, req.identity.guestId); res.json({ csrf, message: 'Password changed. Other sessions have been revoked.' });
   });
-  app.post('/api/account/revoke-sessions', async (req, res) => { const user = guard(req); await Session.deleteMany({ userId: user.id }); const { csrf } = await newSession(res, user.id); res.json({ csrf, message: 'All other sessions revoked.' }); });
+  app.post('/api/account/revoke-sessions', async (req, res) => { const user = guard(req); await Session.deleteMany({ userId: user.id }); const { csrf } = await newSession(res, user.id, req.identity.guestId); res.json({ csrf, message: 'All other sessions revoked.' }); });
   app.delete('/api/account', async (req, res) => {
     const user = guard(req); const { password } = z.object({ password: z.string().max(128) }).parse(req.body);
     await authRate(req, 'delete-account', 5, HOUR, user.email);

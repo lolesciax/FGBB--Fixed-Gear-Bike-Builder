@@ -45,6 +45,14 @@ On 27 October 2026: Atlas connectivity and transactions passed. A temporary acco
 3. Improve guest draft/allowance transitions and their regression coverage.
 4. Extend catalog provenance and review tooling before publishing manufacturer records.
 
+## Task · Guest quota identity survives session rotation
+
+- Introduced a separately signed HttpOnly guest-identity cookie. Login/logout, password/session rotation, and authentication-cookie resets retain the same guest usage subject. Legacy guest sessions retain their existing identity during migration.
+- Added signed cookie purposes and payload checks, while retaining compatible existing authentication cookies. The usage cookie has its own expiry and uses Secure `__Host-` naming in production.
+- Regression coverage verifies that component changes and 3D grants persist across guest logout/session-cookie reset, and that signing into an account then signing out restores the original guest allowance.
+- Local verification: 37 isolated tests and all four Chromium workflows passed; TypeScript and lint passed. The live Redis test remained skipped locally and is exercised by CI. Existing transaction-race and account-isolation checks still pass.
+- Remaining limitation: a public client can still clear all cookies or change client identity. This is not represented as tamper-proof abuse prevention; IP-based secondary thresholds and server authorization remain in place.
+
 ## Task · PWA navigation and deferred 3D loading
 
 - Replaced the unconditional offline navigation fallback with online network navigation and an offline fallback only when navigation fails. API routes are excluded, and no API/account responses are stored in Cache Storage.

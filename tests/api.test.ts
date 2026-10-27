@@ -13,8 +13,8 @@ const origin = 'http://localhost:5173';
 const config = parseConfig({ NODE_ENV: 'test', FRONTEND_URL: origin });
 let repl: MongoMemoryReplSet, app: ReturnType<typeof createApp>;
 let letters: { email: string; kind: string; token: string }[];
-type Client = { agent: Agent; csrf: string; userId?: string };
-async function guest(): Promise<Client> { const server = createServer(app); server.setMaxListeners(30); /* The quota race deliberately makes 15 simultaneous Supertest calls. */ const agent = request.agent(server); const s = await agent.get('/api/session').expect(200); return { agent, csrf: s.body.csrf }; }
+type Client = { agent: Agent; csrf: string; userId?: string; guestCookie: string };
+async function guest(): Promise<Client> { const server = createServer(app); server.setMaxListeners(30); /* The quota race deliberately makes 15 simultaneous Supertest calls. */ const agent = request.agent(server); const s = await agent.get('/api/session').expect(200); const guestCookie = (s.headers['set-cookie'] as unknown as string[]).find(value => value.startsWith('tracklab-guest='))?.split(';')[0]; if (!guestCookie) throw new Error('Guest usage cookie was not issued.'); return { agent, csrf: s.body.csrf, guestCookie }; }
 function post(c: Client, path: string, body: object = {}) { return c.agent.post(`/api${path}`).set('Origin', origin).set('X-CSRF-Token', c.csrf).send(body); }
 function patch(c: Client, path: string, body: object = {}, editorToken = '') { return c.agent.patch(`/api${path}`).set('Origin', origin).set('X-CSRF-Token', c.csrf).set('X-Editor-Token', editorToken).send(body); }
 function del(c: Client, path: string) { return c.agent.delete(`/api${path}`).set('Origin', origin).set('X-CSRF-Token', c.csrf); }
@@ -33,6 +33,24 @@ describe('authentication and authorization', () => {
   it('deletes associated personal data', async () => { const c = await member(); await post(c, '/builds', build).expect(201); await c.agent.delete('/api/account').set('Origin', origin).set('X-CSRF-Token', c.csrf).send({ password: 'a-long-test-passphrase' }).expect(200); expect(await User.countDocuments()).toBe(0); expect(await Build.countDocuments()).toBe(0); expect(await Session.countDocuments({ userId: c.userId })).toBe(0); });
 });
 describe('guest restrictions', () => {
+  it('keeps guest usage through logout and authentication-cookie resets', async () => {
+    const c = await guest(), w = await workspace(c);
+    await post(c, '/workspace/change', { token: w.token, slot: 'wheels', variantId: 'studio-deep' }).expect(200);
+    await post(c, '/workspace/preview', { token: w.token }).expect(200);
+    const logout = await post(c, '/auth/logout').expect(200); c.csrf = logout.body.csrf;
+    const usage = (await c.agent.get('/api/session').expect(200)).body.usage;
+    expect(usage.changes).toBe(1); expect(usage.previews).toBe(1);
+    const reset = request.agent(app); const restored = await reset.get('/api/session').set('Cookie', c.guestCookie).expect(200);
+    expect(restored.body.usage.changes).toBe(1); expect(restored.body.usage.previews).toBe(1);
+  });
+  it('restores original guest allowances after a registered session logs out', async () => {
+    const c = await guest(), w = await workspace(c);
+    await post(c, '/workspace/change', { token: w.token, slot: 'wheels', variantId: 'studio-deep' }).expect(200);
+    const registration = await post(c, '/auth/register', { name: 'Rider', email: 'rider@example.com', password: 'a-long-test-passphrase' }).expect(201); c.csrf = registration.body.csrf;
+    const logout = await post(c, '/auth/logout').expect(200); c.csrf = logout.body.csrf;
+    const restored = await c.agent.get('/api/session').expect(200);
+    expect(restored.body.user).toBeNull(); expect(restored.body.usage.changes).toBe(1);
+  });
   it('does not charge repeated selections, browsing or invalid compatibility', async () => { const c = await guest(); const w = await workspace(c); await post(c, '/workspace/change', { token: w.token, slot: 'wheels', variantId: 'studio-classic' }).expect(200); await c.agent.get('/api/catalog?slot=tires').expect(200); const next = await post(c, '/workspace/change', { token: w.token, slot: 'tires', variantId: 'studio-tire28' }).expect(200); await post(c, '/workspace/change', { token: next.body.token, slot: 'frameset', variantId: 'studio-pursuit-forest' }).expect(422); const s = await c.agent.get('/api/session'); expect(s.body.usage.changes).toBe(1); });
   it('enforces twelve accepted changes and persists counters across reload/bootstrap', async () => { const c = await guest(); let w = await workspace(c); for (let i = 0; i < 12; i++) w = (await post(c, '/workspace/change', { token: w.token, slot: 'wheels', variantId: i % 2 ? 'studio-classic' : 'studio-deep' }).expect(200)).body; await post(c, '/workspace/change', { token: w.token, slot: 'wheels', variantId: 'studio-deep' }).expect(409); const fresh = await workspace(c); const exhausted = await post(c, '/workspace/change', { token: fresh.token, slot: 'wheels', variantId: 'studio-deep' }).expect(409); expect(exhausted.body.error.code).toBe('GUEST_CHANGE_LIMIT'); expect(exhausted.body.error.details.resetAt).toBeTruthy(); expect((await c.agent.get('/api/session')).body.usage.changes).toBe(12); });
   it('serializes concurrent guest changes without exceeding twelve', async () => { const c = await guest(); const w = await workspace(c); const results = await Promise.all(Array.from({ length: 15 }, () => post(c, '/workspace/change', { token: w.token, slot: 'wheels', variantId: 'studio-deep' }))); expect(results.filter(r => r.status === 200)).toHaveLength(12); expect(results.filter(r => r.status === 409)).toHaveLength(3); });
