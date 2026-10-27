@@ -40,6 +40,6 @@ try {
   if (!ready) throw new Error('The isolated test API did not become ready.');
   const session = await (await fetch('http://127.0.0.1:4010/api/session')).json();
   if (session.mode !== 'ephemeral-development') throw new Error('Refusing to run browser tests against a persistent database.');
-  launch('../node_modules/vite/bin/vite.js', ['--config', 'apps/web/vite.config.ts']);
+  launch('../node_modules/vite/bin/vite.js', [...(process.argv.includes('--preview') ? ['preview'] : []), '--config', 'apps/web/vite.config.ts']);
   console.info('Browser tests use isolated temporary MongoDB and ports 4010/5190. Atlas and SMTP are not used.');
 } catch (error) { console.error((error as Error).message); stop(1); }

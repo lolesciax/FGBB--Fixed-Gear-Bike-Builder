@@ -24,7 +24,7 @@ The initial commit records the existing working development baseline together. F
 | 6 · 3D builder | Eleven original registered schematic GLBs, lazy viewer, orbit controls, shared configuration, preview authorization | Licensed authentic assets; more camera presets; loading/performance checks |
 | 7 · Garage | Private ownership, create/update/delete/duplicate, active/history limits, editor leases, publishing limits, JSON exports | Screenshot export; additional conflict and browser coverage |
 | 8 · Pricing | Provider interface, exact-match/staleness guard, disabled feature | Authorized source and tested adapter required before enabling |
-| 9 · PWA and responsive behavior | Manifest/icons, service worker configuration, offline page, adaptive layouts | Verify navigation/offline behavior; exclude 3D assets from initial precache; mobile selection sheet |
+| 9 · PWA and responsive behavior | Manifest/icons, tested online/offline navigation, API cache exclusion, deferred 3D downloads, adaptive layouts | Update notification UX, device installation checks, mobile selection sheet |
 | 10 · Release | Local checks, browser workflows, preparatory hosting manifests | Full release audit and monitoring; deployment explicitly deferred by the user |
 
 ## Verified baseline
@@ -41,6 +41,14 @@ On 27 October 2026: Atlas connectivity and transactions passed. A temporary acco
 ## Next tasks
 
 1. Isolate browser test servers and credentials from the local Atlas environment — implemented and verified.
-2. Fix and verify service-worker navigation and initial 3D loading.
+2. Fix and verify service-worker navigation and initial 3D loading — implemented and verified.
 3. Improve guest draft/allowance transitions and their regression coverage.
 4. Extend catalog provenance and review tooling before publishing manufacturer records.
+
+## Task · PWA navigation and deferred 3D loading
+
+- Replaced the unconditional offline navigation fallback with online network navigation and an offline fallback only when navigation fails. API routes are excluded, and no API/account responses are stored in Cache Storage.
+- Restricted precaching to offline support assets and icons. The generated precache fell from about 2.3 MB to 17.61 KiB. The 3D bundle and GLBs remain on demand.
+- Added an isolated production-preview test configuration. Both browser checks passed: online deep-link reload plus offline/reconnect behavior; and no initial 3D download or API response caching. TypeScript and lint passed.
+- Added these production-build browser checks to CI after the normal browser workflows. This runs on loopback and does not deploy anything.
+- Remaining dependencies: browser/device installability checks, update notification UX, and responsive selection-sheet work.

@@ -34,6 +34,7 @@ See [Atlas configuration](docs/development/mongodb-atlas.md) for connection setu
 | `npm run lint` | Check source lint rules |
 | `npm test` | Run isolated unit/integration tests; they use their own temporary MongoDB replica set |
 | `npm run test:e2e` | Run browser workflows against an automatically isolated temporary database on ports 4010/5190; never reuse Atlas |
+| `npm run test:pwa` | Build locally and verify online reloads, offline recovery, deferred 3D downloads and API cache exclusion |
 | `npm run build` | Build the frontend and backend locally |
 
 Email delivery is not configured yet. During development, verification and password-recovery links are written under `.local/mail/`, which is ignored by Git. No real email is sent without SMTP configuration.
