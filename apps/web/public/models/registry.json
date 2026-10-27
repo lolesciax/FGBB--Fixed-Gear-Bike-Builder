@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "assembly": "TrackLab Studio",
+  "representation": "independently authored schematic demonstration",
+  "authenticManufacturerGeometry": false,
+  "rights": "Original procedural geometry created for TrackLab; no manufacturer imagery, marks or scans.",
+  "license": "CC0-1.0",
+  "units": "metres",
+  "upAxis": "+Y",
+  "forwardAxis": "+X",
+  "origin": "common assembly origin; wheel contact plane Y=-0.282",
+  "attachments": { "rearAxle": [-0.49, 0, 0], "frontAxle": [0.5, 0, 0], "bottomBracket": [-0.11, -0.036, 0] },
+  "assets": [
+    "frame-track.glb", "frame-pursuit.glb", "wheels-classic.glb", "wheels-deep.glb",
+    "tires-black.glb", "tires-tan.glb", "cockpit-drop.glb", "cockpit-riser.glb",
+    "saddle-race.glb", "saddle-comfort.glb", "drivetrain.glb"
+  ]
+}
