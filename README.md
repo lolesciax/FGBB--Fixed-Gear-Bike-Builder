@@ -2,6 +2,8 @@
 
 A fixed-gear bicycle configurator in active development. The app runs locally; no frontend or backend has been deployed.
 
+Implementation requirements are consolidated in [the project specification](docs/PROJECT_SPEC.md). The continuation adds a [graphite/electric-blue design system](docs/DESIGN_SYSTEM.md), UI/UX acceptance in every phase, and a dedicated mobile parts sheet. See the [known issues](docs/KNOWN_ISSUES.md) for unfinished requirements; the previous green visual direction is superseded.
+
 ## Local development with MongoDB Atlas
 
 Requirements: Node.js 22.12+ (Node 24 is recommended) and npm.

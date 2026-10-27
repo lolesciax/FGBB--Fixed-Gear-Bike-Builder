@@ -1,5 +1,8 @@
 # TrackLab development rules
 
+- Apply the consolidated requirements in `docs/PROJECT_SPEC.md` and the continuation's graphite/electric-blue direction in `docs/DESIGN_SYSTEM.md`. UI/UX, responsive behavior, accessibility and real interaction feedback are acceptance criteria in every phase, not end-of-project polish.
+- Preserve existing working code and audit actual behavior. Use explicit phase statuses and verification evidence; component/file existence does not prove completion.
+
 - Keep development local. Do not deploy, provision hosting, or publish a release unless the user explicitly authorizes deployment later.
 - After each verified phase or important task, commit and push the coherent change to the existing GitHub repository. Do not combine unrelated unfinished phases or describe partial work as a finished release.
 - Record implemented behavior, checks, remaining limitations and next dependencies in `docs/development/roadmap.md`.

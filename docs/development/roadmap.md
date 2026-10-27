@@ -12,20 +12,22 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
 
-## Current phase status
+## Current phase status after continuation audit
 
-| Phase | Implemented baseline | Outstanding work |
-| --- | --- | --- |
-| 1 · Foundation | React/Vite and Express/TypeScript structure; shared domain schemas; themes; routes; environment templates | Continue extracting feature modules as features grow |
-| 2 · Database and security | Atlas database, indexes, backend sessions, CSRF, account recovery/verification logic, transaction-backed business quotas, Redis adapter; two-client Redis race verified in CI | SMTP delivery; complete security review; production Redis configuration remains deferred |
-| 3 · Catalog and administration | API-backed demo catalog, unique variants, draft manufacturer reference, admin record editing, archival snapshots | Brand/source/media management, per-field provenance, permission review, verified manufacturer variants |
-| 4 · 2D builder | Shared configuration, original layered SVG, selections, finish changes, view controls, undo/redo | Broader component slots, responsive interaction polish, guest draft transitions |
-| 5 · Compatibility | Compatible/incompatible/unverified results, affected slots and missing data, illustrative calculations | Additional real component interfaces and verified measurements |
-| 6 · 3D builder | Eleven original registered schematic GLBs, lazy viewer, orbit controls, shared configuration, preview authorization | Licensed authentic assets; more camera presets; loading/performance checks |
-| 7 · Garage | Private ownership, create/update/delete/duplicate, active/history limits, editor leases, publishing limits, JSON exports | Screenshot export; additional conflict and browser coverage |
-| 8 · Pricing | Provider interface, exact-match/staleness guard, disabled feature | Authorized source and tested adapter required before enabling |
-| 9 · PWA and responsive behavior | Manifest/icons, tested online/offline navigation, API cache exclusion, deferred 3D downloads, adaptive layouts | Update notification UX, device installation checks, mobile selection sheet |
-| 10 · Release | Local checks, browser workflows, preparatory hosting manifests | Full release audit and monitoring; deployment explicitly deferred by the user |
+The [consolidated specification](../PROJECT_SPEC.md) adds UI/UX acceptance to every phase. No whole phase is claimed complete merely because its earlier functional milestone passed. Existing CI evidence remains valid for those tested behaviors, not for the new design criteria.
+
+| Phase | Status | Verified/implemented behavior | Missing acceptance and next dependencies |
+| --- | --- | --- | --- |
+| 1 · Foundation and design system | Partially implemented | Established app/API/domain structure, routes and environment parsing | New graphite/blue tokens, readable controls and responsive shell; continue feature extraction |
+| 2 · Authentication, database and security | Implemented but not fully verified | Atlas persistence, sessions, CSRF, account flows, transaction-backed quotas and Redis race tests | New responsive auth/settings presentation; SMTP delivery; complete security review; production Redis remains deferred |
+| 3 · Brand/component catalog | Partially implemented | API-backed demos, unique variants, manufacturer draft, basic editor and archival snapshots | Brand/source/media review, verified variants, provenance, brand filters and structured admin forms; authentic assets require permission |
+| 4 · 2D builder | Partially implemented | SVG configuration, finish changes, view controls, undo/redo, guest draft and quota transitions | Final workspace and mobile sheet; readable inspector/specifications; independent pedals/brakes/accessories slots |
+| 5 · Compatibility engine | Partially implemented | Three result states, affected slots, missing data and illustrative calculations tested | More real interfaces and verified measurements; integrated accessible status presentation |
+| 6 · 3D builder | Partially implemented | Eleven original schematic GLBs, lazy viewer, orbit/reset, shared state and preview grants tested | Authentic permitted assets, camera presets, selected-part highlighting and more device/performance coverage |
+| 7 · My Garage | Partially implemented | Ownership, CRUD/duplicate, active/history limits, leases, visibility and JSON exports tested | Refined collection details/cards, screenshot export, additional conflict/browser coverage |
+| 8 · Optional verified pricing | Blocked (optional integration) | Provider interface and fail-closed visibility guard; pricing disabled | An approved source/access and exact matching are required; continue other phases independently |
+| 9 · PWA/mobile optimization | Partially implemented | Offline/reconnect, API cache exclusion and deferred 3D downloads tested | Mobile bottom sheet, keyboard/landscape behavior, eight-width matrix, device installation and update UX |
+| 10 · Verification/release | Partially implemented; deployment held | CI runs lint, types, unit/API/Redis, browser, PWA and builds | New visual/accessibility matrix, full release audit and monitoring; deployment awaits explicit user authorization |
 
 ## Verified baseline
 
@@ -40,10 +42,11 @@ On 27 October 2026: Atlas connectivity and transactions passed. A temporary acco
 
 ## Next tasks
 
-1. Isolate browser test servers and credentials from the local Atlas environment — implemented and verified.
-2. Fix and verify service-worker navigation and initial 3D loading — implemented and verified.
-3. Improve guest draft/allowance transitions and their regression coverage — implemented and verified in six browser workflows.
-4. Extend catalog provenance and review tooling before publishing manufacturer records.
+1. Apply the graphite/blue design system across the existing shell, builder and shared page components.
+2. Implement the accessible mobile/tablet parts sheet and run the required responsive matrix.
+3. Extend catalog provenance/review tooling, search/filter presentation and structured administration before publishing manufacturer records.
+4. Extend actual supported component slots, compatibility interfaces and permitted rendering assets without breaking saved builds.
+5. Continue garage, account, camera/PWA and accessibility improvements alongside functional work. Keep deployment held.
 
 ## Task · Guest quota identity survives session rotation
 
