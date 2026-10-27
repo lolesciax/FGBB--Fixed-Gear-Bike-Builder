@@ -13,6 +13,7 @@
     "dev": "concurrently -k -n api,web \"npm:dev:api\" \"npm:dev:web\"",
     "dev:api": "tsx watch apps/api/src/server.ts",
     "dev:web": "vite --config apps/web/vite.config.ts",
+    "dev:test": "tsx scripts/e2e-server.ts",
     "build": "npm run typecheck && npm run build:web && npm run build:api",
     "build:web": "vite build --config apps/web/vite.config.ts",
     "build:api": "tsup apps/api/src/server.ts --format esm --platform node --target node22 --out-dir apps/api/dist --no-splitting --external mongodb-memory-server",

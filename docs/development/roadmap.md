@@ -17,7 +17,7 @@ The initial commit records the existing working development baseline together. F
 | Phase | Implemented baseline | Outstanding work |
 | --- | --- | --- |
 | 1 · Foundation | React/Vite and Express/TypeScript structure; shared domain schemas; themes; routes; environment templates | Continue extracting feature modules as features grow |
-| 2 · Database and security | Atlas database, indexes, backend sessions, CSRF, account recovery/verification logic, transaction-backed business quotas, Redis adapter | Verify Redis across live clients; SMTP delivery; complete security review |
+| 2 · Database and security | Atlas database, indexes, backend sessions, CSRF, account recovery/verification logic, transaction-backed business quotas, Redis adapter; two-client Redis race verified in CI | SMTP delivery; complete security review; production Redis configuration remains deferred |
 | 3 · Catalog and administration | API-backed demo catalog, unique variants, draft manufacturer reference, admin record editing, archival snapshots | Brand/source/media management, per-field provenance, permission review, verified manufacturer variants |
 | 4 · 2D builder | Shared configuration, original layered SVG, selections, finish changes, view controls, undo/redo | Broader component slots, responsive interaction polish, guest draft transitions |
 | 5 · Compatibility | Compatible/incompatible/unverified results, affected slots and missing data, illustrative calculations | Additional real component interfaces and verified measurements |
@@ -29,11 +29,18 @@ The initial commit records the existing working development baseline together. F
 
 ## Verified baseline
 
-On 27 October 2026: Atlas connectivity and transactions passed. A temporary account, saved build, session and creation quota survived a complete API/database reconnection; the fixture was removed afterward. TypeScript and lint passed. The latest isolated Vitest run passed 34 tests and skipped the live Redis test because no test Redis server was configured. Four existing browser workflows were checked during implementation; local browser tests must be isolated from Atlas before relying on repeatable regression runs.
+On 27 October 2026: Atlas connectivity and transactions passed. A temporary account, saved build, session and creation quota survived a complete API/database reconnection; the fixture was removed afterward. TypeScript and lint passed. The local baseline Vitest run passed 34 tests and skipped the live Redis test because no test Redis server was configured. The initial GitHub CI run passed all 35 tests, including the two-client atomic Redis quota race, and all four browser workflows: [baseline CI evidence](https://github.com/lolesciax/FGBB--Fixed-Gear-Bike-Builder/actions/runs/40503274845).
+
+## Task · Browser-test isolation
+
+- Implemented an isolated API on port 4010, frontend on port 5190, temporary MongoDB replica set, and independent test session secret. Inherited Atlas, Redis, SMTP and frontend API credentials are replaced before child processes start.
+- The launcher waits for the test API and checks its ephemeral mode before starting the frontend. Playwright refuses to reuse an existing development server. The Atlas-backed app remains on ports 4000/5180.
+- Local verification: all four Chromium workflows passed against the new isolated launcher. TypeScript and lint passed. A regression test covers removal of inherited external service credentials.
+- Remaining dependencies: browser performance/offline checks and additional guest-transition coverage. No deployment was performed.
 
 ## Next tasks
 
-1. Isolate browser test servers and credentials from the local Atlas environment.
+1. Isolate browser test servers and credentials from the local Atlas environment — implemented and verified.
 2. Fix and verify service-worker navigation and initial 3D loading.
 3. Improve guest draft/allowance transitions and their regression coverage.
 4. Extend catalog provenance and review tooling before publishing manufacturer records.

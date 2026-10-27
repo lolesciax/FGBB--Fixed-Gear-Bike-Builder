@@ -8,6 +8,8 @@ Requirements: Node.js 22.12+ (Node 24 is recommended) and npm.
 
 ```sh
 npm ci
+npm run setup:development
+# Configure the Atlas URI in the ignored root .env before the next command.
 npm run db:check
 npm run dev
 ```
@@ -31,7 +33,7 @@ See [Atlas configuration](docs/development/mongodb-atlas.md) for connection setu
 | `npm run typecheck` | Check TypeScript |
 | `npm run lint` | Check source lint rules |
 | `npm test` | Run isolated unit/integration tests; they use their own temporary MongoDB replica set |
-| `npm run test:e2e` | Run browser workflows; use an isolated local test environment rather than a shared Atlas database |
+| `npm run test:e2e` | Run browser workflows against an automatically isolated temporary database on ports 4010/5190; never reuse Atlas |
 | `npm run build` | Build the frontend and backend locally |
 
 Email delivery is not configured yet. During development, verification and password-recovery links are written under `.local/mail/`, which is ignored by Git. No real email is sent without SMTP configuration.
@@ -51,4 +53,6 @@ Implemented flows include the illustrative 2D/3D workspace, session authenticati
 
 The selectable catalog currently contains original **demo** parts. Manufacturer publishing remains gated until product variants, specification provenance, geometry and asset permissions are reviewed. The Cinelli reference is an unpublished research draft. Demo geometry is never presented as authentic manufacturer geometry. Pricing remains disabled.
 
-This is not a completed public release. Remaining work includes manufacturer catalog verification, expanded component categories and assets, richer administration, accessibility/responsive polish, live distributed Redis verification, SMTP delivery testing, PWA verification, and deployment validation. Hosting manifests are preparatory files only; **do not apply them while development and release review are pending**.
+This is not a completed public release. Remaining work includes manufacturer catalog verification, expanded component categories and assets, richer administration, accessibility/responsive polish, production Redis configuration, SMTP delivery testing, PWA verification, and deployment validation. The Redis adapter's atomic behavior has been verified with two independent clients in GitHub CI. Hosting manifests are preparatory files only; **do not apply them while development and release review are pending**.
+
+Verified phases and important tasks are committed and pushed incrementally. See the [development roadmap and push workflow](docs/development/roadmap.md).
