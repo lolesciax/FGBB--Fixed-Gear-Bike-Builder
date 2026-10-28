@@ -8,6 +8,15 @@ export const cameraPresets = [
   ["top", "Top"],
 ] as const;
 export type CameraView = (typeof cameraPresets)[number][0];
+export const compactCameraLabels: Record<CameraView, string> = {
+  studio: "Studio",
+  side: "Side",
+  front: "Front",
+  rear: "Rear",
+  "three-quarter": "Front 3/4",
+  "rear-quarter": "Rear 3/4",
+  top: "Top",
+};
 export type StudioEnvironment = "light" | "dark";
 export type GraphicsQuality = "auto" | "performance" | "balanced" | "quality";
 export type QualityTier = Exclude<GraphicsQuality, "auto">;
@@ -34,6 +43,7 @@ export const motion = {
   paintDamping: 10,
   turntableRadiansPerSecond: 0.12,
 };
+export const selectionEmissiveIntensity = 0.018;
 export function autoQuality(
   width: number,
   cores = 8,

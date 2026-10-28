@@ -8,6 +8,7 @@ test("development has no usage locks while authentication and the normal policy 
       exact: true,
     }),
   ).toBeVisible();
+  await page.getByText("Guest and account access", { exact: true }).click();
   await expect(
     page.getByText(/customize and explore 3D without usage quotas/),
   ).toBeVisible();

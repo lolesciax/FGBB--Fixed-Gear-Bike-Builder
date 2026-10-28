@@ -1,4 +1,7 @@
-import { cameraPresets } from "../features/builder/studio-settings";
+import {
+  cameraPresets,
+  compactCameraLabels,
+} from "../features/builder/studio-settings";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
@@ -686,10 +689,12 @@ export function BuilderPage() {
               </button>
             </div>
             <span className="viewer-label">
-              {b.configuration &&
-              variantById(data, b.configuration.frameset)?.product.visual
-                ? "Measurement-based illustration / authentic assets unavailable"
-                : "Illustrative assembly"}
+              {compact
+                ? "Illustrative preview"
+                : b.configuration &&
+                    variantById(data, b.configuration.frameset)?.product.visual
+                  ? "Measurement-based illustration / authentic assets unavailable"
+                  : "Illustrative assembly"}
             </span>
             <button
               className="icon-button bordered"
@@ -825,8 +830,8 @@ export function BuilderPage() {
                   }
                 >
                   {cameraPresets.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
+                    <option key={value} value={value} aria-label={label}>
+                      {compact ? compactCameraLabels[value] : label}
                     </option>
                   ))}
                 </select>
@@ -843,8 +848,12 @@ export function BuilderPage() {
                       b.set({ studio: event.target.value as typeof b.studio })
                     }
                   >
-                    <option value="light">Studio Light</option>
-                    <option value="dark">Studio Dark</option>
+                    <option value="light">
+                      {compact ? "Light" : "Studio Light"}
+                    </option>
+                    <option value="dark">
+                      {compact ? "Dark" : "Studio Dark"}
+                    </option>
                   </select>
                 </label>
                 <label className="studio-setting">

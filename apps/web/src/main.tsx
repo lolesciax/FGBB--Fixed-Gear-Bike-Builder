@@ -7,5 +7,6 @@ import './styles.css';
 import './workshop.css';
 import './studio.css';
 import './motion.css';
+import './premium.css';
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 60000, refetchOnWindowFocus: false }, mutations: { retry: false } } });
 createRoot(document.getElementById('root')!).render(<BrowserRouter><QueryClientProvider client={queryClient}><App/></QueryClientProvider></BrowserRouter>);

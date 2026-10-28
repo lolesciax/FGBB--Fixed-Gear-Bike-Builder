@@ -1,32 +1,260 @@
-import { CatalogReview } from '../components/CatalogReview';
-import { PolicyEditor } from '../components/PolicyEditor';
-import { RegistryEditor } from '../features/catalog/RegistryEditor';
-import { AssetInbox } from '../features/catalog/AssetInbox';
-import { useState } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, ArrowUpRight, LockKeyhole } from 'lucide-react';
-import { brandDisclaimer, technicalDisclaimer, productSchema, withHistoricalCatalog, type Product } from '@tracklab/domain';
-import { api, loadCatalog, type SavedBuild } from '../services/api';
-import { errorMessage, useApp } from '../app/context';
-import { Bike2D } from '../features/builder/Bike2D';
-export { HomePage } from './HomePage';
+import { CatalogReview } from "../components/CatalogReview";
+import { PolicyEditor } from "../components/PolicyEditor";
+import { RegistryEditor } from "../features/catalog/RegistryEditor";
+import { AssetInbox } from "../features/catalog/AssetInbox";
+import { useState } from "react";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowRight, ArrowUpRight, LockKeyhole } from "lucide-react";
+import {
+  brandDisclaimer,
+  technicalDisclaimer,
+  productSchema,
+  withHistoricalCatalog,
+  type Product,
+} from "@tracklab/domain";
+import { api, loadCatalog, type SavedBuild } from "../services/api";
+import { errorMessage, useApp } from "../app/context";
+import { Bike2D } from "../features/builder/Bike2D";
+export { HomePage } from "./HomePage";
 export function AboutPage() {
-  return <main className="prose-page standard-page"><h1>Independent by design.</h1><p className="lead">TrackLab is a place to explore what your next bicycle could be. A useful plan begins with honest information.</p><h2>Brand & Trademark Disclaimer</h2><p>{brandDisclaimer}</p><h2>Technical disclaimer</h2><p>{technicalDisclaimer}</p><h2>Studio parts & original assets</h2><p>TrackLab Studio parts are illustrative demonstration records, not manufacturer products or products for sale. Their schematic dimensions exist to demonstrate the builder and its rules. The SVG and GLB assets are independently authored generic geometry. They do not reproduce authentic product geometry or manufacturer logos.</p><h2>Manufacturer references</h2><p>Cinelli is a trademark of its respective owner. TrackLab is an independent project and is not officially affiliated with Cinelli. Source-reviewed Vigorelli and Dosnoventa variants are selectable with independent measurement-based schematic previews. No manufacturer photographs, logos or proprietary model files are distributed. Missing measurements and interfaces remain unverified.</p><a href="https://cinelli-milano.com/it/collections/vigorelli/products/vigorelli-track-alu-frame" target="_blank" rel="noreferrer">Cinelli manufacturer reference<ArrowUpRight size={14}/></a><h2>Privacy & retention</h2><p>Sessions use an HttpOnly first-party cookie. A guest build stays in application memory, while server usage history survives page refreshes. Guest usage records expire after 31 days. Expired session and recovery records are removed by database TTL indexes. Account deletion removes personal builds, sessions, recovery records and profile data. Administrative audit records expire after 90 days. Deployment infrastructure may maintain backups according to its configured retention policy.</p><h2>Pricing</h2><p>Pricing is disabled. No authorized retailer provider has been connected. TrackLab does not show guessed prices or estimated purchase totals.</p><Link className="button primary" to="/builder">Back to the workshop<ArrowRight size={17}/></Link></main>;
+  return (
+    <main className="prose-page standard-page">
+      <h1>Independent by design.</h1>
+      <p className="lead">
+        TrackLab is a place to explore what your next bicycle could be. A useful
+        plan begins with honest information.
+      </p>
+      <h2>Brand & Trademark Disclaimer</h2>
+      <p>{brandDisclaimer}</p>
+      <h2>Technical disclaimer</h2>
+      <p>{technicalDisclaimer}</p>
+      <h2>Studio parts & original assets</h2>
+      <p>
+        TrackLab Studio parts are illustrative demonstration records, not
+        manufacturer products or products for sale. Their schematic dimensions
+        exist to demonstrate the builder and its rules. The SVG and GLB assets
+        are independently authored generic geometry. They do not reproduce
+        authentic product geometry or manufacturer logos.
+      </p>
+      <h2>Manufacturer references</h2>
+      <p>
+        Cinelli is a trademark of its respective owner. TrackLab is an
+        independent project and is not officially affiliated with Cinelli.
+        Source-reviewed Vigorelli and Dosnoventa variants are selectable with
+        independent measurement-based schematic previews. No manufacturer
+        photographs, logos or proprietary model files are distributed. Missing
+        measurements and interfaces remain unverified.
+      </p>
+      <a
+        href="https://cinelli-milano.com/it/collections/vigorelli/products/vigorelli-track-alu-frame"
+        target="_blank"
+        rel="noreferrer"
+      >
+        Cinelli manufacturer reference
+        <ArrowUpRight size={14} />
+      </a>
+      <h2>Privacy & retention</h2>
+      <p>
+        Sessions use an HttpOnly first-party cookie. A guest build stays in
+        application memory, while server usage history survives page refreshes.
+        Guest usage records expire after 31 days. Expired session and recovery
+        records are removed by database TTL indexes. Account deletion removes
+        personal builds, sessions, recovery records and profile data.
+        Administrative audit records expire after 90 days. Deployment
+        infrastructure may maintain backups according to its configured
+        retention policy.
+      </p>
+      <h2>Pricing</h2>
+      <p>
+        Pricing is disabled. No authorized retailer provider has been connected.
+        TrackLab does not show guessed prices or estimated purchase totals.
+      </p>
+      <Link className="button primary" to="/builder">
+        Back to the workshop
+        <ArrowRight size={17} />
+      </Link>
+    </main>
+  );
 }
 export function PublicBuildPage() {
-  const { publicId } = useParams(), { session, auth, notify } = useApp(), navigate = useNavigate();
+  const { publicId } = useParams(),
+    { session, auth, notify } = useApp(),
+    navigate = useNavigate();
   const [busy, setBusy] = useState(false);
-  const build = useQuery({ queryKey: ['public-build', publicId], queryFn: () => api<SavedBuild>(`/public/builds/${publicId}`) });
-  const catalog = useQuery({ queryKey: ['catalog'], queryFn: loadCatalog });
-  async function duplicate() { if (!session.user) { auth('register'); return; } setBusy(true); try { const result = await api<SavedBuild>(`/public/builds/${publicId}/duplicate`, { method: 'POST' }); notify('Build added to your garage.'); navigate(`/builder/${result._id}`); } catch (e) { notify(errorMessage(e)); } finally { setBusy(false); } }
-  return <main className="standard-page public-build"><div className="page-intro"><div><h1>{build.data?.name || 'A shared idea.'}</h1><p>Public build · independent studio visualization</p></div><button className="button primary" disabled={busy || !build.data} onClick={() => void duplicate()}>Make it your own<ArrowRight size={17}/></button></div>{build.isError && <div className="error-box" role="alert">{errorMessage(build.error)}</div>}{build.data && catalog.data && <div className="public-preview"><Bike2D configuration={build.data.configuration} catalog={withHistoricalCatalog(catalog.data.items, build.data.catalogSnapshot)}/></div>}<p className="small muted">{technicalDisclaimer}</p><Link to="/acknowledgments">Brand acknowledgments</Link></main>;
+  const build = useQuery({
+    queryKey: ["public-build", publicId],
+    queryFn: () => api<SavedBuild>(`/public/builds/${publicId}`),
+  });
+  const catalog = useQuery({ queryKey: ["catalog"], queryFn: loadCatalog });
+  async function duplicate() {
+    if (!session.user) {
+      auth("register");
+      return;
+    }
+    setBusy(true);
+    try {
+      const result = await api<SavedBuild>(
+        `/public/builds/${publicId}/duplicate`,
+        { method: "POST" },
+      );
+      notify("Build added to your garage.");
+      navigate(`/builder/${result._id}`);
+    } catch (e) {
+      notify(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <main className="standard-page public-build">
+      <div className="page-intro">
+        <div>
+          <h1>{build.data?.name || "A shared idea."}</h1>
+          <p>Public build · independent studio visualization</p>
+        </div>
+        <button
+          className="button primary"
+          disabled={busy || !build.data}
+          onClick={() => void duplicate()}
+        >
+          Make it your own
+          <ArrowRight size={17} />
+        </button>
+      </div>
+      {build.isError && (
+        <div className="error-box" role="alert">
+          {errorMessage(build.error)}
+        </div>
+      )}
+      {build.data && catalog.data && (
+        <div className="public-preview">
+          <Bike2D
+            configuration={build.data.configuration}
+            catalog={withHistoricalCatalog(
+              catalog.data.items,
+              build.data.catalogSnapshot,
+            )}
+          />
+        </div>
+      )}
+      <p className="small muted">{technicalDisclaimer}</p>
+      <Link to="/acknowledgments">Brand acknowledgments</Link>
+    </main>
+  );
 }
 export function AdminPage() {
-  const { session, notify } = useApp(), client = useQueryClient();
-  const [editing, setEditing] = useState(''), [busy, setBusy] = useState(false), [page, setPage] = useState(1);
-  const catalog = useQuery({ queryKey: ['admin-catalog', page], queryFn: () => api<{ items: { data: Product }[] }>(`/admin/catalog?page=${page}`), enabled: session.user?.role === 'admin' });
-  if (session.user?.role !== 'admin') return <main className="center-state"><LockKeyhole size={32}/><h1>Administrator access required.</h1><Link className="button" to="/builder">Return to builder</Link></main>;
-  async function save() { setBusy(true); try { const input = productSchema.parse(JSON.parse(editing)); await api(`/admin/catalog/${input.id}`, { method: 'PUT', body: input }); await client.invalidateQueries({ queryKey: ['admin-catalog'] }); await client.invalidateQueries({ queryKey: ['catalog'] }); notify('Catalog record saved.'); } catch (e) { notify(errorMessage(e)); } finally { setBusy(false); } }
-  return <main className="standard-page"><div className="page-intro"><div><h1>The catalog workshop.</h1><p>Review source data, variants and publication status.</p></div></div><div className="notice">Manufacturer publication is gated until provenance, geometry and asset rights have been reviewed. Keep unreviewed imported records as drafts. Reviewed measurement-based framesets may be maintained with their source, geometry and independent asset provenance intact. Archive records to preserve existing build references.</div>{catalog.isError && <p className="error-box">{errorMessage(catalog.error)}</p>}<PolicyEditor/><RegistryEditor/><AssetInbox/><div className="admin-layout"><div className="admin-records">{catalog.data?.items.map(({ data }) => <button key={data.id} onClick={() => setEditing(JSON.stringify(data, null, 2))}><strong>{data.name}</strong><span className="mono small">{data.status} · {data.slot}</span></button>)}<button className="button" onClick={() => setPage(p => p + 1)} disabled={(catalog.data?.items.length || 0) < 30}>Next page</button>{page > 1 && <button className="button" onClick={() => setPage(p => p - 1)}>Previous page</button>}</div><form onSubmit={e => { e.preventDefault(); void save(); }}><CatalogReview text={editing}/><label>Catalog record JSON<textarea className="mono" rows={25} value={editing} onChange={e => setEditing(e.target.value)} spellCheck={false}/></label><button className="button primary" disabled={busy || !editing}>Save validated record</button></form></div></main>;
+  const { session, notify } = useApp(),
+    client = useQueryClient();
+  const [editing, setEditing] = useState(""),
+    [busy, setBusy] = useState(false),
+    [page, setPage] = useState(1);
+  const catalog = useQuery({
+    queryKey: ["admin-catalog", page],
+    queryFn: () =>
+      api<{ items: { data: Product }[] }>(`/admin/catalog?page=${page}`),
+    enabled: session.user?.role === "admin",
+  });
+  if (session.user?.role !== "admin")
+    return (
+      <main className="center-state">
+        <LockKeyhole size={32} />
+        <h1>Administrator access required.</h1>
+        <Link className="button" to="/builder">
+          Return to builder
+        </Link>
+      </main>
+    );
+  async function save() {
+    setBusy(true);
+    try {
+      const input = productSchema.parse(JSON.parse(editing));
+      await api(`/admin/catalog/${input.id}`, { method: "PUT", body: input });
+      await client.invalidateQueries({ queryKey: ["admin-catalog"] });
+      await client.invalidateQueries({ queryKey: ["catalog"] });
+      notify("Catalog record saved.");
+    } catch (e) {
+      notify(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <main className="standard-page admin-page">
+      <div className="page-intro">
+        <div>
+          <h1>The catalog workshop.</h1>
+          <p>Review source data, variants and publication status.</p>
+        </div>
+      </div>
+      <div className="notice">
+        Manufacturer publication is gated until provenance, geometry and asset
+        rights have been reviewed. Keep unreviewed imported records as drafts.
+        Reviewed measurement-based framesets may be maintained with their
+        source, geometry and independent asset provenance intact. Archive
+        records to preserve existing build references.
+      </div>
+      {catalog.isError && (
+        <p className="error-box">{errorMessage(catalog.error)}</p>
+      )}
+      <details className="admin-control-panel">
+        <summary>Usage policy and audit history</summary>
+        <PolicyEditor />
+      </details>
+      <RegistryEditor />
+      <AssetInbox />
+      <div className="admin-layout">
+        <div className="admin-records">
+          <p className="small muted">
+            Select a record to review its variants, source and visualization.
+          </p>
+          {catalog.data?.items.map(({ data }) => (
+            <button
+              key={data.id}
+              aria-pressed={editing === JSON.stringify(data, null, 2)}
+              onClick={() => setEditing(JSON.stringify(data, null, 2))}
+            >
+              <strong>{data.name}</strong>
+              <span className="mono small">
+                {data.status} · {data.slot}
+              </span>
+            </button>
+          ))}
+          <button
+            className="button"
+            onClick={() => setPage((p) => p + 1)}
+            disabled={(catalog.data?.items.length || 0) < 30}
+          >
+            Next page
+          </button>
+          {page > 1 && (
+            <button className="button" onClick={() => setPage((p) => p - 1)}>
+              Previous page
+            </button>
+          )}
+        </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void save();
+          }}
+        >
+          <CatalogReview text={editing} />
+          <label>
+            Catalog record JSON
+            <textarea
+              className="mono"
+              rows={25}
+              value={editing}
+              onChange={(e) => setEditing(e.target.value)}
+              spellCheck={false}
+            />
+          </label>
+          <button className="button primary" disabled={busy || !editing}>
+            Save validated record
+          </button>
+        </form>
+      </div>
+    </main>
+  );
 }

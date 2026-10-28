@@ -7,6 +7,7 @@ import {
   type CSSProperties,
 } from "react";
 import { X } from "lucide-react";
+import { useDialogExit } from "../../components/useDialogExit";
 
 export function PartsSheet({
   title,
@@ -22,6 +23,7 @@ export function PartsSheet({
   const dialog = useRef<HTMLDialogElement>(null),
     closeButton = useRef<HTMLButtonElement>(null);
   const [height, setHeight] = useState(380);
+  const dismiss = useDialogExit(dialog, onClose);
   useEffect(() => {
     const previousFocus = document.activeElement as HTMLElement | null;
     const previousOverflow = document.documentElement.style.overflow;
@@ -52,14 +54,14 @@ export function PartsSheet({
     <dialog
       ref={dialog}
       className="parts-sheet"
-      style={{ height, '--sheet-height': `${height}px` } as CSSProperties}
+      style={{ height, "--sheet-height": `${height}px` } as CSSProperties}
       aria-labelledby="parts-sheet-title"
       onCancel={(event) => {
         event.preventDefault();
-        onClose();
+        dismiss();
       }}
       onClick={(event) => {
-        if (event.target === dialog.current) onClose();
+        if (event.target === dialog.current) dismiss();
       }}
     >
       <div className="sheet-grip" aria-hidden="true" />
@@ -69,14 +71,14 @@ export function PartsSheet({
           ref={closeButton}
           className="icon-button"
           aria-label="Close parts selector"
-          onClick={onClose}
+          onClick={dismiss}
         >
           <X size={22} />
         </button>
       </header>
       <div className="sheet-scroll">{children}</div>
       <footer className="sheet-actions">
-        <button className="button primary full" onClick={onClose}>
+        <button className="button primary full" onClick={dismiss}>
           Done
         </button>
       </footer>

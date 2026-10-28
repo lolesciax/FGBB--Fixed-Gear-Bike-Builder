@@ -7,7 +7,7 @@ import {
 } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { motion } from "./studio-settings";
+import { motion, selectionEmissiveIntensity } from "./studio-settings";
 export function PaintMaterial({
   color,
   reducedMotion,
@@ -129,7 +129,7 @@ export function PartGroup({
           });
           if (active) {
             material.emissive.set("#3659db");
-            material.emissiveIntensity = 0.09;
+            material.emissiveIntensity = selectionEmissiveIntensity;
           }
         }
     });

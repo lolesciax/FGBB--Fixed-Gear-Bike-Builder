@@ -12,12 +12,12 @@ test('controlled online deep links remain online and fall back only when offline
   await context.setOffline(true); await page.goto('/builder');
   await expect(page.getByRole('heading', { name: 'Your workshop is offline.' })).toBeVisible();
   await context.setOffline(false); await page.getByRole('link', { name: 'Reconnect to TrackLab' }).click();
-  await expect(page.getByRole('heading', { name: 'One gear. Endless possibility.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Build Beyond the Ordinary.' })).toBeVisible();
 });
 test('installation does not fetch 3D assets or cache API/account responses', async ({ page, context }) => {
   const requests: string[] = [];
   context.on('request', request => requests.push(request.url()));
-  await page.goto('/'); await expect(page.getByRole('heading', { name: 'One gear. Endless possibility.' })).toBeVisible();
+  await page.goto('/'); await expect(page.getByRole('heading', { name: 'Build Beyond the Ordinary.' })).toBeVisible();
   await activateServiceWorker(page);
   const cached = await page.evaluate(async () => { const names = await caches.keys(); return (await Promise.all(names.map(async name => (await (await caches.open(name)).keys()).map(r => r.url)))).flat(); });
   expect(cached.some(url => /\/api\/|\.glb(?:\?|$)|\/assets\/.*\.js/.test(url))).toBe(false);

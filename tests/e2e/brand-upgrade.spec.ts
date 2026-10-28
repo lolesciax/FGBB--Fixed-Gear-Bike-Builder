@@ -1,10 +1,27 @@
 import { test, expect } from "@playwright/test";
-test('an unavailable frame kit keeps the configuration and supports an explicit retry',async({page})=>{
-  await page.route('**/models/frames/dosnoventa-02-la-m.glb',route=>route.fulfill({status:404,body:''}));
-  await page.goto('/builder');await page.getByLabel('Filter by brand').selectOption('Dosnoventa');await page.getByRole('combobox',{name:'02 LA variant',exact:true}).selectOption('dosnoventa-02-la-m');
-  await page.getByRole('button',{name:'3D',exact:true}).click();await expect(page.getByText('3D preview unavailable',{exact:true})).toBeVisible();
-  await page.unroute('**/models/frames/dosnoventa-02-la-m.glb');await page.getByRole('button',{name:'Retry 3D model'}).click();await expect(page.locator('canvas')).toBeVisible();
-  await page.getByRole('button',{name:'2D',exact:true}).click();await expect(page.locator('.bike-svg')).toHaveAttribute('data-frame-variant','dosnoventa-02-la-m');
+test("an unavailable frame kit keeps the configuration and supports an explicit retry", async ({
+  page,
+}) => {
+  await page.route("**/models/frames/dosnoventa-02-la-m.glb", (route) =>
+    route.fulfill({ status: 404, body: "" }),
+  );
+  await page.goto("/builder");
+  await page.getByLabel("Filter by brand").selectOption("Dosnoventa");
+  await page
+    .getByRole("combobox", { name: "02 LA variant", exact: true })
+    .selectOption("dosnoventa-02-la-m");
+  await page.getByRole("button", { name: "3D", exact: true }).click();
+  await expect(
+    page.getByText("3D preview unavailable", { exact: true }),
+  ).toBeVisible();
+  await page.unroute("**/models/frames/dosnoventa-02-la-m.glb");
+  await page.getByRole("button", { name: "Retry 3D model" }).click();
+  await expect(page.locator("canvas")).toBeVisible();
+  await page.getByRole("button", { name: "2D", exact: true }).click();
+  await expect(page.locator(".bike-svg")).toHaveAttribute(
+    "data-frame-variant",
+    "dosnoventa-02-la-m",
+  );
 });
 test("studio landing page and variant previews stay usable across phone and desktop", async ({
   page,
@@ -15,13 +32,13 @@ test("studio landing page and variant previews stay usable across phone and desk
   });
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "One gear. Endless possibility." }),
+    page.getByRole("heading", { name: "Build Beyond the Ordinary." }),
   ).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Start building", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "Explore components" }),
+    page.getByRole("link", { name: "Explore framesets", exact: true }).first(),
   ).toBeVisible();
   for (const width of [320, 375, 430, 768, 1024, 1366, 1440, 1920]) {
     await page.setViewportSize({ width, height: 932 });

@@ -1,0 +1,642 @@
+.cinematic-home {
+  max-width: 1600px;
+  margin: auto;
+  padding: 0 40px 48px;
+}
+.cinematic-hero {
+  min-height: 620px;
+  position: relative;
+  display: grid;
+  grid-template-columns: 0.95fr 1.4fr;
+  align-items: center;
+  gap: 24px;
+}
+.cinematic-copy {
+  position: relative;
+  z-index: 1;
+  padding: 60px 0;
+}
+.cinematic-copy h1 {
+  font-size: clamp(44px, 5.3vw, 84px);
+  line-height: 1.04;
+  letter-spacing: -0.06em;
+  font-weight: 650;
+  margin-bottom: 26px;
+}
+.cinematic-copy > p {
+  max-width: 430px;
+  font-size: 18px;
+  color: var(--muted);
+  line-height: 1.65;
+  margin-bottom: 28px;
+}
+.cinematic-copy .studio-actions {
+  gap: 10px;
+}
+.cinematic-copy .studio-actions .button {
+  min-height: 48px;
+  padding: 12px 18px;
+}
+.hero-render {
+  margin: 0 -40px 0 -80px;
+  position: relative;
+  min-width: 0;
+}
+.hero-render img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1.35;
+  object-fit: cover;
+  object-position: 58% 50%;
+  mask-image:
+    linear-gradient(90deg, transparent, black 12%, black 92%, transparent),
+    linear-gradient(0deg, transparent, black 8%, black 90%, transparent);
+  mask-composite: intersect;
+}
+.hero-render .hero-dark {
+  display: none;
+}
+:root[data-theme="dark"] .hero-dark {
+  display: block;
+}
+:root[data-theme="dark"] .hero-light {
+  display: none;
+}
+.hero-render figcaption {
+  color: var(--muted);
+  font-size: 12px;
+  text-align: right;
+  padding: 12px 40px 0 0;
+}
+.manufacturer-strip {
+  display: flex;
+  gap: 36px;
+  align-items: center;
+  padding: 28px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.manufacturer-strip p {
+  color: var(--muted);
+  font-size: 12px;
+  max-width: 110px;
+}
+.manufacturer-strip > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  flex: 1;
+}
+.manufacturer-strip a {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+.manufacturer-strip a:hover {
+  color: var(--primary);
+}
+.studio-experience {
+  display: grid;
+  grid-template-columns: 0.9fr 1.3fr;
+  align-items: center;
+  gap: 64px;
+  padding: 84px 0;
+}
+.cinematic-home h2 {
+  font-size: clamp(30px, 3vw, 42px);
+  line-height: 1.12;
+  letter-spacing: -0.045em;
+}
+.studio-experience-copy > p {
+  color: var(--muted);
+  margin: 20px 0 28px;
+  max-width: 420px;
+}
+.studio-experience ol {
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 24px;
+  margin: 0 0 24px;
+}
+.studio-experience li {
+  display: flex;
+  align-items: start;
+  gap: 16px;
+}
+.studio-experience li > svg {
+  color: var(--muted);
+  margin-top: 3px;
+}
+.studio-experience li p {
+  font-size: 14px;
+  margin-top: 6px;
+  color: var(--muted);
+  max-width: 340px;
+}
+.environment-preview {
+  margin: 0;
+  min-width: 0;
+  position: relative;
+  border-radius: var(--panel-radius);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  background: #151a22;
+}
+.environment-preview[data-environment="light"] {
+  background: #e8ebef;
+}
+.environment-preview .segmented {
+  position: absolute;
+  z-index: 1;
+  left: 16px;
+  top: 16px;
+  background: var(--surface);
+}
+.environment-preview img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1.4;
+  object-fit: contain;
+  display: block;
+}
+.environment-preview figcaption {
+  color: #b1bdcf;
+  font-size: 12px;
+  padding: 0 18px 18px;
+}
+.environment-preview[data-environment="light"] figcaption {
+  color: #465160;
+}
+.cinematic-frames {
+  border-top: 1px solid var(--line);
+  padding: 48px 0;
+}
+.cinematic-frames header {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+.cinematic-frames header p {
+  color: var(--muted);
+  margin-top: 14px;
+}
+.frame-shelf {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.frame-shelf > a {
+  position: relative;
+  min-width: 0;
+}
+.frame-shelf > a > div {
+  background: var(--studio-canvas);
+  padding: 24px;
+  border-radius: var(--panel-radius);
+  margin-bottom: 16px;
+  border: 1px solid var(--line);
+  transition: border-color var(--motion-fast) ease;
+}
+.frame-shelf > a:hover > div {
+  border-color: var(--primary);
+}
+.frame-shelf svg {
+  width: 100%;
+  height: 120px;
+}
+.frame-shelf h3 {
+  font-size: 17px;
+  margin-top: 6px;
+  padding-right: 20px;
+}
+.frame-shelf > a > svg {
+  width: 17px;
+  height: 17px;
+  position: absolute;
+  right: 0;
+  bottom: 2px;
+}
+.brand-disclosure {
+  max-width: 760px;
+  margin-top: 26px;
+  line-height: 1.6;
+}
+.cinematic-garage {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 64px;
+  padding: 48px;
+  border-radius: var(--panel-radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+.cinematic-garage p {
+  max-width: 380px;
+  color: var(--muted);
+  margin: 20px 0 26px;
+}
+.garage-plan {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex-direction: column;
+  gap: 12px;
+}
+.garage-plan .bike-svg {
+  width: 100%;
+  height: auto;
+  max-height: 240px;
+}
+.cinematic-access {
+  padding-top: 28px;
+}
+.cinematic-access details {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+}
+.cinematic-access summary {
+  cursor: pointer;
+  font-size: 14px;
+}
+.cinematic-access details > div {
+  display: grid;
+  gap: 12px;
+  padding: 20px 0 0;
+  max-width: 900px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.cinematic-access .text-button {
+  justify-self: start;
+}
+.password-control {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+.password-control input {
+  padding-right: 52px;
+}
+.password-control .icon-button {
+  position: absolute;
+  right: 4px;
+  width: 42px;
+  min-height: 42px;
+  color: var(--muted);
+}
+.settings-nav {
+  display: flex;
+  gap: 24px;
+  margin: 26px 0 8px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.settings-nav a {
+  font-size: 14px;
+  color: var(--muted);
+  padding: 8px 0;
+}
+.settings-nav a:hover {
+  color: var(--primary);
+}
+.account-page .settings-section {
+  max-width: 760px;
+  padding: 32px;
+  margin-top: 20px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: var(--panel-radius);
+  scroll-margin-top: 24px;
+}
+.account-page .settings-section h2 {
+  font-size: 22px;
+  margin-bottom: 22px;
+}
+.account-page .settings-section form {
+  gap: 18px;
+  max-width: none;
+}
+.account-page .settings-section > p {
+  color: var(--muted);
+  font-size: 14px;
+}
+.account-page {
+  max-width: 1200px;
+}
+.account-settings-layout {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 20px 32px;
+  margin-top: 32px;
+}
+.account-settings-layout .settings-nav {
+  grid-column: 1;
+  grid-row: 1 / span 5;
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  display: grid;
+  border: 0;
+  margin: 0;
+  padding: 8px 16px;
+  gap: 4px;
+}
+.account-settings-layout .settings-nav a {
+  padding: 12px 0;
+}
+.account-settings-layout > .settings-section,
+.account-settings-layout > a {
+  grid-column: 2;
+  margin-top: 0;
+  max-width: none;
+}
+.account-settings-layout > a {
+  justify-self: start;
+}
+.build-visibility {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.account-page .danger-zone {
+  border-color: color-mix(in srgb, var(--danger) 32%, var(--line));
+}
+.garage-card {
+  border-radius: var(--panel-radius);
+}
+.garage-preview {
+  height: 290px;
+  background: var(--studio-canvas);
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.garage-preview .bike-svg {
+  width: 100%;
+  height: 100%;
+}
+.garage-card-content {
+  padding: 24px;
+}
+.garage-card-content .garage-model {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.garage-card-actions {
+  gap: 8px;
+}
+.garage-card-actions .icon-button {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  min-height: 42px;
+  min-width: 42px;
+}
+.catalog-card,
+.product-option {
+  border-radius: var(--panel-radius);
+}
+.catalog-image,
+.catalog-card .catalog-image {
+  background: var(--studio-canvas);
+}
+.catalog-card:hover .catalog-image > svg {
+  transform: translateY(-2px);
+}
+.catalog-image > svg {
+  transition: transform var(--motion-standard) var(--motion-ease);
+}
+.admin-page details {
+  border-radius: var(--panel-radius);
+}
+.admin-control-panel {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  margin: 24px 0;
+  padding: 20px;
+}
+.admin-control-panel > summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+.admin-records > p {
+  padding: 4px 4px 16px;
+  line-height: 1.6;
+}
+.admin-records {
+  border: 1px solid var(--line);
+  border-radius: var(--panel-radius);
+  background: var(--surface);
+  padding: 12px;
+  align-self: start;
+}
+.admin-records > button:not(.button) {
+  border-radius: 6px;
+}
+.admin-records > button:not(.button):hover,
+.admin-records > button[aria-pressed="true"] {
+  background: var(--primary-soft);
+}
+.admin-layout > form {
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--panel-radius);
+  background: var(--surface);
+  min-width: 0;
+}
+.admin-layout textarea {
+  background: var(--bg);
+  line-height: 1.65;
+}
+.site-header nav a,
+.account-link,
+.button,
+.icon-button.bordered {
+  border-radius: 8px;
+}
+.compact-workshop .viewer,
+.compact-workshop .category-rail,
+.parts-inspector,
+.compact-summary {
+  border-radius: 8px;
+}
+.pan-layer {
+  animation: studio-reveal var(--motion-standard) ease;
+}
+@media (max-width: 1100px) {
+  .cinematic-home {
+    padding: 0 28px 40px;
+  }
+  .cinematic-hero {
+    min-height: 520px;
+    grid-template-columns: 1fr 1.1fr;
+    gap: 12px;
+  }
+  .hero-render {
+    margin-left: -40px;
+    margin-right: -28px;
+  }
+  .studio-experience {
+    gap: 32px;
+  }
+  .manufacturer-strip {
+    gap: 24px;
+  }
+  .manufacturer-strip > div {
+    justify-content: start;
+    gap: 20px;
+  }
+  .manufacturer-strip a {
+    font-size: 16px;
+  }
+}
+@media (max-width: 767px) {
+  .cinematic-home {
+    padding: 0 20px 32px;
+  }
+  .cinematic-hero {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    min-height: 0;
+    align-items: stretch;
+  }
+  .cinematic-copy {
+    padding: 40px 0 12px;
+  }
+  .cinematic-copy h1 {
+    font-size: clamp(40px, 8.5vw, 60px);
+    margin-bottom: 20px;
+  }
+  .cinematic-copy > p {
+    font-size: 16px;
+    margin-bottom: 22px;
+    max-width: 460px;
+  }
+  .cinematic-copy .studio-actions {
+    flex-wrap: wrap;
+  }
+  .cinematic-copy .studio-actions .button {
+    font-size: 13px;
+    padding: 11px 14px;
+  }
+  .hero-render {
+    margin: 8px -20px 28px;
+  }
+  .hero-render img {
+    max-height: 350px;
+    object-fit: cover;
+  }
+  .hero-render figcaption {
+    padding-right: 20px;
+    font-size: 12px;
+  }
+  .manufacturer-strip {
+    flex-direction: column;
+    align-items: start;
+    gap: 18px;
+    padding: 24px 0;
+  }
+  .manufacturer-strip p {
+    max-width: none;
+  }
+  .manufacturer-strip > div {
+    gap: 16px 24px;
+  }
+  .studio-experience {
+    grid-template-columns: 1fr;
+    padding: 44px 0;
+    gap: 28px;
+  }
+  .cinematic-home h2 {
+    font-size: 32px;
+  }
+  .studio-experience ol {
+    gap: 20px;
+  }
+  .environment-preview img {
+    aspect-ratio: 1.3;
+  }
+  .environment-preview .segmented {
+    left: 12px;
+    top: 12px;
+  }
+  .environment-preview .segmented button {
+    min-height: 44px;
+    padding: 10px 12px;
+  }
+  .cinematic-frames {
+    padding: 32px 0;
+  }
+  .cinematic-frames header {
+    display: grid;
+    gap: 18px;
+  }
+  .frame-shelf {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 12px;
+  }
+  .frame-shelf > a > div {
+    padding: 12px;
+  }
+  .frame-shelf svg {
+    height: 90px;
+  }
+  .frame-shelf h3 {
+    font-size: 15px;
+  }
+  .cinematic-garage {
+    grid-template-columns: 1fr;
+    padding: 28px 20px;
+    gap: 20px;
+  }
+  .garage-plan span {
+    font-size: 12px;
+    text-align: center;
+  }
+  .account-page .settings-section {
+    padding: 24px 18px;
+  }
+  .account-settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    margin-top: 24px;
+  }
+  .account-settings-layout .settings-nav {
+    grid-column: 1;
+    grid-row: auto;
+    position: static;
+    display: flex;
+    gap: 24px;
+    padding: 0;
+  }
+  .account-settings-layout > .settings-section,
+  .account-settings-layout > a {
+    grid-column: 1;
+  }
+  .garage-preview {
+    height: 230px;
+  }
+  .garage-card-content {
+    padding: 20px;
+  }
+  .garage-card-actions .button {
+    flex-basis: 100%;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .admin-layout > form {
+    padding: 16px;
+  }
+  .compact-workshop:has(.viewer[data-studio]) .workbench {
+    grid-template-rows: clamp(350px, 102vw, 440px) auto auto;
+  }
+}
