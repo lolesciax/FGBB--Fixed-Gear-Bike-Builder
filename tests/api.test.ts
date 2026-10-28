@@ -285,6 +285,33 @@ describe('API boundaries', () => {
     await patch(c, `/builds/${first.id}`, { ...build, revision: 2, visibility: 'private' }, first.editorToken).expect(200);
     await c.agent.get(`/api/public/builds/${first.publicId}`).expect(404);
   });
+  it("upgrades only the original illustrative asset registration without overwriting edited technical data", async () => {
+    const product = seedCatalog.find(
+        (p) => p.variants[0].asset3D?.revision === "frame-kit-v2",
+      )!,
+      variant = product.variants[0];
+    await ProductModel.updateOne(
+      { _id: product.id },
+      { $set: { "data.variants.0.asset3D.revision": "frame-kit-v1" } },
+    );
+    await importCatalog();
+    let stored = await ProductModel.findById(product.id).lean();
+    expect(stored!.data.variants[0].asset3D.revision).toBe("frame-kit-v2");
+    expect(stored!.data.variants[0].specs).toEqual(variant.specs);
+    await ProductModel.updateOne(
+      { _id: product.id },
+      {
+        $set: {
+          "data.variants.0.asset3D.revision": "frame-kit-v1",
+          "data.variants.0.specs.reach": 123,
+        },
+      },
+    );
+    await importCatalog();
+    stored = await ProductModel.findById(product.id).lean();
+    expect(stored!.data.variants[0].specs.reach).toBe(123);
+    expect(stored!.data.variants[0].asset3D.revision).toBe("frame-kit-v1");
+  });
   it('bounds catalog pagination, validates JSON and limits request bodies', async () => { const c = await guest(); await c.agent.get('/api/catalog?limit=99999').expect(422); await c.agent.post('/api/workspace').set('Content-Type', 'application/json').send('{oops').expect(400); await post(c, '/workspace', { extra: 'x'.repeat(40000) }).expect(413); });
   it('returns a consistent 429 and Retry-After for sensitive operations', async () => { const c = await guest(); for (let i = 0; i < 5; i++) await post(c, '/auth/login', { email: 'none@example.com', password: 'a-long-test-passphrase' }).expect(401); const r = await post(c, '/auth/login', { email: 'none@example.com', password: 'a-long-test-passphrase' }).expect(429); expect(r.body.error.code).toBe('RATE_LIMIT_EXCEEDED'); expect(Number(r.headers['retry-after'])).toBeGreaterThan(0); });
 });

@@ -12,10 +12,18 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
 
+## Task · Bicycle geometry and four cockpit profiles — completed and verified locally, 28 October 2026
+
+- Corrected rigid fork steering/crown/blades/dropouts, BSD/width/depth-driven wheel/tire sections, flange-based instanced spokes, paired cranks/pedals, tooth-derived ring/cog and closed chain, supported shaped saddle, and four continuous bar profiles. Shared metre-scale anchors and paths drive both viewers; reviewed manufacturer frame geometry and all six canonical slots remain intact. Regenerated 39 original illustrative frame/fork GLBs with versioned caches and a narrow untouched-registration migration.
+- Added the independent flat-bar demo, native type filter, actual profile thumbnails and category-specific filters. Existing branded selections, undo, normal backend policy, account saves/garage actions and SVG exports retain the selected cockpit. The approved private development bypass remains enabled. No independently selected stem/hub/crank system, manufacturer accuracy upgrade or invented fit/price/license claim.
+- Camera fitting now includes every mesh and instance with eight presets; floor follows tire radius. Fixed contact-shadow artifacts and disposed shadow/environment resources explicitly. Four quality cycles retained stable GPU resource counts; idle demand rendering emitted zero frames. Corrected tablet controls and refreshed the existing lightweight landing illustrations. [Modeling review](modeling-corrections.md) records phase statuses, numeric assumptions, screenshots, measured costs and remaining external dependencies.
+- Checks: TypeScript, lint, 73 unit/API/asset tests, both builds, all 22 normal-policy browser scenarios, separate development-access scenario and both rebuilt PWA checks passed. One live Redis test is skipped locally and checked in CI. An old exact GLB URL assertion failed on the new revision parameter, was corrected, and the full browser suite passed. Tests used temporary MongoDB only. Normal localhost:5180 returned 200 in connected mode with `developmentUnlimited: true`. GitHub CI is inspected after pushing this milestone.
+- Remaining: authentic rights-reviewed manufacturer surfaces/graphics, measured missing component interfaces, physical-device GPU/assistive-technology review, and broader release readiness. Build chunk-size advisories remain documented. No deployment or hosting provisioned.
+
 ## Task · Modeling correction audit — completed, 28 October 2026
 
 - Archived the targeted brief and inspected actual side/front/top/quarter renders on the isolated temporary-database server. Recorded disconnected fork roots, toroidal rims/tires, centre-origin spokes, incomplete drivetrain, spherical saddle, fixed-offset bars and conservative camera bounds in [the geometry audit](modeling-corrections.md), with baseline images.
-- Modeling implementation is pending; no geometry, source measurements, database records, quotas or component slots changed in this audit milestone. The dedicated flat-bar choice and targeted cockpit filter are authorized; the full modular overhaul remains postponed.
+- Modeling implementation was pending at this audit milestone and is now covered by the verified task above. No geometry, source measurements, database records, quotas or slots changed in the audit itself. The full modular overhaul remains postponed.
 
 ## Task · Frontend/backend folder cleanup — completed and verified locally, 28 October 2026
 

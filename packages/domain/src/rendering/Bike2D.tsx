@@ -1,11 +1,16 @@
 import React, { useId, type KeyboardEvent } from "react";
 import {
-  assemblyGeometry,
+  componentGeometry,
+  forkBladePoints,
+  handlebarPoints,
+  spokeEndpoints,
   variantById,
   type Configuration,
   type Product,
   type Slot,
+  type Position,
 } from "@tracklab/domain";
+type Point = { x: number; y: number };
 type Props = {
   configuration: Configuration;
   catalog: Product[];
@@ -14,6 +19,72 @@ type Props = {
   zoom?: number;
   compact?: boolean;
 };
+const project = (p: Position): Point => ({ x: p[0] * 1000, y: -p[1] * 1000 });
+const add = (a: Position, b: Position): Position =>
+  a.map((v, i) => v + b[i]) as Position;
+const line = (points: Point[], close = false) =>
+  points.map((p, i) => (i ? "L" : "M") + p.x + " " + p.y).join(" ") +
+  (close ? "Z" : "");
+function smooth(points: Point[]) {
+  const p = points.filter(
+    (v, i) =>
+      !i || Math.hypot(v.x - points[i - 1].x, v.y - points[i - 1].y) > 0.01,
+  );
+  let d = "M" + p[0].x + " " + p[0].y;
+  for (let i = 0; i < p.length - 1; i++) {
+    const a = p[i - 1] || p[i],
+      b = p[i],
+      c = p[i + 1],
+      e = p[i + 2] || c;
+    d +=
+      " C" +
+      (b.x + (c.x - a.x) / 6) +
+      " " +
+      (b.y + (c.y - a.y) / 6) +
+      " " +
+      (c.x - (e.x - b.x) / 6) +
+      " " +
+      (c.y - (e.y - b.y) / 6) +
+      " " +
+      c.x +
+      " " +
+      c.y;
+  }
+  return d;
+}
+function gear(teeth: number, radius: number, inner: number, center: Point) {
+  const p: Point[] = [];
+  for (let i = 0; i < teeth; i++)
+    for (const [o, r] of [
+      [-0.5, radius - 3.8],
+      [-0.17, radius + 2.7],
+      [0.17, radius + 2.7],
+      [0.5, radius - 3.8],
+    ]) {
+      const a = ((i + o) * Math.PI * 2) / teeth;
+      p.push({ x: center.x + Math.cos(a) * r, y: center.y + Math.sin(a) * r });
+    }
+  return (
+    line(p, true) +
+    " M" +
+    (center.x - inner) +
+    " " +
+    center.y +
+    "a" +
+    inner +
+    " " +
+    inner +
+    " 0 1 0 " +
+    inner * 2 +
+    " 0a" +
+    inner +
+    " " +
+    inner +
+    " 0 1 0 " +
+    -inner * 2 +
+    " 0Z"
+  );
+}
 export function Bike2D({
   configuration,
   catalog,
@@ -22,39 +93,49 @@ export function Bike2D({
   zoom = 1,
   compact = false,
 }: Props) {
-  const uid = useId().replace(/:/g, "");
-  const get = (slot: Slot) =>
-    variantById(catalog, configuration[slot])?.variant;
-  const frame = get("frameset"),
-    g = assemblyGeometry(frame?.specs);
-  const paint=frame?.color||'#535963';
-  const highlight='#'+[1,3,5].map(index=>Math.round(parseInt(paint.slice(index,index+2),16)*.86+255*.14).toString(16).padStart(2,'0')).join('');
-  const {
-    rear,
-    front,
-    bb,
-    seat,
-    head,
-    headBottom,
-    saddle,
-    bar,
-    radius,
-    bounds:frameBounds,
-  } = g;
-  const deep = get("wheels")?.specs.rimDepth === 60,
-    tan = get("tires")?.specs.sidewall === "tan";
-  const bullhorn=get('cockpit')?.specs.shape==='bullhorn';
-  const riser = get("cockpit")?.specs.shape === "riser",
-    comfort = get("saddle")?.specs.shape === "comfort";
-  const bounds={...frameBounds,y:Math.min(frameBounds.y,bar.y-(bullhorn?110:riser?45:30)-12)};
-  bounds.height=radius+12-bounds.y;
+  const uid = useId().replace(/:/g, ""),
+    get = (slot: Slot) => variantById(catalog, configuration[slot])?.variant;
+  const m = componentGeometry(
+      Object.fromEntries(
+        Object.keys(configuration).map((slot) => [
+          slot,
+          get(slot as Slot)?.specs,
+        ]),
+      ),
+    ),
+    g = m.frame,
+    { rear, front, bb, seat, head, headBottom } = g,
+    saddle = project(m.saddlePost),
+    bar = project(m.barClamp),
+    stem = project(m.stemBase),
+    radius = m.wheel.radius * 1000;
+  const paint = get("frameset")?.color || "#535963",
+    highlight =
+      "#" +
+      [1, 3, 5]
+        .map((i) =>
+          Math.round(parseInt(paint.slice(i, i + 2), 16) * 0.86 + 255 * 0.14)
+            .toString(16)
+            .padStart(2, "0"),
+        )
+        .join("");
+  const barPoints = handlebarPoints(get("cockpit")?.specs)
+    .slice(Math.floor(handlebarPoints(get("cockpit")?.specs).length / 2))
+    .map((p) => project(add(m.barClamp, p)));
+  const bounds = {
+    x: -radius - 8,
+    y: Math.min(g.bounds.y, saddle.y - 65, ...barPoints.map((p) => p.y - 18)),
+    width: front.x + radius * 2 + 16,
+    height: 0,
+  };
+  bounds.height = radius + 12 - bounds.y;
   const margin = compact ? 12 : 16;
   const interactive = (slot: Slot) =>
     onSelect
       ? {
           role: "button",
           tabIndex: 0,
-          "aria-label": `Select ${slot} on bicycle`,
+          "aria-label": "Select " + slot + " on bicycle",
           onClick: () => onSelect(slot),
           onKeyDown: (e: KeyboardEvent) => {
             if (e.key === "Enter" || e.key === " ") {
@@ -62,59 +143,84 @@ export function Bike2D({
               onSelect(slot);
             }
           },
-          className: `bike-part ${active === slot ? "is-active" : ""}`,
+          className: "bike-part " + (active === slot ? "is-active" : ""),
         }
       : {};
-  const tube = (
-    a: { x: number; y: number },
-    b: { x: number; y: number },
-    width: number,
-    paint = `url(#${uid}-paint)`,
-  ) => (
+  const metal = "url(#" + uid + "-metal)",
+    framePaint = "url(#" + uid + "-paint)";
+  const tube = (a: Point, b: Point, width: number, color = framePaint) => (
     <g>
       <path
-        d={`M${a.x} ${a.y}L${b.x} ${b.y}`}
+        d={line([a, b])}
+        fill="none"
         stroke="#21252b"
         strokeWidth={width + 1.5}
       />
+      <path d={line([a, b])} fill="none" stroke={color} strokeWidth={width} />
       <path
-        d={`M${a.x} ${a.y}L${b.x} ${b.y}`}
-        stroke={paint}
-        strokeWidth={width}
-      />
-      <path
-        d={`M${a.x} ${a.y - 2}L${b.x} ${b.y - 2}`}
+        d={line([
+          { x: a.x, y: a.y - 2 },
+          { x: b.x, y: b.y - 2 },
+        ])}
+        fill="none"
         stroke="#fff"
-        opacity=".22"
+        opacity=".16"
         strokeWidth="2"
       />
     </g>
   );
+  const crown = project(m.crown);
+  const [forkStart, forkA, forkB, forkEnd] = forkBladePoints(m, 1).map(project);
+  const forkPath = `M${forkStart.x} ${forkStart.y} C${forkA.x} ${forkA.y} ${forkB.x} ${forkB.y} ${forkEnd.x} ${forkEnd.y}`;
+  const d = m.drivetrain,
+    chain = line(d.chain.points.map(project), true),
+    frontRadius = d.chain.frontRadius * 1000,
+    rearRadius = d.chain.rearRadius * 1000;
   return (
     <svg
-      className={`bike-svg ${compact ? "compact" : ""}`}
-      viewBox={`${bounds.x - margin} ${bounds.y - margin} ${bounds.width + margin * 2} ${bounds.height + margin * 2}`}
+      className={"bike-svg " + (compact ? "compact" : "")}
+      viewBox={[
+        bounds.x - margin,
+        bounds.y - margin,
+        bounds.width + margin * 2,
+        bounds.height + margin * 2,
+      ].join(" ")}
       preserveAspectRatio="xMidYMid meet"
       role="img"
       aria-label="Illustrative fixed-gear bicycle, side profile. Not manufacturer geometry."
       data-frame-variant={configuration.frameset}
+      data-cockpit-variant={configuration.cockpit}
+      data-cockpit-shape={m.cockpit.type}
+      data-geometry-revision="components-v2"
     >
       <defs>
-        <linearGradient id={`${uid}-paint`} x1="0" y1="0" x2=".2" y2="1">
-          <stop stopColor={frame?.color || "#535963"} />
-          <stop offset=".35" stopColor={frame?.color || "#535963"} />
+        <linearGradient id={uid + "-paint"} x1="0" y1="0" x2=".2" y2="1">
+          <stop stopColor={paint} />
+          <stop offset=".35" stopColor={paint} />
           <stop offset=".5" stopColor={highlight} />
-          <stop offset=".63" stopColor={frame?.color || "#535963"} />
+          <stop offset=".65" stopColor={paint} />
           <stop offset="1" stopColor="#272c33" />
         </linearGradient>
-        <linearGradient id={`${uid}-metal`} x1="0" y1="0" x2="0" y2="1">
-          <stop stopColor="#868d98" />
-          <stop offset=".3" stopColor="#363c46" />
-          <stop offset="1" stopColor="#171b22" />
+        <linearGradient id={uid + "-metal"} x1="0" y1="0" x2="0" y2="1">
+          <stop stopColor="#8b94a0" />
+          <stop offset=".3" stopColor="#444d59" />
+          <stop offset="1" stopColor="#202630" />
         </linearGradient>
       </defs>
       <g
-        transform={`translate(${front.x / 2} ${bounds.y + bounds.height / 2}) scale(${zoom}) translate(${-front.x / 2} ${-(bounds.y + bounds.height / 2)})`}
+        transform={
+          "translate(" +
+          front.x / 2 +
+          " " +
+          (bounds.y + bounds.height / 2) +
+          ") scale(" +
+          zoom +
+          ") translate(" +
+          -front.x / 2 +
+          " " +
+          -(bounds.y + bounds.height / 2) +
+          ")"
+        }
         strokeLinecap="round"
         strokeLinejoin="round"
       >
@@ -122,193 +228,229 @@ export function Bike2D({
           cx={front.x / 2}
           cy={radius + 3}
           rx={front.x / 2 + radius - 30}
-          ry="9"
+          ry="7"
           fill="#171c26"
           opacity=".08"
         />
         <g {...interactive("wheels")}>
           {[rear, front].map((axle, i) => (
-            <g key={i} transform={`translate(${axle.x} 0)`}>
+            <g key={i} transform={"translate(" + axle.x + " 0)"}>
               <circle
-                r={radius - 10}
+                r={(m.wheel.bsd / 2 + m.wheel.tireHeight / 2) * 1000}
                 fill="none"
                 stroke="#1c2027"
-                strokeWidth="21"
+                strokeWidth={m.wheel.tireHeight * 1000}
+              />
+              {m.wheel.sidewall === "tan" && (
+                <circle
+                  r={(m.wheel.bsd / 2 + m.wheel.tireHeight * 0.5) * 1000}
+                  fill="none"
+                  stroke="#a98b61"
+                  strokeWidth={m.wheel.tireHeight * 450}
+                />
+              )}
+              <circle
+                r={(m.wheel.rimOuter + m.wheel.rimInner) * 500}
+                fill="none"
+                stroke={metal}
+                strokeWidth={m.wheel.rimDepth * 1000}
               />
               <circle
-                r={radius - 8}
+                r={m.wheel.rimOuter * 1000}
                 fill="none"
-                stroke={tan ? "#ae8d5b" : "#565d68"}
-                strokeWidth={tan ? 7 : 2}
+                stroke="#a7afba"
+                strokeWidth="1.5"
               />
-              <circle
-                r={deep ? radius - 49 : radius - 28}
-                fill="none"
-                stroke={`url(#${uid}-metal)`}
-                strokeWidth={deep ? 56 : 24}
-              />
-              <circle
-                r={radius - 18}
-                fill="none"
-                stroke="#9aa2ae"
-                strokeWidth="2"
-              />
-              {Array.from({ length: compact ? 20 : 32 }, (_, n) => {
-                const angle = (n * Math.PI * 2) / (compact ? 20 : 32);
-                return (
-                  <line
-                    key={n}
-                    x1={Math.cos(angle + 0.5) * 14}
-                    y1={Math.sin(angle + 0.5) * 14}
-                    x2={Math.cos(angle) * (radius - (deep ? 78 : 42))}
-                    y2={Math.sin(angle) * (radius - (deep ? 78 : 42))}
-                    stroke="#7e8794"
-                    strokeWidth="1.4"
-                  />
-                );
-              })}
-              <circle r="17" fill="#353c46" stroke="#b1b8c3" strokeWidth="3" />
-              <circle r="7" fill="#c8ccd2" stroke="#343a44" strokeWidth="2" />
+              {spokeEndpoints(m.wheel, i === 0).map((s, n) => (
+                <line
+                  key={n}
+                  x1={s.hub[0] * 1000}
+                  y1={-s.hub[1] * 1000}
+                  x2={s.rim[0] * 1000}
+                  y2={-s.rim[1] * 1000}
+                  stroke="#858f9e"
+                  strokeWidth="1.3"
+                />
+              ))}
+              <circle r={i === 0 ? 28 : 22} fill={metal} />
+              <circle r="6" fill="#c0c7d1" stroke="#353e4b" strokeWidth="2" />
             </g>
           ))}
         </g>
         <g {...interactive("tires")}>
           <path
-            d={`M${rear.x - radius + 5} -45 A${radius} ${radius} 0 0 1 ${rear.x + radius - 5} -45 M${front.x - radius + 5} -45 A${radius} ${radius} 0 0 1 ${front.x + radius - 5} -45`}
+            d={
+              "M" +
+              (rear.x - radius + 5) +
+              " -45 A" +
+              radius +
+              " " +
+              radius +
+              " 0 0 1 " +
+              (rear.x + radius - 5) +
+              " -45 M" +
+              (front.x - radius + 5) +
+              " -45 A" +
+              radius +
+              " " +
+              radius +
+              " 0 0 1 " +
+              (front.x + radius - 5) +
+              " -45"
+            }
             fill="none"
             stroke="transparent"
-            strokeWidth="25"
+            strokeWidth="28"
           />
         </g>
         <g {...interactive("frameset")}>
-          {tube(rear, seat, 13)}
-          {tube(rear, bb, 18)}
+          {tube(rear, seat, 14)}
+          {tube(rear, bb, 16)}
           {tube(seat, head, g.frameWidth)}
-          {tube(bb, seat, g.frameWidth + 2)}
-          {tube(bb, headBottom, g.frameWidth + 10)}
-          {tube(head, headBottom, g.frameWidth + 9)}
+          {tube(bb, seat, g.frameWidth)}
+          {tube(bb, headBottom, g.frameWidth + 8)}
+          {tube(head, headBottom, g.frameWidth + 8)}
+          {tube(crown, project(m.steererTop), 28, metal)}
+          <path d={forkPath} fill="none" stroke={metal} strokeWidth="22" />
+          <circle cx={front.x} cy="0" r="10" fill={metal} />
           <path
-            d={String(frame?.specs.forkProfile||'').startsWith('straight')?`M${headBottom.x} ${headBottom.y} L${front.x} 0`:`M${headBottom.x} ${headBottom.y} Q${headBottom.x + 38} ${headBottom.y + 110} ${front.x} 0`}
-            fill="none"
-            stroke="#20252d"
-            strokeWidth="25"
+            d={line([
+              { x: crown.x - 13, y: crown.y },
+              { x: crown.x + 13, y: crown.y },
+            ])}
+            stroke={metal}
+            strokeWidth="17"
           />
-          <path
-            d={String(frame?.specs.forkProfile||'').startsWith('straight')?`M${headBottom.x+1} ${headBottom.y+10} L${front.x+1} -8`:`M${headBottom.x + 1} ${headBottom.y + 10} Q${headBottom.x + 40} ${headBottom.y + 110} ${front.x + 1} -8`}
-            fill="none"
-            stroke="#636c78"
-            strokeWidth="6"
-          />
-          <circle cx={rear.x} cy="0" r="8" fill="#abb3bf" />
-          <circle cx={front.x} cy="0" r="8" fill="#abb3bf" />
         </g>
         <g {...interactive("saddle")}>
-          {tube(seat, saddle, Number(get('saddle')?.specs.seatpost)||22, `url(#${uid}-metal)`)}
+          {tube(seat, saddle, m.saddle.postDiameter * 1000, metal)}
           <path
-            d={`M${saddle.x - 44} ${saddle.y - 3} Q${saddle.x} ${saddle.y + 15} ${saddle.x + 62} ${saddle.y - 4}`}
+            d={smooth([
+              { x: saddle.x - 94, y: saddle.y - 31 },
+              { x: saddle.x - 70, y: saddle.y - 15 },
+              { x: saddle.x + 40, y: saddle.y - 12 },
+              { x: saddle.x + 98, y: saddle.y - 31 },
+            ])}
             fill="none"
-            stroke="#848b94"
-            strokeWidth="5"
+            stroke="#87919e"
+            strokeWidth="7"
+          />
+          <rect
+            x={saddle.x - 23}
+            y={saddle.y - 17}
+            width="46"
+            height="18"
+            rx="5"
+            fill={metal}
           />
           <path
-            d={`M${saddle.x - 83} ${saddle.y - 21} Q${saddle.x - 48} ${saddle.y - 30} ${saddle.x - 5} ${saddle.y - 20} L${saddle.x + 85} ${saddle.y - 18} Q${saddle.x + 98} ${saddle.y - 8} ${saddle.x + 58} ${saddle.y - 4} L${saddle.x - 38} ${saddle.y + (comfort ? 8 : 0)} Q${saddle.x - 72} ${saddle.y + 1} ${saddle.x - 83} ${saddle.y - 21}Z`}
-            fill={`url(#${uid}-metal)`}
-            stroke="#20252b"
-            strokeWidth="3"
+            d={
+              "M" +
+              (saddle.x - m.saddle.length * 520) +
+              " " +
+              (saddle.y - 48) +
+              " Q" +
+              (saddle.x - m.saddle.length * 350) +
+              " " +
+              (saddle.y - 67) +
+              " " +
+              saddle.x +
+              " " +
+              (saddle.y - 54) +
+              " L" +
+              (saddle.x + m.saddle.length * 430) +
+              " " +
+              (saddle.y - 52) +
+              " Q" +
+              (saddle.x + m.saddle.length * 490) +
+              " " +
+              (saddle.y - 39) +
+              " " +
+              (saddle.x + m.saddle.length * 390) +
+              " " +
+              (saddle.y - 34) +
+              " L" +
+              (saddle.x - m.saddle.length * 410) +
+              " " +
+              (saddle.y - 32) +
+              "Z"
+            }
+            fill="#252c36"
+            stroke="#555f6e"
+            strokeWidth="2"
           />
         </g>
         <g {...interactive("cockpit")}>
-          {tube(
-            head,
-            { x: head.x - 7, y: head.y - 48 },
-            26,
-            `url(#${uid}-metal)`,
-          )}
-          {tube(
-            { x: head.x - 7, y: head.y - 48 },
-            bar,
-            25,
-            `url(#${uid}-metal)`,
-          )}
-          <path
-            d={
-              bullhorn ? `M${bar.x-12} ${bar.y} Q${bar.x+70} ${bar.y-5} ${bar.x+110} ${bar.y-85}` : riser
-                ? `M${bar.x - 12} ${bar.y}L${bar.x + 40} ${bar.y - 28}L${bar.x + 108} ${bar.y - 28}`
-                : `M${bar.x - 10} ${bar.y} C${bar.x + 75} ${bar.y - 8} ${bar.x + 112} ${bar.y + 18} ${bar.x + 109} ${bar.y + 65} Q${bar.x + 111} ${bar.y + 114} ${bar.x + 50} ${bar.y + 121} L${bar.x + 20} ${bar.y + 118}`
-            }
-            fill="none"
-            stroke="#222831"
-            strokeWidth="24"
+          {tube(stem, bar, 28, metal)}
+          <circle cx={stem.x} cy={stem.y} r="18" fill={metal} />
+          <circle
+            cx={bar.x}
+            cy={bar.y}
+            r={m.cockpit.clamp * 500 + 4}
+            fill={metal}
           />
           <path
-            d={
-              riser
-                ? `M${bar.x + 58} ${bar.y - 28}L${bar.x + 108} ${bar.y - 28}`
-                : `M${bar.x + 15} ${bar.y + 1} Q${bar.x + 101} ${bar.y - 3} ${bar.x + 102} ${bar.y + 61} Q${bar.x + 104} ${bar.y + 106} ${bar.x + 31} ${bar.y + 112}`
-            }
+            d={smooth(barPoints)}
             fill="none"
-            stroke="#57616e"
-            strokeWidth="4"
+            stroke="#242c37"
+            strokeWidth={m.cockpit.tubeDiameter * 1000 + 2.8}
           />
         </g>
         <g {...interactive("drivetrain")}>
-          <path
-            d={`M0 -24 L${bb.x} ${bb.y - 83} A83 83 0 0 1 ${bb.x} ${bb.y + 83} L0 24 A24 24 0 0 1 0 -24Z`}
-            fill="none"
-            stroke="#979b9d"
-            strokeWidth="7"
-          />
-          <path
-            d={`M0 -24 L${bb.x} ${bb.y - 83} A83 83 0 0 1 ${bb.x} ${bb.y + 83} L0 24 A24 24 0 0 1 0 -24Z`}
-            fill="none"
-            stroke="#30363f"
-            strokeWidth="3"
-            strokeDasharray="4 5"
-          />
-          <circle
-            cx={bb.x}
-            cy={bb.y}
-            r="80"
-            fill="#303741"
-            stroke="#9099a5"
-            strokeWidth="4"
-          />
-          {Array.from({ length: 5 }, (_, i) => (
-            <path
-              key={i}
-              d={`M${bb.x + 13} ${bb.y - 22} L${bb.x + 30} ${bb.y - 61} Q${bb.x + 49} ${bb.y - 56} ${bb.x + 58} ${bb.y - 37} L${bb.x + 29} ${bb.y - 11}Z`}
-              fill="#dde1e7"
-              transform={`rotate(${i * 72} ${bb.x} ${bb.y})`}
-            />
-          ))}
-          <circle
-            cx={bb.x}
-            cy={bb.y}
-            r="83"
-            fill="none"
-            stroke="#65707c"
-            strokeWidth="5"
-            strokeDasharray="2 7"
-          />
-          {tube(bb, { x: bb.x + 118, y: bb.y + 45 }, 22, `url(#${uid}-metal)`)}
+          {tube(bb, project(d.pedals[1]), 22, metal)}
           <rect
-            x={bb.x + 93}
-            y={bb.y + 42}
-            width="63"
-            height="17"
+            x={project(d.pedals[1]).x - 43}
+            y={project(d.pedals[1]).y - 6}
+            width="86"
+            height="12"
             rx="4"
-            fill="#303741"
-            stroke="#88929f"
+            fill="#404a58"
+          />
+          <path d={chain} fill="none" stroke="#88929e" strokeWidth="6.4" />
+          <path
+            d={chain}
+            fill="none"
+            stroke="#3c4552"
+            strokeWidth="3"
+            strokeDasharray="4 8.7"
+          />
+          <path
+            d={gear(d.rearTeeth, rearRadius, 12, rear)}
+            fill={metal}
+            fillRule="evenodd"
+            data-teeth={d.rearTeeth}
+          />
+          <path
+            d={gear(d.frontTeeth, frontRadius, frontRadius - 26, bb)}
+            fill={metal}
+            fillRule="evenodd"
+            data-teeth={d.frontTeeth}
+          />
+          {Array.from({ length: 5 }, (_, i) => {
+            const a = (i * Math.PI * 2) / 5 + d.crankAngle,
+              p = {
+                x: bb.x + Math.cos(a) * (frontRadius - 20),
+                y: bb.y - Math.sin(a) * (frontRadius - 20),
+              };
+            return (
+              <g key={i}>
+                <path d={line([bb, p])} stroke="#4a5463" strokeWidth="14" />
+                <circle cx={p.x} cy={p.y} r="3.7" fill="#b8c1ce" />
+              </g>
+            );
+          })}
+          {tube(bb, project(d.pedals[0]), 23, metal)}
+          <rect
+            x={project(d.pedals[0]).x - 44}
+            y={project(d.pedals[0]).y - 7}
+            width="88"
+            height="14"
+            rx="4"
+            fill="#333d4b"
+            stroke="#858f9e"
             strokeWidth="2"
           />
-          <circle
-            cx={bb.x}
-            cy={bb.y}
-            r="13"
-            fill="#b9c1cc"
-            stroke="#363e49"
-            strokeWidth="5"
-          />
+          <circle cx={bb.x} cy={bb.y} r="8" fill="#a9b3c0" />
         </g>
       </g>
     </svg>

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useThree } from "@react-three/fiber";
-import { ContactShadows, Environment, Lightformer } from "@react-three/drei";
+import { GroundShadow } from "./GroundShadow";
+import { SoftboxEnvironment } from "./SoftboxEnvironment";
 import {
   studioPalettes,
   type StudioEnvironment,
@@ -11,11 +12,13 @@ export function StudioLighting({
   quality,
   modelKey,
   centerX,
+  groundY = -0.338,
 }: {
   studio: StudioEnvironment;
   quality: QualityTier;
   modelKey: string;
   centerX: number;
+  groundY?: number;
 }) {
   const palette = studioPalettes[studio],
     { gl, invalidate } = useThree();
@@ -46,49 +49,25 @@ export function StudioLighting({
         intensity={studio === "dark" ? 3 : 1.4}
       />
       {quality !== "performance" && (
-        <Environment
-          key={studio + quality}
-          frames={1}
+        <SoftboxEnvironment
           resolution={quality === "quality" ? 256 : 128}
-          environmentIntensity={studio === "dark" ? 0.7 : 0.65}
-        >
-          <Lightformer
-            form="rect"
-            intensity={3}
-            position={[0, 4, 1]}
-            scale={[6, 2, 1]}
-            rotation={[-Math.PI / 2, 0, 0]}
-          />
-          <Lightformer
-            form="rect"
-            intensity={2}
-            position={[-3, 1, 2]}
-            scale={[2, 4, 1]}
-            rotation={[0, Math.PI / 3, 0]}
-          />
-          <Lightformer
-            form="rect"
-            intensity={4}
-            position={[3, 2, -3]}
-            scale={[1, 4, 1]}
-            rotation={[0, -Math.PI / 3, 0]}
-          />
-        </Environment>
+          intensity={studio === "dark" ? 0.7 : 0.65}
+        />
       )}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[centerX, -0.343, 0]}>
-        <planeGeometry args={[200, 200]} />
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[centerX, groundY - 0.0005, 0]}
+      >
+        <planeGeometry args={[20, 20, 8, 8]} />
         <meshBasicMaterial color={palette.floor} toneMapped={false} />
       </mesh>
       {quality !== "performance" && (
-        <ContactShadows
-          key={studio + quality + modelKey}
-          position={[centerX, -0.34, 0]}
+        <GroundShadow
+          centerX={centerX}
+          groundY={groundY}
+          revision={studio + quality + modelKey}
           opacity={studio === "dark" ? 0.5 : 0.3}
-          scale={5}
-          blur={3}
-          far={1.2}
           resolution={quality === "quality" ? 512 : 256}
-          frames={1}
         />
       )}
     </>

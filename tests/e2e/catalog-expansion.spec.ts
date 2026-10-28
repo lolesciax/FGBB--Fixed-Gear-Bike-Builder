@@ -74,13 +74,13 @@ test("dependent frame changes preserve state, geometry, usage and undo across th
   );
   const before = await page.locator(".bike-svg").getAttribute("viewBox");
   const asset = page.waitForResponse((r) =>
-    r.url().endsWith("/models/frames/skream-magnum-m.glb"),
+    r.url().split("?")[0].endsWith("/models/frames/skream-magnum-m.glb"),
   );
   await page.getByRole("button", { name: "3D", exact: true }).click();
   expect((await asset).status()).toBe(200);
   await expect(page.locator("canvas")).toBeVisible();
   const rangerAsset = page.waitForResponse((r) =>
-    r.url().endsWith("/models/frames/skream-ranger-m.glb"),
+    r.url().split("?")[0].endsWith("/models/frames/skream-ranger-m.glb"),
   );
   await page
     .getByLabel("Ranger variant", { exact: true })

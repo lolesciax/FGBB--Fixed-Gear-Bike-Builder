@@ -16,6 +16,7 @@ export const seedCatalog: Product[] = [
   demo('studio-tire28', 'Road 28 · tan wall', 'tires', 'A wider profile with a warm tan sidewall. Requires sufficient clearance.', { bsd: 622, width: 28, sidewall: 'tan' }),
   demo('studio-drop', 'Track drops', 'cockpit', 'Curved drop bars with black wrap.', { stemClamp: 31.8, brakeMount: 'caliper', shape: 'drop' }),
   demo('studio-riser', 'City riser', 'cockpit', 'An upright riser profile for a relaxed visual setup.', { stemClamp: 31.8, brakeMount: 'caliper', shape: 'riser' }),
+  demo('studio-flat', 'Straight / flat bar', 'cockpit', 'Independent flat-bar and stem illustration. Listed dimensions are authored demo values, not a manufacturer specification.', { stemClamp:31.8, brakeMount:'caliper', shape:'flat', width:600, rise:0, sweep:6, tubeDiameter:22.2, stemLength:90 }),
   demo('studio-bullhorn', 'City bullhorn', 'cockpit', 'Independent illustrative forward-reaching bar with raised tips.', { stemClamp:31.8, brakeMount:'caliper', shape:'bullhorn' }),
   demo('studio-46', 'Fixed 46 / 16', 'drivetrain', 'A complete illustrative crank, chain and sprocket selection.', { frontTeeth: 46, rearTeeth: 16, chainWidth: '1/8', chainline: 42, bottomBracket: 'BSA-68' }),
   demo('studio-48', 'Fixed 48 / 17', 'drivetrain', 'An alternative illustrative chainring and sprocket combination.', { frontTeeth: 48, rearTeeth: 17, chainWidth: '1/8', chainline: 42, bottomBracket: 'BSA-68' }),

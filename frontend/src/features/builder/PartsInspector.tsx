@@ -2,6 +2,9 @@ import { useState, type ReactNode } from "react";
 import { Check, Search } from "lucide-react";
 import {
   visualizationInfo,
+  barTypes,
+  cockpitDimensions,
+  type BarType,
   slots,
   variantById,
   type Configuration,
@@ -45,6 +48,12 @@ const specLabels: Record<string, string> = {
   frontTeeth: "Chainring teeth",
   rearTeeth: "Cog teeth",
   rimDepth: "Rim depth · mm",
+  rise: "Rise · mm",
+  reach: "Reach · mm",
+  drop: "Drop · mm",
+  sweep: "Sweep · degrees",
+  stemLength: "Stem length · mm",
+  tubeDiameter: "Tube diameter · mm",
 };
 export function PartsInspector({
   products,
@@ -57,8 +66,21 @@ export function PartsInspector({
   onCategory,
   notice,
 }: Props) {
-  const [query, setQuery] = useState(""),
-    [brand, setBrand] = useState("");
+  const [filters, setFilters] = useState<
+    Partial<
+      Record<Slot, { query: string; brand: string; barType: BarType | "" }>
+    >
+  >({});
+  const { query = "", brand = "", barType = "" } = filters[slot] || {};
+  const updateFilter = (
+    patch: Partial<{ query: string; brand: string; barType: BarType | "" }>,
+  ) =>
+    setFilters((previous) => ({
+      ...previous,
+      [slot]: { query, brand, barType, ...patch },
+    }));
+  const setQuery = (query: string) => updateFilter({ query });
+  const setBrand = (brand: string) => updateFilter({ brand });
   const [showDemos, setShowDemos] = useState(true);
   const current = configuration
     ? variantById(products, configuration[slot])
@@ -70,6 +92,9 @@ export function PartsInspector({
         product.slot === slot &&
         (showDemos || !product.illustrative) &&
         (!brand || product.brand === brand) &&
+        (slot !== "cockpit" ||
+          !barType ||
+          product.variants.some((v) => v.specs.shape === barType)) &&
         `${product.brand} ${product.name}`
           .toLowerCase()
           .includes(query.toLowerCase()),
@@ -138,6 +163,25 @@ export function PartsInspector({
           </select>
         </label>
       </div>
+      {slot === "cockpit" && (
+        <label className="cockpit-type-control">
+          Handlebar type
+          <select
+            aria-label="Handlebar type"
+            value={barType}
+            onChange={(event) =>
+              updateFilter({ barType: event.target.value as BarType | "" })
+            }
+          >
+            <option value="">All handlebar types</option>
+            {barTypes.map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <div className="product-options">
         {loading ? (
           <p className="muted">Loading parts…</p>
@@ -148,8 +192,7 @@ export function PartsInspector({
             <button
               className="text-button"
               onClick={() => {
-                setQuery("");
-                setBrand("");
+                updateFilter({ query: "", brand: "", barType: "" });
               }}
             >
               Clear filters
@@ -157,14 +200,17 @@ export function PartsInspector({
           </div>
         ) : (
           available.map((product, index) => {
-            const isSelected = product.variants.some(
+            const variants = product.variants.filter(
+              (v) =>
+                slot !== "cockpit" || !barType || v.specs.shape === barType,
+            );
+            const isSelected = variants.some(
               (variant) => variant.id === configuration?.[slot],
             );
             const shown = isSelected
               ? current!.variant
-              : product.variants.find(
-                  (variant) => variant.label === "Graphite",
-                ) || product.variants[0];
+              : variants.find((variant) => variant.label === "Graphite") ||
+                variants[0];
             const fidelity = visualizationInfo(product, shown);
             return (
               <article
@@ -200,13 +246,32 @@ export function PartsInspector({
                   <div className="product-identity">
                     <span className="product-brand">{product.brand}</span>
                     <h3>{product.name}</h3>
+                    {slot === "cockpit" && (
+                      <span className="render-support">
+                        {barTypes.find(
+                          ([type]) => type === shown.specs.shape,
+                        )?.[1] || "Unverified type"}{" "}
+                        /{" "}
+                        {Math.round(
+                          cockpitDimensions(shown.specs).width * 1000,
+                        )}{" "}
+                        mm{" "}
+                        {typeof shown.specs.width !== "number"
+                          ? "illustrative width"
+                          : product.illustrative
+                            ? "demo width"
+                            : "listed width"}{" "}
+                        / {String(shown.specs.stemClamp || "Unknown")} mm clamp
+                      </span>
+                    )}
                     <span className="demo-tag">
                       {product.illustrative
                         ? "Illustrative demo"
                         : "Manufacturer reference"}
                     </span>
                     <span className="render-support">
-                      {fidelity.mode2D?'2D supported':'2D unavailable'} / {fidelity.mode3D?'3D supported':'3D unavailable'}
+                      {fidelity.mode2D ? "2D supported" : "2D unavailable"} /{" "}
+                      {fidelity.mode3D ? "3D supported" : "3D unavailable"}
                     </span>
                   </div>
                   {isSelected && (
@@ -258,8 +323,15 @@ export function PartsInspector({
                     value={shown.id}
                     onChange={(event) => onSelect(slot, event.target.value)}
                   >
-                    {product.variants.map((variant) => (
-                      <option key={variant.id} value={variant.id} disabled={variant.status==='archived'||variant.status==='draft'}>
+                    {variants.map((variant) => (
+                      <option
+                        key={variant.id}
+                        value={variant.id}
+                        disabled={
+                          variant.status === "archived" ||
+                          variant.status === "draft"
+                        }
+                      >
                         {variant.label}
                       </option>
                     ))}
@@ -287,7 +359,11 @@ export function PartsInspector({
                       )
                       .map(([key, value]) => (
                         <div key={key}>
-                          <dt>{specLabels[key] || key}</dt>
+                          <dt>
+                            {slot === "cockpit" && key === "width"
+                              ? "Handlebar width · mm"
+                              : specLabels[key] || key}
+                          </dt>
                           <dd>{String(value)}</dd>
                         </div>
                       ))}

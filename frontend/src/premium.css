@@ -281,6 +281,8 @@
   position: relative;
   width: 100%;
 }
+.cockpit-type-control { margin: 0 0 14px; }
+.cockpit-type-control select { min-height: 44px; }
 .password-control input {
   padding-right: 52px;
 }

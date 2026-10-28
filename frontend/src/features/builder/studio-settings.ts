@@ -1,6 +1,7 @@
 export const cameraPresets = [
   ["studio", "Default Studio"],
-  ["side", "Side Profile"],
+  ["side", "Right Side"],
+  ["opposite-side", "Left Side"],
   ["front", "Front"],
   ["rear", "Rear"],
   ["three-quarter", "Three-Quarter Front"],
@@ -11,6 +12,7 @@ export type CameraView = (typeof cameraPresets)[number][0];
 export const compactCameraLabels: Record<CameraView, string> = {
   studio: "Studio",
   side: "Side",
+  "opposite-side": "Left Side",
   front: "Front",
   rear: "Rear",
   "three-quarter": "Front 3/4",
@@ -44,6 +46,8 @@ export const motion = {
   turntableRadiansPerSecond: 0.12,
 };
 export const selectionEmissiveIntensity = 0.018;
+export const frameRequestUrl = (asset: { url: string; revision: string }) =>
+  `${asset.url}?revision=${encodeURIComponent(asset.revision)}`;
 export function autoQuality(
   width: number,
   cores = 8,

@@ -15,6 +15,7 @@ test("studio settings, camera motion, turntable pause and canonical configuratio
   await expect(scene).toHaveAttribute("data-studio", "dark");
   for (const view of [
     "side",
+    "opposite-side",
     "front",
     "rear",
     "three-quarter",
@@ -65,6 +66,12 @@ test("studio settings, camera motion, turntable pause and canonical configuratio
     const box = await page.getByLabel(label).boundingBox();
     expect(box!.height).toBeGreaterThanOrEqual(44);
   }
+  for (const width of [768, 375, 320]) {
+    await page.setViewportSize({width,height:1024});
+    const redo=await page.getByRole('button',{name:'Redo selection',exact:true}).boundingBox();
+    const reset=await page.getByRole('button',{name:'Reset view',exact:true}).boundingBox();
+    expect(redo!.x+redo!.width).toBeLessThanOrEqual(reset!.x+1);
+  }
 });
 
 test("a pending model preserves the previous 3D assembly and reuses the downloaded kit", async ({
@@ -75,7 +82,7 @@ test("a pending model preserves the previous 3D assembly and reuses the download
     release = resolve;
   });
   await page.route(
-    "**/models/frames/dosnoventa-03-det-m.glb",
+    "**/models/frames/dosnoventa-03-det-m.glb*",
     async (route) => {
       await gate;
       await route.continue();
@@ -109,7 +116,7 @@ test("a pending model preserves the previous 3D assembly and reuses the download
   );
   let downloads = 0;
   page.on("request", (r) => {
-    if (r.url().endsWith("dosnoventa-02-la-m.glb")) downloads++;
+    if (r.url().split("?")[0].endsWith("dosnoventa-02-la-m.glb")) downloads++;
   });
   await page
     .getByRole("combobox", { name: "02 LA variant", exact: true })

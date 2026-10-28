@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 test("an unavailable frame kit keeps the configuration and supports an explicit retry", async ({
   page,
 }) => {
-  await page.route("**/models/frames/dosnoventa-02-la-m.glb", (route) =>
+  await page.route("**/models/frames/dosnoventa-02-la-m.glb*", (route) =>
     route.fulfill({ status: 404, body: "" }),
   );
   await page.goto("/builder");
@@ -14,7 +14,7 @@ test("an unavailable frame kit keeps the configuration and supports an explicit 
   await expect(
     page.getByText("3D preview unavailable", { exact: true }),
   ).toBeVisible();
-  await page.unroute("**/models/frames/dosnoventa-02-la-m.glb");
+  await page.unroute("**/models/frames/dosnoventa-02-la-m.glb*");
   await page.getByRole("button", { name: "Retry 3D model" }).click();
   await expect(page.locator("canvas")).toBeVisible();
   await page.getByRole("button", { name: "2D", exact: true }).click();
@@ -76,13 +76,13 @@ test("separate frame kits load on demand, camera presets work, and guest session
     .getByRole("combobox", { name: "02 LA variant", exact: true })
     .selectOption("dosnoventa-02-la-m");
   const first = page.waitForResponse((response) =>
-    response.url().endsWith("dosnoventa-02-la-m.glb"),
+    response.url().split("?")[0].endsWith("dosnoventa-02-la-m.glb"),
   );
   await page.getByRole("button", { name: "3D", exact: true }).click();
   expect((await first).status()).toBe(200);
   await expect(page.locator("canvas")).toBeVisible();
   const second = page.waitForResponse((response) =>
-    response.url().endsWith("dosnoventa-03-det-m.glb"),
+    response.url().split("?")[0].endsWith("dosnoventa-03-det-m.glb"),
   );
   await page
     .getByRole("combobox", { name: "03 DET variant", exact: true })

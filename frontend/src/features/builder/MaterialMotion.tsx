@@ -68,7 +68,7 @@ export function useKitPaint(
           if (material instanceof THREE.MeshStandardMaterial) {
             material.metalness = 0.35;
             material.roughness = 0.34;
-            result.push(material);
+            if (!result.includes(material)) result.push(material);
           }
       }
     });
@@ -122,6 +122,7 @@ export function PartGroup({
         ? node.material
         : [node.material])
         if (material instanceof THREE.MeshStandardMaterial) {
+          if (originals.some((entry) => entry.material === material)) continue;
           originals.push({
             material,
             color: material.emissive.clone(),

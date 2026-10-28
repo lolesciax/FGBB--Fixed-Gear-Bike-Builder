@@ -9,7 +9,7 @@ npm run assets:frames
 npx vitest run tests/frame-kits.test.ts
 ```
 
-The exporter reads `manufacturer-catalog.ts`, uses the shared `assemblyGeometry` function, creates original tubes/stays/forks, and writes:
+The exporter reads `manufacturer-catalog.ts`, uses `componentGeometry` (preserving reviewed `assemblyGeometry` anchors) and the same `modeling/frame.ts` builder as runtime, and writes:
 
 - `frontend/public/models/frames/<variant-id>.glb`: self-contained metre-scale glTF 2.0 binary, loaded only when a corresponding 3D view needs it.
 - `<variant-id>.model.json`: source URL, input measurements, anchor positions, bounds and fidelity/license notes.
@@ -17,7 +17,7 @@ The exporter reads `manufacturer-catalog.ts`, uses the shared `assemblyGeometry`
 
 There are no copied photographs, logos, textures or manufacturer model files in these assets. The original generated geometry is designated CC0-1.0; that does not license third-party graphics. Tests check the binary format, resource independence, size budget and actual exported head-anchor positions against each variant's geometry.
 
-The importer attaches these references only to matching source/specification records. It preserves edited technical variants, archived products and saved configurations. Admin catalog review exposes source, variant, fidelity, asset path, units and license; backend validation prevents technical changes to variants already used in saved builds. Adding rendering metadata does not create a different selected product.
+The importer attaches these references only to matching source/specification records. It preserves edited technical variants, archived products and saved configurations. Current kits have revision `frame-kit-v2`, adding the connected steerer/crown/tapered fork/dropouts; only exact untouched v1 registrations are upgraded. Historical v1 snapshots remain readable. Request URLs include the revision to avoid stale caches. Admin catalog review exposes source, variant, fidelity, asset path, units and license; backend validation prevents technical changes to variants already used in saved builds. Adding rendering metadata does not create a different selected product.
 
 ## Blender/CAD production for higher fidelity
 
@@ -28,7 +28,7 @@ The importer attaches these references only to matching source/specification rec
 5. Export `.glb`, then check dimensions, anchors, normals, component clearance, paint selection and all camera presets in the application. Start with modest mesh counts and 1K textures; higher resolutions, compression and LOD require device/performance evidence. Current texture-free frame kits are checked below 300 KB each and do not need a compression decoder.
 6. Review licensing and fidelity before registering a replacement. The current runtime schema accepts the supplied **illustrative** kits; it does not let an editor assert that these files are officially licensed. Authentic or independently verified surface models need a separate evidence-backed review and contract update. Test 2D/3D state, missing-file fallback and old saved builds before publication.
 
-Three.js loads registered files through the [glTF loader](https://threejs.org/docs/pages/GLTFLoader). The app assembles wheels, cockpit, drivetrain and seating at frame-derived anchors, uses studio lights/contact shadows, and offers side/front/rear/three-quarter views. Camera framing is recomputed from the assembled bounds and viewport aspect. The lightweight landing page uses SVG and does not download 3D assets.
+Three.js loads registered files through the [glTF loader](https://threejs.org/docs/pages/GLTFLoader). The app assembles wheels, four cockpit profiles, drivetrain and seating at shared frame-derived anchors, uses owned finite studio environment/contact-shadow passes and offers eight camera presets including both sides. Camera fit projects actual vertices and all instances. SVG and WebGL share component dimensions and paths; see [modeling corrections and explicit assumptions](modeling-corrections.md). The lightweight landing uses original renderer captures and SVG; it does not download WebGL or GLB assets.
 
 ## What remains unavailable
 

@@ -1,105 +1,60 @@
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import * as THREE from "three";
+import {
+  componentGeometry,
+  variantById,
+  type Configuration,
+  type Product,
+  type Slot,
+  type BicycleGeometry,
+} from "@tracklab/domain";
 import { StudioCamera } from "./StudioCamera";
 import { StudioLighting } from "./StudioLighting";
-import { PartGroup, PaintMaterial } from "./MaterialMotion";
+import { PartGroup, useKitPaint } from "./MaterialMotion";
+import { FrameKit } from "./FrameKit";
 import type {
   CameraView,
   StudioEnvironment,
   QualityTier,
 } from "./studio-settings";
-import { useLayoutEffect, useMemo, useRef } from "react";
+import { createFrame } from "./modeling/frame";
+import { createWheel, createTire } from "./modeling/wheel";
+import { createCockpit } from "./modeling/cockpit";
+import { createSaddle } from "./modeling/saddle";
+import { createDrivetrain } from "./modeling/drivetrain";
+import { disposeModel } from "./modeling/primitives";
 
-import { FrameKit } from "./FrameKit";
+type ModelSpecs = NonNullable<Parameters<typeof componentGeometry>[0]>;
+function useOwnedModel(
+  key: string,
+  build: (g: BicycleGeometry, specs: ModelSpecs) => THREE.Group,
+) {
+  const model = useMemo(() => {
+    const specs = JSON.parse(key) as ModelSpecs;
+    return build(componentGeometry(specs), specs);
+  }, [key, build]);
+  useEffect(() => () => disposeModel(model), [model]);
+  return model;
+}
+const fallbackFrame = (g: BicycleGeometry, s: ModelSpecs) =>
+  s.frameset ? createFrame(g, "#535963") : new THREE.Group();
+const wheels = (g: BicycleGeometry) => {
+  const root = new THREE.Group();
+  root.add(createWheel(g, false), createWheel(g, true));
+  return root;
+};
+const tires = (g: BicycleGeometry) => {
+  const root = new THREE.Group();
+  for (const axle of [g.rear, g.front]) {
+    const tire = createTire(g);
+    tire.position.set(...axle);
+    root.add(tire);
+  }
+  return root;
+};
+const cockpit = (g: BicycleGeometry, s: ModelSpecs) =>
+  createCockpit(g, s.cockpit || {});
 
-import * as THREE from "three";
-import {
-  assemblyGeometry,
-  variantById,
-  type Configuration,
-  type Product,
-  type Slot,
-} from "@tracklab/domain";
-type Point = { x: number; y: number };
-function CurvedBar({ points, z }: { points: Point[]; z: number }) {
-  const key = JSON.stringify(points);
-  const curve = useMemo(
-    () =>
-      new THREE.CatmullRomCurve3(
-        (JSON.parse(key) as Point[]).map((point) => vec(point, z)),
-      ),
-    [key, z],
-  );
-  return (
-    <mesh>
-      <tubeGeometry args={[curve, 32, 0.012, 10, false]} />
-      <meshStandardMaterial color="#343d49" metalness={0.2} roughness={0.72} />
-    </mesh>
-  );
-}
-const vec = (point: Point, z = 0) =>
-  new THREE.Vector3(point.x / 1000, -point.y / 1000, z);
-function Tube({
-  a,
-  b,
-  radius = 12,
-  color = "#424a57",
-  z = 0,
-  paint = false,
-  reducedMotion = false,
-}: {
-  a: Point;
-  b: Point;
-  paint?: boolean;
-  reducedMotion?: boolean;
-  radius?: number;
-  color?: string;
-  z?: number;
-}) {
-  const transform = useMemo(() => {
-    const start = vec(a, z),
-      end = vec(b, z),
-      delta = end.clone().sub(start);
-    return {
-      position: start.add(end).multiplyScalar(0.5),
-      length: delta.length(),
-      quaternion: new THREE.Quaternion().setFromUnitVectors(
-        new THREE.Vector3(0, 1, 0),
-        delta.normalize(),
-      ),
-    };
-  }, [a, b, z]);
-  return (
-    <mesh position={transform.position} quaternion={transform.quaternion}>
-      <cylinderGeometry
-        args={[radius / 1000, radius / 1000, transform.length, 20]}
-      />
-      {paint ? (
-        <PaintMaterial color={color} reducedMotion={reducedMotion} />
-      ) : (
-        <meshStandardMaterial color={color} metalness={0.7} roughness={0.32} />
-      )}
-    </mesh>
-  );
-}
-function Ring({
-  center,
-  radius,
-  thickness,
-  color,
-  z = 0,
-}: {
-  center: Point;
-  radius: number;
-  thickness: number;
-  color: string;
-  z?: number;
-}) {
-  return (
-    <mesh position={vec(center, z)}>
-      <torusGeometry args={[radius / 1000, thickness / 1000, 12, 96]} />
-      <meshStandardMaterial color={color} metalness={0.5} roughness={0.45} />
-    </mesh>
-  );
-}
 export function ProceduralAssembly({
   configuration,
   catalog,
@@ -129,17 +84,51 @@ export function ProceduralAssembly({
 }) {
   const get = (slot: Slot) =>
     variantById(catalog, configuration[slot])?.variant;
-  const g = assemblyGeometry(get("frameset")?.specs),
-    { rear, front, bb, seat, head, headBottom, saddle, bar } = g;
-  const group = useRef<THREE.Group>(null);
-  const modelKey = Object.values(configuration).join("|");
-  const geometryKey = JSON.stringify([
-    get("frameset")?.specs,
-    get("frameset")?.asset3D?.url,
-    get("cockpit")?.specs,
-    get("saddle")?.specs,
-    get("wheels")?.specs,
-    get("tires")?.specs,
+  const frame = get("frameset"),
+    paint = frame?.color || "#535963";
+  const geometryKey = JSON.stringify(
+    Object.fromEntries(
+      Object.keys(configuration).map((slot) => [
+        slot,
+        get(slot as Slot)?.specs,
+      ]),
+    ),
+  );
+  const g = useMemo(
+    () => componentGeometry(JSON.parse(geometryKey)),
+    [geometryKey],
+  );
+  const key = (...slots: Slot[]) =>
+    JSON.stringify(
+      Object.fromEntries(slots.map((slot) => [slot, get(slot)?.specs])),
+    );
+  const models = {
+    frame: useOwnedModel(
+      frame?.asset3D ? "{}" : key("frameset"),
+      fallbackFrame,
+    ),
+    wheels: useOwnedModel(key("frameset", "wheels"), wheels),
+    tires: useOwnedModel(key("frameset", "wheels", "tires"), tires),
+    cockpit: useOwnedModel(key("frameset", "cockpit"), cockpit),
+    saddle: useOwnedModel(key("frameset", "saddle"), createSaddle),
+    drivetrain: useOwnedModel(key("frameset", "drivetrain"), createDrivetrain),
+  };
+  useKitPaint(models.frame, paint, reducedMotion);
+  const group = useRef<THREE.Group>(null),
+    modelKey = Object.values(configuration).join("|");
+  useLayoutEffect(() => {
+    // Layer 0 is the visible scene. Layer 1 contains only bicycle shadow casters,
+    // excluding the near-coplanar studio floor from the contact depth texture.
+    group.current?.traverse((node) => node.layers.enable(1));
+  }, [
+    modelKey,
+    models.frame,
+    models.wheels,
+    models.tires,
+    models.cockpit,
+    models.saddle,
+    models.drivetrain,
+    frame?.asset3D?.revision,
   ]);
   const pick = (slot: Slot) => ({
     onClick: (event: { stopPropagation: () => void }) => {
@@ -147,210 +136,58 @@ export function ProceduralAssembly({
       onSelect(slot);
     },
   });
-  const paint = get("frameset")?.color || "#535963",
-    deep = get("wheels")?.specs.rimDepth === 60;
   return (
     <>
-      <group ref={group}>
+      <group
+        ref={group}
+        name="bicycle_assembly"
+        userData={{
+          geometryRevision: "components-v2",
+          cockpit: g.cockpit.type,
+        }}
+      >
         <PartGroup
           {...pick("frameset")}
           active={activeSlot === "frameset"}
           modelKey={modelKey}
         >
-          {get("frameset")?.asset3D ? (
+          {frame?.asset3D ? (
             <FrameKit
-              variant={get("frameset")!}
-              bb={bb}
+              variant={frame}
+              bb={g.frame.bb}
               reducedMotion={reducedMotion}
             />
           ) : (
-            <>
-              {[
-                [rear, seat, 7],
-                [rear, bb, 9],
-                [seat, head, g.frameWidth / 2],
-                [bb, seat, g.frameWidth / 2],
-                [bb, headBottom, g.frameWidth / 2 + 5],
-                [head, headBottom, g.frameWidth / 2 + 6],
-              ].map(([a, b, r], i) => (
-                <Tube
-                  key={i}
-                  a={a as Point}
-                  b={b as Point}
-                  radius={r as number}
-                  color={paint}
-                  paint
-                  reducedMotion={reducedMotion}
-                />
-              ))}
-              {[-0.035, 0.035].map((z) => (
-                <Tube key={z} a={headBottom} b={front} radius={12} z={z} />
-              ))}
-            </>
+            <primitive object={models.frame} />
           )}
         </PartGroup>
-        {[rear, front].map((axle, i) => (
-          <PartGroup
-            key={i}
-            {...pick("wheels")}
-            active={activeSlot === "wheels"}
-            modelKey={modelKey}
-          >
+        {(["wheels", "tires", "cockpit", "saddle", "drivetrain"] as const).map(
+          (slot) => (
             <PartGroup
-              {...pick("tires")}
-              active={activeSlot === "tires"}
+              key={slot}
+              {...pick(slot)}
+              active={activeSlot === slot}
               modelKey={modelKey}
             >
-              <Ring
-                center={axle}
-                radius={326}
-                thickness={12}
-                color={
-                  get("tires")?.specs.sidewall === "tan" ? "#9e825a" : "#20242b"
-                }
-              />
+              <primitive object={models[slot]} />
             </PartGroup>
-            <Ring
-              center={axle}
-              radius={deep ? 291 : 309}
-              thickness={deep ? 27 : 10}
-              color="#454e5b"
-            />
-            <Spokes center={axle} radius={deep ? 264 : 301} />
-            <mesh position={vec(axle)} rotation={[Math.PI / 2, 0, 0]}>
-              <cylinderGeometry args={[0.016, 0.016, 0.11, 20]} />
-              <meshStandardMaterial
-                color="#aab2bd"
-                metalness={0.8}
-                roughness={0.3}
-              />
-            </mesh>
-          </PartGroup>
-        ))}
-        <PartGroup
-          {...pick("saddle")}
-          active={activeSlot === "saddle"}
-          modelKey={modelKey}
-        >
-          <Tube
-            a={seat}
-            b={saddle}
-            radius={(Number(get("saddle")?.specs.seatpost) || 22) / 2}
-          />
-          <mesh
-            position={vec({ x: saddle.x, y: saddle.y - 10 })}
-            scale={[
-              0.092,
-              0.014,
-              get("saddle")?.specs.shape === "comfort" ? 0.06 : 0.04,
-            ]}
-          >
-            <sphereGeometry args={[1, 32, 16]} />
-            <meshStandardMaterial color="#222831" roughness={0.65} />
-          </mesh>
-        </PartGroup>
-        <PartGroup
-          {...pick("cockpit")}
-          active={activeSlot === "cockpit"}
-          modelKey={modelKey}
-        >
-          <Tube a={head} b={{ x: head.x - 7, y: head.y - 48 }} radius={13} />
-          <Tube a={{ x: head.x - 7, y: head.y - 48 }} b={bar} radius={13} />
-          {[-0.18, 0.18].map((z) => (
-            <CurvedBar
-              key={z}
-              z={z}
-              points={
-                get("cockpit")?.specs.shape === "riser"
-                  ? [
-                      bar,
-                      { x: bar.x + 45, y: bar.y - 25 },
-                      { x: bar.x + 105, y: bar.y - 30 },
-                    ]
-                  : get("cockpit")?.specs.shape === "bullhorn"
-                    ? [
-                        bar,
-                        { x: bar.x + 75, y: bar.y - 20 },
-                        { x: bar.x + 110, y: bar.y - 85 },
-                      ]
-                    : [
-                        bar,
-                        { x: bar.x + 55, y: bar.y + 3 },
-                        { x: bar.x + 86, y: bar.y + 24 },
-                        { x: bar.x + 92, y: bar.y + 65 },
-                        { x: bar.x + 65, y: bar.y + 108 },
-                        { x: bar.x + 20, y: bar.y + 117 },
-                      ]
-              }
-            />
-          ))}
-          <mesh position={vec(bar)} rotation={[Math.PI / 2, 0, 0]}>
-            <cylinderGeometry args={[0.012, 0.012, 0.36, 20]} />
-            <meshStandardMaterial color="#343d49" roughness={0.65} />
-          </mesh>
-        </PartGroup>
-        <PartGroup
-          {...pick("drivetrain")}
-          active={activeSlot === "drivetrain"}
-          modelKey={modelKey}
-        >
-          <Ring
-            center={bb}
-            radius={80}
-            thickness={6}
-            color="#7c8795"
-            z={0.065}
-          />
-          {Array.from({ length: 5 }, (_, i) => {
-            const angle = (i * Math.PI * 2) / 5;
-            return (
-              <Tube
-                key={i}
-                a={bb}
-                b={{
-                  x: bb.x + Math.cos(angle) * 76,
-                  y: bb.y + Math.sin(angle) * 76,
-                }}
-                radius={5}
-                z={0.065}
-              />
-            );
-          })}
-          <Tube
-            a={bb}
-            b={{ x: bb.x + 118, y: bb.y + 45 }}
-            radius={11}
-            z={0.08}
-          />
-          <Tube
-            a={{ x: 0, y: -24 }}
-            b={{ x: bb.x, y: bb.y - 83 }}
-            radius={3}
-            color="#959ba2"
-            z={0.065}
-          />
-          <Tube
-            a={{ x: 0, y: 24 }}
-            b={{ x: bb.x, y: bb.y + 83 }}
-            radius={3}
-            color="#959ba2"
-            z={0.065}
-          />
-          <mesh position={vec({ x: bb.x + 118, y: bb.y + 51 }, 0.08)}>
-            <boxGeometry args={[0.06, 0.016, 0.08]} />
-            <meshStandardMaterial color="#343d49" />
-          </mesh>
-        </PartGroup>
+          ),
+        )}
       </group>
       <StudioLighting
         studio={studio}
         quality={quality}
         modelKey={modelKey}
-        centerX={front.x / 2000}
+        centerX={g.front[0] / 2}
+        groundY={g.groundY}
       />
       <StudioCamera
         assembly={group}
-        configurationKey={geometryKey}
+        configurationKey={
+          geometryKey +
+          (frame?.asset3D?.url || "") +
+          (frame?.asset3D?.revision || "")
+        }
         view={cameraView}
         resetKey={resetKey}
         reducedMotion={reducedMotion}
@@ -359,37 +196,5 @@ export function ProceduralAssembly({
         onMoving={onMoving}
       />
     </>
-  );
-}
-
-function Spokes({ center, radius }: { center: Point; radius: number }) {
-  const mesh = useRef<THREE.InstancedMesh>(null);
-  const { x, y } = center;
-  useLayoutEffect(() => {
-    if (!mesh.current) return;
-    const dummy = new THREE.Object3D(),
-      up = new THREE.Vector3(0, 1, 0),
-      a = vec({ x, y });
-    for (let i = 0; i < 28; i++) {
-      const angle = (i * Math.PI * 2) / 28,
-        b = vec({
-          x: x + Math.cos(angle) * radius,
-          y: y + Math.sin(angle) * radius,
-        }),
-        delta = b.clone().sub(a);
-      dummy.position.copy(a).add(b).multiplyScalar(0.5);
-      dummy.quaternion.setFromUnitVectors(up, delta.clone().normalize());
-      dummy.scale.set(1, delta.length(), 1);
-      dummy.updateMatrix();
-      mesh.current.setMatrixAt(i, dummy.matrix);
-    }
-    mesh.current.instanceMatrix.needsUpdate = true;
-    mesh.current.computeBoundingSphere();
-  }, [x, y, radius]);
-  return (
-    <instancedMesh ref={mesh} args={[undefined, undefined, 28]}>
-      <cylinderGeometry args={[0.001, 0.001, 1, 6]} />
-      <meshStandardMaterial color="#a1a9b4" metalness={0.65} roughness={0.4} />
-    </instancedMesh>
   );
 }

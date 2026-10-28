@@ -2,6 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { withHistoricalCatalog,assemblyGeometry, compatibility, validateConfiguration, productSchema } from '@tracklab/domain';
 import { defaultConfiguration, seedCatalog } from '../backend/src/catalog';
 describe('compatibility engine', () => {
+  it('keeps unknown fixed-cog and crank mounts unverified and rejects a known mounting mismatch', () => {
+    const initial=compatibility(defaultConfiguration,seedCatalog);
+    expect(initial.rules.find(r=>r.id==='fixed-cog-mount')?.state).toBe('unverified');
+    expect(initial.rules.find(r=>r.id==='chainring-mount')?.state).toBe('unverified');
+    const catalog=structuredClone(seedCatalog);
+    catalog.find(p=>p.id==='studio-classic')!.variants[0].specs.cogMount='threaded';
+    const drive=catalog.find(p=>p.id==='studio-46')!.variants[0].specs;
+    drive.cogMount='splined';drive.chainringMount='144BCD';drive.crankChainringMount='direct';
+    const result=compatibility(defaultConfiguration,catalog);
+    expect(result.rules.find(r=>r.id==='fixed-cog-mount')?.state).toBe('incompatible');
+    expect(result.rules.find(r=>r.id==='chainring-mount')?.state).toBe('incompatible');
+  });
   it('merges a saved retired variant into an existing product without exposing it for new selections',()=>{
     const snapshot=structuredClone(seedCatalog.find(p=>p.id==='studio-track')!);
     const current={...snapshot,variants:snapshot.variants.filter(v=>v.id!==defaultConfiguration.frameset)};

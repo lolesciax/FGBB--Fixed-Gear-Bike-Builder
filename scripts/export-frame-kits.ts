@@ -2,7 +2,13 @@
 import * as THREE from "three";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
 import { mkdir, writeFile } from "node:fs/promises";
-import { assemblyGeometry, frameAssetSchema } from "@tracklab/domain";
+import {
+  assemblyGeometry,
+  componentGeometry,
+  frameAssetSchema,
+} from "@tracklab/domain";
+import { createFrame } from "../frontend/src/features/builder/modeling/frame";
+import { disposeModel } from "../frontend/src/features/builder/modeling/primitives";
 import { manufacturerCatalog } from "../backend/src/manufacturer-catalog";
 
 Object.defineProperty(globalThis, "FileReader", {
@@ -35,55 +41,12 @@ for (const product of manufacturerCatalog.filter(
     group.name = `illustrative_${variant.id}`;
     const v = (p: { x: number; y: number }, z = 0) =>
       new THREE.Vector3((p.x - g.bb.x) / 1000, (g.bb.y - p.y) / 1000, z);
-    const paint = new THREE.MeshStandardMaterial({
-        color: variant.color,
-        metalness: 0.65,
-        roughness: 0.38,
-      }),
-      metal = new THREE.MeshStandardMaterial({
-        color: "#414957",
-        metalness: 0.5,
-        roughness: 0.4,
-      });
-    function tube(
-      name: string,
-      a: THREE.Vector3,
-      b: THREE.Vector3,
-      r: number,
-      material = paint,
-    ) {
-      const delta = b.clone().sub(a),
-        mesh = new THREE.Mesh(
-          new THREE.CylinderGeometry(r, r, delta.length(), 20),
-          material,
-        );
-      mesh.name = name;
-      mesh.position.copy(a.clone().add(b).multiplyScalar(0.5));
-      mesh.quaternion.setFromUnitVectors(
-        new THREE.Vector3(0, 1, 0),
-        delta.normalize(),
-      );
-      group.add(mesh);
-    }
-    tube("paint_top", v(g.seat), v(g.head), g.frameWidth / 2000);
-    tube("paint_down", v(g.bb), v(g.headBottom), (g.frameWidth + 8) / 2000);
-    tube("paint_seat", v(g.bb), v(g.seat), g.frameWidth / 2000);
-    tube("paint_head", v(g.head), v(g.headBottom), (g.frameWidth + 8) / 2000);
-    for (const z of [-0.045, 0.045]) {
-      tube(`paint_seatstay_${z}`, v(g.seat), v(g.rear, z), 0.007);
-      tube(`paint_chainstay_${z}`, v(g.bb, z), v(g.rear, z), 0.009);
-      const curve = new THREE.QuadraticBezierCurve3(
-        v(g.headBottom, z),
-        String(variant.specs.forkProfile||'').startsWith('straight')?v({x:(g.headBottom.x+g.front.x)/2,y:g.headBottom.y/2},z):v({ x: g.headBottom.x + 35, y: g.headBottom.y + 160 }, z),
-        v(g.front, z),
-      );
-      const fork = new THREE.Mesh(
-        new THREE.TubeGeometry(curve, 24, 0.011, 12, false),
-        metal,
-      );
-      fork.name = `fork_${z}`;
-      group.add(fork);
-    }
+    const model = createFrame(
+      componentGeometry({ frameset: variant.specs }),
+      variant.color,
+    );
+    model.position.set(-g.bb.x / 1000, g.bb.y / 1000, 0);
+    group.add(model);
     for (const [name, p] of Object.entries({
       rear: g.rear,
       front: g.front,
@@ -144,14 +107,10 @@ for (const product of manufacturerCatalog.filter(
         rotation: [0, 0, 0],
         origin: "bottom-bracket",
         units: "metres",
-        revision: "frame-kit-v1",
+        revision: "frame-kit-v2",
       }),
     );
-    group.traverse((node) => {
-      if (node instanceof THREE.Mesh) node.geometry.dispose();
-    });
-    paint.dispose();
-    metal.dispose();
+    disposeModel(group);
   }
 await writeFile(
   new URL("../packages/domain/src/frame-assets.json", import.meta.url),

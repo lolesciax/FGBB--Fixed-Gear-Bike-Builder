@@ -1,6 +1,10 @@
 import { useId } from "react";
-import { Bike, Cog, SlidersHorizontal } from "lucide-react";
-import { assemblyGeometry, type Product } from "@tracklab/domain";
+import { Cog, SlidersHorizontal } from "lucide-react";
+import {
+  assemblyGeometry,
+  handlebarPoints,
+  type Product,
+} from "@tracklab/domain";
 export function PartThumbnail({
   product,
   color,
@@ -11,7 +15,8 @@ export function PartThumbnail({
   variant?: Product["variants"][number];
 }) {
   const uid = useId().replace(/:/g, "");
-  if(product.slot==='frameset'&&!product.illustrative&&!product.visual) return <span className="unavailable-thumbnail">Preview unavailable</span>;
+  if (product.slot === "frameset" && !product.illustrative && !product.visual)
+    return <span className="unavailable-thumbnail">Preview unavailable</span>;
   if (product.slot === "frameset") {
     const g = assemblyGeometry(
       variant?.specs ||
@@ -85,11 +90,38 @@ export function PartThumbnail({
         )}
       </svg>
     );
-  const I =
-    product.slot === "drivetrain"
-      ? Cog
-      : product.slot === "cockpit"
-        ? Bike
-        : SlidersHorizontal;
+  if (product.slot === "cockpit") {
+    const points = handlebarPoints(
+        variant?.specs || product.variants[0].specs,
+      ).map(([x, y, z]) => ({ x: z * 1000, y: -x * 650 - y * 950 })),
+      xs = points.map((p) => p.x),
+      ys = points.map((p) => p.y),
+      minX = Math.min(...xs) - 22,
+      maxX = Math.max(...xs) + 22,
+      minY = Math.min(...ys) - 22,
+      maxY = Math.max(...ys) + 22;
+    return (
+      <svg
+        viewBox={`${minX} ${minY} ${maxX - minX} ${Math.max(90, maxY - minY)}`}
+        aria-hidden="true"
+      >
+        <path
+          d={points.map((p, i) => `${i ? "L" : "M"}${p.x} ${p.y}`).join(" ")}
+          fill="none"
+          stroke="#404b5a"
+          strokeWidth="15"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M0 0L0 40"
+          stroke="#798391"
+          strokeWidth="22"
+          strokeLinecap="round"
+        />
+      </svg>
+    );
+  }
+  const I = product.slot === "drivetrain" ? Cog : SlidersHorizontal;
   return <I size={70} strokeWidth={1.2} />;
 }

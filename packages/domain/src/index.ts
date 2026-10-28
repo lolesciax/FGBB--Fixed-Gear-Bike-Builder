@@ -1,11 +1,12 @@
 import { z } from 'zod';
 import frameAssets from './frame-assets.json';
 export { brandSchema, modelRecordSchema, type CatalogBrand, type ModelRecord } from './catalog-registry';
-export const frameAssetSchema=z.object({variantId:z.string(),url:z.string().regex(/^\/models\/frames\/[a-z0-9-]+\.glb$/),fidelity:z.literal('illustrative'),license:z.literal('CC0-1.0'),source:z.string(),scale:z.literal(1),rotation:z.tuple([z.number(),z.number(),z.number()]),origin:z.literal('bottom-bracket'),units:z.literal('metres'),revision:z.literal('frame-kit-v1')}).strict();
+export const frameAssetSchema=z.object({variantId:z.string(),url:z.string().regex(/^\/models\/frames\/[a-z0-9-]+\.glb$/),fidelity:z.literal('illustrative'),license:z.literal('CC0-1.0'),source:z.string(),scale:z.literal(1),rotation:z.tuple([z.number(),z.number(),z.number()]),origin:z.literal('bottom-bracket'),units:z.literal('metres'),revision:z.enum(['frame-kit-v1','frame-kit-v2'])}).strict();
 export const registeredFrameAssets=z.array(frameAssetSchema).parse(frameAssets);
 export { quotaPolicySchema, defaultQuotaPolicy, type QuotaPolicy } from './policy';
 export { visualizationInfo } from './fidelity';
 export { assemblyGeometry, assetRegistry } from './visual';
+export { componentGeometry, cockpitDimensions, handlebarPoints, forkBladePoints, wheelDimensions, spokeEndpoints, pitchRadius, barTypes, type Position, type BarType, type BicycleGeometry } from './components';
 
 export const slots = ['frameset', 'wheels', 'tires', 'cockpit', 'drivetrain', 'saddle'] as const;
 export const slotSchema = z.enum(slots);
@@ -77,6 +78,8 @@ export function compatibility(config: Configuration, catalog: Product[]) {
   check('bottom-bracket', 'frameset', 'bottomBracket', 'drivetrain', 'bottomBracket', 'Bottom bracket interface');
   check('chain-width', 'drivetrain', 'chainWidth', 'wheels', 'cogWidth', 'Chain and cog width');
   check('chainline', 'drivetrain', 'chainline', 'wheels', 'chainline', 'Chainline');
+  check('fixed-cog-mount', 'drivetrain', 'cogMount', 'wheels', 'cogMount', 'Fixed cog and rear hub mounting');
+  check('chainring-mount', 'drivetrain', 'chainringMount', 'drivetrain', 'crankChainringMount', 'Chainring and crank mounting');
   check('brakes', 'frameset', 'brakeMount', 'cockpit', 'brakeMount', 'Brake interface');
   check('front-brake', 'frameset', 'frontBrakeType', 'wheels', 'frontBrakeType', 'Front brake and hub provision');
   check('headset', 'frameset', 'headset', 'cockpit', 'headset', 'Headset assembly');

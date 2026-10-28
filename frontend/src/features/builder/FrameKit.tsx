@@ -3,6 +3,7 @@ import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import type { Variant } from "@tracklab/domain";
 import { useKitPaint } from "./MaterialMotion";
+import { frameRequestUrl } from "./studio-settings";
 export function FrameKit({
   variant,
   bb,
@@ -13,7 +14,7 @@ export function FrameKit({
   reducedMotion?: boolean;
 }) {
   const asset = variant.asset3D!;
-  const gltf = useGLTF(asset.url);
+  const gltf = useGLTF(frameRequestUrl(asset));
   const scene = useMemo(() => {
     const clone = gltf.scene.clone(true);
     clone.traverse((node) => {

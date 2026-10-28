@@ -45,7 +45,7 @@ export function HomePage() {
             className="hero-dark"
             src="/studio/studio-dark.png"
             width="1438"
-            height="800"
+            height="798"
             fetchPriority="high"
             alt="Original TrackLab fixed-gear illustration in a graphite studio"
           />
@@ -53,7 +53,7 @@ export function HomePage() {
             className="hero-light"
             src="/studio/studio-light.png"
             width="1438"
-            height="800"
+            height="798"
             fetchPriority="high"
             alt="Original TrackLab fixed-gear illustration in a light studio"
           />
@@ -100,7 +100,7 @@ export function HomePage() {
               <div>
                 <h3>Explore in 2D and 3D</h3>
                 <p>
-                  The same setup, with seven camera views and two studio
+                  The same setup, with eight camera views and two studio
                   environments.
                 </p>
               </div>

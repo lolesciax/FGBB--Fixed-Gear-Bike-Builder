@@ -20,6 +20,7 @@ import { ProceduralAssembly } from "./ProceduralAssembly";
 import { Bike2D } from "./Bike2D";
 import {
   autoQuality,
+  frameRequestUrl,
   type CameraView,
   type StudioEnvironment,
   type GraphicsQuality,
@@ -81,7 +82,7 @@ export default function Bike3D(props: Props) {
       props.catalog,
       props.configuration.frameset,
     )?.variant,
-    asset = frame?.asset3D?.url;
+    asset = frame?.asset3D ? frameRequestUrl(frame.asset3D) : undefined;
   const frameReady = useCallback(() => {
     setDisplayed(props.configuration);
     setLoading(false);
@@ -122,6 +123,12 @@ export default function Bike3D(props: Props) {
       <div
         className="bike3d-wrapper"
         data-frame-variant={displayed.frameset}
+        data-cockpit-variant={displayed.cockpit}
+        data-cockpit-shape={
+          variantById(props.catalog, displayed.cockpit)?.variant.specs.shape ||
+          "unknown"
+        }
+        data-geometry-revision="components-v2"
         data-studio={studio}
         data-quality={quality}
         data-camera-moving={moving}

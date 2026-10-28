@@ -31,6 +31,10 @@ test('3D authorization loads a real canvas and both views retain the finish', as
 });
 test('register, save, edit existing build, then duplicate and delete in the garage', async ({ page }) => {
   await page.goto('/builder'); await page.getByRole('button', { name: 'Studio Track Acid finish' }).click();
+  await page.getByRole('button', {name:'Cockpit',exact:true}).click();
+  await page.getByLabel('Handlebar type').selectOption('flat');
+  await page.getByRole('button',{name:'Select Straight / flat bar',exact:true}).click();
+  await page.getByRole('button', {name:'Frameset',exact:true}).click();
   await page.getByRole('textbox', { name: 'Build name', exact: true }).fill('Morning ride');
   await page.getByRole('button', { name: 'Create account to save', exact: true }).click(); const dialog = page.getByRole('dialog');
   await dialog.getByLabel('Your name').fill('Browser Rider'); await dialog.getByLabel('Email address').fill(`browser-${Date.now()}@example.com`); await dialog.getByLabel('Password', { exact: true }).fill('my-browser-test-passphrase'); await dialog.getByRole('button', { name: 'Create your account', exact: true }).click();
@@ -60,6 +64,8 @@ test('register, save, edit existing build, then duplicate and delete in the gara
   await page.getByRole('link', { name: 'My garage', exact: true }).click(); await expect(page.getByText('1 of 8 builds used')).toBeVisible(); await expect(page.getByRole('heading', { name: 'Morning ride', exact: true })).toBeVisible();
   const download=page.waitForEvent('download');await page.getByRole('button',{name:'Export image of Morning ride',exact:true}).click();const image=await download;expect(image.suggestedFilename()).toBe('Morning-ride.svg');
   const svg=await readFile((await image.path())!,'utf8');
+  expect(svg).toContain('data-cockpit-variant="studio-flat"');
+  expect(svg).toContain('data-cockpit-shape="flat"');
   const dimensions=await page.evaluate(svg=>new Promise<number[]>((resolve,reject)=>{const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'})),image=new Image();image.onload=()=>{URL.revokeObjectURL(url);resolve([image.naturalWidth,image.naturalHeight]);};image.onerror=()=>reject(new Error('SVG did not decode'));image.src=url;}),svg);
   expect(dimensions).toEqual([1600,1000]);
   await page.getByRole('button', { name: 'Duplicate Morning ride', exact: true }).click(); await expect(page.getByText('2 of 8 builds used')).toBeVisible();
