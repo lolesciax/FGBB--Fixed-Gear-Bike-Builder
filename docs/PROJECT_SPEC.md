@@ -31,6 +31,8 @@ Registered accounts default to eight active builds, three creations per rolling 
 
 ## New visual and interaction requirements
 
+The [cinematic studio brief](requirements/cinematic-studio.md) prioritizes the existing model presentation, smooth cameras, two studio environments, optional turntable, quality controls and complete-page polish. Individual stem/crank/cog/hub/seatpost customization is postponed. [Audit and design reference](development/cinematic-audit.md). Existing access policy and the approved local development bypass are preserved.
+
 - Replace the green brand identity with graphite, titanium, off-white and electric blue across the application. Green is reserved for semantic success/verified compatibility. Existing green bicycle finish options are component choices, not the brand palette; default illustrative presentation must be neutral.
 - Use centralized CSS variables and Tailwind semantic tokens, readable typography, consistent controls and complete light/dark modes. Preserve saved theme preferences and verify WCAG 2.2 AA text contrast.
 - Prioritize the builder: compact component navigation, largest region for the bicycle, compact readable selector, specifications/compatibility feedback, persistent view/save controls and synchronized viewer state.

@@ -22,6 +22,12 @@ The initial commit records the existing working development baseline together. F
 
 ## Current phase status after continuation audit
 
+## Task · Cinematic presentation audit and concepts — completed and verified, 28 October 2026
+
+- Inspected the actual isolated landing, builder, 3D, catalog, account and admin screens and captured a baseline before implementation. Documented abrupt cameras, flat lighting, absent environment/quality/motion controls, loading/selection gaps and secondary-page hierarchy issues in [the audit](cinematic-audit.md).
+- Archived the full brief and generated coordinated desktop/mobile builder, landing hero/details, collection and account/auth references. API-backed names, finishes, quota state and fidelity override incorrect generated content; reference bicycle imagery is not shipped as an authentic model.
+- Implementation and profiling are **not yet verified** in this audit milestone. Keep the successful workspace structure, native dialog behavior and demand rendering. No backend quota changes, component-slot expansion, Atlas data changes or deployment.
+
 The [consolidated specification](../PROJECT_SPEC.md) adds UI/UX acceptance to every phase. No whole phase is claimed complete merely because its earlier functional milestone passed. Existing CI evidence remains valid for those tested behaviors, not for the new design criteria.
 
 | Phase | Status | Verified/implemented behavior | Missing acceptance and next dependencies |
