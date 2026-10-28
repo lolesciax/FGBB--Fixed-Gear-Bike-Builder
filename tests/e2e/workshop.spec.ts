@@ -1,15 +1,16 @@
 import { test, expect } from '@playwright/test';
+import {readFile} from 'node:fs/promises';
 test('guest selection, undo, quota persistence and compatibility rejection', async ({ page }) => {
   await page.goto('/builder');
   const acid = page.getByRole('button', { name: 'Studio Track Acid finish' }); await expect(acid).toBeEnabled();
-  await acid.click(); await expect(acid).toHaveAttribute('aria-pressed', 'true'); await expect(page.getByText('11 of 12 component changes left', { exact: false })).toBeVisible();
+  await acid.click(); await expect(acid).toHaveAttribute('aria-pressed', 'true'); await expect(page.getByText('23 changes remaining', { exact: false })).toBeVisible();
   await page.getByRole('button', { name: 'Undo last selection' }).click(); await expect(page.getByRole('button', { name: 'Studio Track Graphite finish' })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Tires', exact: true }).click(); await page.getByRole('button', { name: 'Select Road 28 · tan wall' }).click();
   await page.getByRole('button', { name: 'Frameset', exact: true }).click(); await page.getByRole('button', { name: 'Select Studio Pursuit', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('conflicts with your current parts');
   await expect(page.getByRole('button', { name: 'Select Studio Track', exact: true })).toHaveAttribute('aria-pressed', 'true');
   page.once('dialog', d => d.accept()); await page.reload();
-  await expect(page.getByText('9 of 12 component changes left', { exact: false })).toBeVisible();
+  await expect(page.getByText('21 changes remaining', { exact: false })).toBeVisible();
 });
 test('3D authorization loads a real canvas and both views retain the finish', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
@@ -37,9 +38,30 @@ test('register, save, edit existing build, then duplicate and delete in the gara
   const update = page.waitForResponse(r => /\/api\/builds\/[a-f0-9]{24}$/.test(r.url()) && r.request().method() === 'PATCH');
   await page.getByRole('button', { name: 'Save build', exact: true }).click(); expect((await update).ok()).toBe(true);
   await expect(page.getByTitle('No unsaved changes')).toBeVisible();
-  await page.getByRole('link', { name: 'My garage', exact: true }).click(); await expect(page.getByText('1 of 5 builds used')).toBeVisible(); await expect(page.getByRole('heading', { name: 'Morning ride', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Duplicate Morning ride', exact: true }).click(); await expect(page.getByText('2 of 5 builds used')).toBeVisible();
-  page.once('dialog', d => d.accept()); await page.getByRole('button', { name: 'Delete Morning ride (copy)', exact: true }).click(); await expect(page.getByText('1 of 5 builds used')).toBeVisible();
+  await page.getByLabel('Autosave',{exact:true}).check();
+  await page.getByRole('textbox',{name:'Build name',exact:true}).fill('Morning ride updated');
+  await expect(page.getByTitle('No unsaved changes')).toBeVisible();
+  await page.getByRole('textbox',{name:'Build name',exact:true}).fill('Morning ride');
+  await expect(page.getByTitle('No unsaved changes')).toBeVisible();
+  let rejectSave=true;
+  await page.route('**/api/builds/*',route=>{if(route.request().method()==='PATCH'&&rejectSave){rejectSave=false;return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{code:'TEMPORARY',message:'Temporary save failure'}})});}return route.continue();});
+  await page.getByRole('textbox',{name:'Build name',exact:true}).fill('Morning ride retry');
+  await expect(page.getByRole('alert')).toContainText('Temporary save failure');
+  await expect(page.getByLabel('Autosave',{exact:true})).not.toBeChecked();
+  await page.getByRole('button',{name:'Retry save',exact:true}).click();
+  await expect(page.getByTitle('No unsaved changes')).toBeVisible();
+  await page.getByRole('textbox',{name:'Build name',exact:true}).fill('Morning ride');
+  await page.getByRole('button',{name:'Save build',exact:true}).click();
+  await expect(page.getByTitle('No unsaved changes')).toBeVisible();
+  await page.unroute('**/api/builds/*');
+  await page.getByLabel('Autosave',{exact:true}).uncheck();
+  await page.getByRole('link', { name: 'My garage', exact: true }).click(); await expect(page.getByText('1 of 8 builds used')).toBeVisible(); await expect(page.getByRole('heading', { name: 'Morning ride', exact: true })).toBeVisible();
+  const download=page.waitForEvent('download');await page.getByRole('button',{name:'Export image of Morning ride',exact:true}).click();const image=await download;expect(image.suggestedFilename()).toBe('Morning-ride.svg');
+  const svg=await readFile((await image.path())!,'utf8');
+  const dimensions=await page.evaluate(svg=>new Promise<number[]>((resolve,reject)=>{const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'})),image=new Image();image.onload=()=>{URL.revokeObjectURL(url);resolve([image.naturalWidth,image.naturalHeight]);};image.onerror=()=>reject(new Error('SVG did not decode'));image.src=url;}),svg);
+  expect(dimensions).toEqual([1600,1000]);
+  await page.getByRole('button', { name: 'Duplicate Morning ride', exact: true }).click(); await expect(page.getByText('2 of 8 builds used')).toBeVisible();
+  page.once('dialog', d => d.accept()); await page.getByRole('button', { name: 'Delete Morning ride (copy)', exact: true }).click(); await expect(page.getByText('1 of 8 builds used')).toBeVisible();
 });
 test('mobile workspace, account dialog and dark theme fit the viewport', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 }); await page.goto('/builder');
@@ -60,15 +82,15 @@ test('a guest draft and its name survive catalog browsing without another change
   await page.getByRole('link', { name: 'Builder', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Studio Track Acid finish' })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('textbox', { name: 'Build name', exact: true })).toHaveValue('My temporary idea');
-  await expect(page.getByText('11 of 12 component changes left', { exact: false })).toBeVisible();
+  await expect(page.getByText('23 changes remaining', { exact: false })).toBeVisible();
   expect(requests.filter(url => /\/workspace(?:\/change)?$/.test(url))).toEqual([]);
 });
 test('guest exhaustion locks selections while keeping the bicycle, specifications and view controls', async ({ page }) => {
   await page.goto('/builder');
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 24; i++) {
     const finish = i % 2 ? 'Graphite' : 'Forest';
     await page.getByRole('button', { name: `Studio Track ${finish} finish` }).click();
-    await expect(page.getByText(`${11 - i} of 12 component changes left`, { exact: false })).toBeVisible();
+    await expect(page.getByText(`${23 - i} changes remaining`, { exact: false })).toBeVisible();
   }
   await expect(page.getByRole('button', { name: 'Studio Track Acid finish' })).toBeDisabled();
   await expect(page.getByRole('combobox', { name: 'Studio Track variant' })).toBeDisabled();

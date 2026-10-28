@@ -1,4 +1,4 @@
-import type { Product } from "@tracklab/domain";
+import { registeredFrameAssets, type Product } from "@tracklab/domain";
 
 const reviewedAt = "2026-10-27T13:50:00.000Z";
 const visual: Product["visual"] = {
@@ -37,7 +37,7 @@ function frame(
       ].filter((key) => !["geometry", "colorApproximate"].includes(key)),
       limitations: limits,
     },
-    variants,
+    variants: variants.map(variant=>({...variant,...(registeredFrameAssets.find(asset=>asset.variantId===variant.id)?{asset3D:registeredFrameAssets.find(asset=>asset.variantId===variant.id)}:{})})),
   };
 }
 const laSource =

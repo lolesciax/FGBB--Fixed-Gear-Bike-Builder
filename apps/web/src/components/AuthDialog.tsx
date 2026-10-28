@@ -10,7 +10,7 @@ type Fields = z.infer<typeof schema>;
 export function AuthDialog({ mode: initialMode, close }: { mode: AuthMode; close: () => void }) {
   const [mode, setMode] = useState(initialMode), [error, setError] = useState(''), [message, setMessage] = useState('');
   const dialog = useRef<HTMLDialogElement>(null);
-  const { refresh, notify } = useApp();
+  const { refresh, notify, session } = useApp();
   const { register, handleSubmit, setError: fieldError, formState: { errors, isSubmitting }, setFocus } = useForm<Fields>({ resolver: zodResolver(schema), defaultValues: { name: '', email: '', password: '' } });
   useEffect(() => { const node = dialog.current; const previous = document.activeElement as HTMLElement; node?.showModal(); setFocus('email'); return () => { node?.close(); previous?.focus(); }; }, [setFocus]);
   async function submit(values: Fields) {
@@ -27,7 +27,7 @@ export function AuthDialog({ mode: initialMode, close }: { mode: AuthMode; close
     <button className="icon-button close-dialog" aria-label="Close sign in" onClick={close}><X size={20}/></button>
     <span className="wordmark">TRACKLAB</span>
     <h2>{mode === 'register' ? 'Make room for your next ride.' : mode === 'forgot' ? 'Back to your workshop.' : 'Good to have you back.'}</h2>
-    <p>{mode === 'register' ? 'Save up to five builds, keep your ideas together, and make them your own.' : mode === 'forgot' ? 'We’ll send a link to reset your password.' : 'Sign in to pick up where you left off.'}</p>
+    <p>{mode === 'register' ? `Save up to ${session.policy.builds} builds, edit your bikes, and share verified public builds.` : mode === 'forgot' ? 'We’ll send a link to reset your password.' : 'Sign in to pick up where you left off.'}</p>
     <form onSubmit={handleSubmit(submit)} noValidate>
       {mode === 'register' && <label>Your name<input autoComplete="name" {...register('name')} aria-invalid={!!errors.name}/>{errors.name && <span className="field-error">{errors.name.message}</span>}</label>}
       <label>Email address<input type="email" autoComplete="email" {...register('email')} aria-invalid={!!errors.email}/>{errors.email && <span className="field-error">{errors.email.message}</span>}</label>

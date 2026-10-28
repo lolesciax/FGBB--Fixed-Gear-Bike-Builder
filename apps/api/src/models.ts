@@ -3,7 +3,7 @@ const options = { timestamps: true };
 const user = new Schema({ email: { type: String, required: true, unique: true }, name: { type: String, required: true }, passwordHash: { type: String, required: true, select: false }, verified: { type: Boolean, default: false }, role: { type: String, enum: ['user', 'admin'], default: 'user' }, theme: { type: String, enum: ['light', 'dark', 'system'], default: 'system' } }, options);
 const session = new Schema({ tokenHash: { type: String, required: true, unique: true }, csrf: { type: String, required: true }, userId: { type: Schema.Types.ObjectId, ref: 'User', index: true }, guestId: String, expiresAt: { type: Date, required: true } }, options);
 session.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-const subject = new Schema({ _id: String, sequence: { type: Number, default: 0 }, changes: { type: [Number], default: [] }, previews: { type: [Number], default: [] }, creates: { type: [Number], default: [] }, saves: { type: [Number], default: [] }, exports: { type: [Number], default: [] }, expiresAt: Date }, options);
+const subject = new Schema({ _id: String, previewId:String, previewUntil:Date, sequence: { type: Number, default: 0 }, changes: { type: [Number], default: [] }, previews: { type: [Number], default: [] }, creates: { type: [Number], default: [] }, saves: { type: [Number], default: [] }, exports: { type: [Number], default: [] }, expiresAt: Date }, options);
 subject.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 const product = new Schema({ _id: String, data: { type: Schema.Types.Mixed, required: true } }, options);
 product.index({ 'data.status': 1, 'data.slot': 1, 'data.brand': 1 });
@@ -12,7 +12,7 @@ const build = new Schema({ owner: { type: Schema.Types.ObjectId, required: true,
 build.index({ owner: 1, updatedAt: -1 });
 const token = new Schema({ userId: { type: Schema.Types.ObjectId, required: true, index: true }, hash: { type: String, unique: true, required: true }, kind: { type: String, enum: ['verify', 'reset'], required: true }, expiresAt: { type: Date, required: true } }, options);
 token.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-const audit = new Schema({ actor: { type: String, required: true }, action: { type: String, required: true }, target: String, expiresAt: { type: Date, default: () => new Date(Date.now() + 90 * 86400000) } }, options);
+const audit = new Schema({ actor: { type: String, required: true }, action: { type: String, required: true }, target: String, details:Schema.Types.Mixed, expiresAt: { type: Date, default: () => new Date(Date.now() + 90 * 86400000) } }, options);
 audit.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 export const User = mongoose.model('User', user);
 export const Session = mongoose.model('Session', session);
@@ -23,4 +23,7 @@ export const Brand = mongoose.model('Brand', new Schema({ _id: String, name: { t
 export const Build = mongoose.model('Build', build);
 export const RecoveryToken = mongoose.model('RecoveryToken', token);
 export const Audit = mongoose.model('Audit', audit);
-export async function initializeModels() { await Promise.all([User, Session, Subject, ProductModel, Brand, Build, RecoveryToken, Audit].map(m => m.init())); }
+export const AccessPolicy = mongoose.model('AccessPolicy', new Schema({_id:String,version:{type:Number,required:true},data:{type:Schema.Types.Mixed,required:true}},options));
+const receipt=new Schema({_id:String,expiresAt:Date});receipt.index({expiresAt:1},{expireAfterSeconds:0});
+export const RequestReceipt=mongoose.model('RequestReceipt',receipt);
+export async function initializeModels() { await Promise.all([User, Session, Subject, ProductModel, Brand, Build, RecoveryToken, Audit, AccessPolicy, RequestReceipt].map(m => m.init())); }

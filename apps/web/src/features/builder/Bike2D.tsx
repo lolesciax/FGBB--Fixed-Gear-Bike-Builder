@@ -27,6 +27,8 @@ export function Bike2D({
     variantById(catalog, configuration[slot])?.variant;
   const frame = get("frameset"),
     g = assemblyGeometry(frame?.specs);
+  const paint=frame?.color||'#535963';
+  const highlight='#'+[1,3,5].map(index=>Math.round(parseInt(paint.slice(index,index+2),16)*.86+255*.14).toString(16).padStart(2,'0')).join('');
   const {
     rear,
     front,
@@ -37,12 +39,15 @@ export function Bike2D({
     saddle,
     bar,
     radius,
-    bounds,
+    bounds:frameBounds,
   } = g;
   const deep = get("wheels")?.specs.rimDepth === 60,
     tan = get("tires")?.specs.sidewall === "tan";
+  const bullhorn=get('cockpit')?.specs.shape==='bullhorn';
   const riser = get("cockpit")?.specs.shape === "riser",
     comfort = get("saddle")?.specs.shape === "comfort";
+  const bounds={...frameBounds,y:Math.min(frameBounds.y,bar.y-(bullhorn?110:riser?45:30)-12)};
+  bounds.height=radius+12-bounds.y;
   const margin = compact ? 12 : 16;
   const interactive = (slot: Slot) =>
     onSelect
@@ -70,7 +75,7 @@ export function Bike2D({
       <path
         d={`M${a.x} ${a.y}L${b.x} ${b.y}`}
         stroke="#21252b"
-        strokeWidth={width + 3}
+        strokeWidth={width + 1.5}
       />
       <path
         d={`M${a.x} ${a.y}L${b.x} ${b.y}`}
@@ -98,7 +103,7 @@ export function Bike2D({
         <linearGradient id={`${uid}-paint`} x1="0" y1="0" x2=".2" y2="1">
           <stop stopColor={frame?.color || "#535963"} />
           <stop offset=".35" stopColor={frame?.color || "#535963"} />
-          <stop offset=".5" stopColor="#8d939a" />
+          <stop offset=".5" stopColor={highlight} />
           <stop offset=".63" stopColor={frame?.color || "#535963"} />
           <stop offset="1" stopColor="#272c33" />
         </linearGradient>
@@ -227,7 +232,7 @@ export function Bike2D({
           )}
           <path
             d={
-              riser
+              bullhorn ? `M${bar.x-12} ${bar.y} Q${bar.x+70} ${bar.y-5} ${bar.x+110} ${bar.y-85}` : riser
                 ? `M${bar.x - 12} ${bar.y}L${bar.x + 40} ${bar.y - 28}L${bar.x + 108} ${bar.y - 28}`
                 : `M${bar.x - 10} ${bar.y} C${bar.x + 75} ${bar.y - 8} ${bar.x + 112} ${bar.y + 18} ${bar.x + 109} ${bar.y + 65} Q${bar.x + 111} ${bar.y + 114} ${bar.x + 50} ${bar.y + 121} L${bar.x + 20} ${bar.y + 118}`
             }

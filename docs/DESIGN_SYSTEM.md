@@ -46,6 +46,8 @@ Preserve light/dark preferences. Check contrast, focus, reduced motion, long lab
 
 ## Primary implementation references
 
+- The [studio landing concept](design/home-studio-reference.png) guides the bicycle-led hero, paired actions and compact frame shelf. Compare the actual [previous landing](design/home-before-upgrade.png), [implemented desktop](design/home-after-upgrade.png) and [mobile](design/home-after-mobile.png). Use the live SVG with honest fidelity disclosure; concept imagery is not a manufacturer asset. Account benefits must read the current server policy.
+
 - The [compact builder refinement](design/builder-compact-reference.png) supersedes the expanded summary/heading layout below. Use a compact toolbar, guest disclosure, 68px desktop summary, dominant neutral studio canvas and independently scrolling inspector. Product thumbnails must use actual independent geometry, not the generated branded images. Registration wording must match the actual flow: guests see Create account to save.
 
 - [Desktop graphite workspace](design/builder-graphite-desktop.png), generated with the built-in Image Gen tool as a full primary-screen reference.

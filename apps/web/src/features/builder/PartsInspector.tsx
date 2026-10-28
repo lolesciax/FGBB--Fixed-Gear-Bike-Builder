@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Check, Search } from "lucide-react";
 import {
+  visualizationInfo,
   slots,
   variantById,
   type Configuration,
@@ -164,6 +165,7 @@ export function PartsInspector({
               : product.variants.find(
                   (variant) => variant.label === "Graphite",
                 ) || product.variants[0];
+            const fidelity = visualizationInfo(product, shown);
             return (
               <article
                 data-catalog-kind={
@@ -189,7 +191,11 @@ export function PartsInspector({
                   onClick={() => onSelect(slot, shown.id)}
                 >
                   <div className="part-thumbnail">
-                    <PartThumbnail product={product} color={shown.color} />
+                    <PartThumbnail
+                      product={product}
+                      variant={shown}
+                      color={shown.color}
+                    />
                   </div>
                   <div className="product-identity">
                     <span className="product-brand">{product.brand}</span>
@@ -264,6 +270,17 @@ export function PartsInspector({
                 <details className="product-specs">
                   <summary>Specifications</summary>
                   <p>{product.description}</p>
+                  <p className="fidelity-summary">
+                    {fidelity.specifications}. {fidelity.fidelity}. 2D:{" "}
+                    {fidelity.mode2D ? "supported" : "unavailable"} / 3D:{" "}
+                    {fidelity.mode3D ? "supported" : "unavailable"}.
+                  </p>
+                  <p className="fidelity-summary">
+                    {fidelity.limitations}
+                    {fidelity.missing.length
+                      ? " Unverified anchors: " + fidelity.missing.join(", ")
+                      : ""}
+                  </p>
                   <dl>
                     {Object.entries(shown.specs)
                       .filter(

@@ -7,7 +7,7 @@ import { createServer } from 'node:http';
 import { createApp } from '../apps/api/src/app';
 import { parseConfig } from '../apps/api/src/config';
 import { DevelopmentRateStore, sign } from '../apps/api/src/security';
-import { Build, ProductModel, Subject, User, initializeModels, Session } from '../apps/api/src/models';
+import { Build, ProductModel, Subject, User, initializeModels, Session, Audit } from '../apps/api/src/models';
 import { seedCatalog, defaultConfiguration } from '../apps/api/src/catalog';
 import { importCatalog } from '../apps/api/src/catalog-import';
 import { Brand } from '../apps/api/src/models';
@@ -27,6 +27,30 @@ beforeAll(async () => { repl = await MongoMemoryReplSet.create({ binary: { downl
 beforeEach(async () => { for (const collection of Object.values(mongoose.connection.collections)) await collection.deleteMany({}); for (const p of seedCatalog) await ProductModel.create({ _id: p.id, data: p }); letters = []; app = createApp(config, new DevelopmentRateStore(), async (email, kind, token) => { letters.push({ email, kind, token }); }); });
 afterAll(async () => { await mongoose.disconnect(); await repl?.stop(); });
 describe('authentication and authorization', () => {
+  it('protects and audits bounded policy changes while preserving existing builds',async()=>{
+    const c=await member();await c.agent.get('/api/admin/policy').expect(403);
+    await User.updateOne({_id:c.userId},{$set:{role:'admin'}});
+    const original=(await c.agent.get('/api/admin/policy').expect(200)).body;
+    expect(original.policy.builds).toBe(8);expect(original.policy.guestChanges).toBe(24);
+    const request=()=>c.agent.put('/api/admin/policy').set('Origin',origin).set('X-CSRF-Token',c.csrf);
+    await request().send({version:original.version,policy:{...original.policy,builds:999}}).expect(422);
+    await Build.create(Array.from({length:3},()=>({...build,owner:c.userId})));
+    await request().send({version:original.version,policy:{...original.policy,builds:2}}).expect(200);
+    expect(await Build.countDocuments()).toBe(3);
+    await post(c,'/builds',build).expect(409);
+    expect((await c.agent.get('/api/session')).body.policy.builds).toBe(2);
+    await request().send({version:original.version,policy:original.policy}).expect(409);
+    expect(await Audit.countDocuments({action:'policy.update'})).toBe(1);
+  });
+  it('exports owned illustrations as SVG and shares the eight-export allowance with information exports',async()=>{
+    const c=await member(),g=await guest(),created=(await post(c,'/builds',build).expect(201)).body;
+    await post(g,`/builds/${created._id}/export-image`).expect(401);
+    const picture=(await post(c,`/builds/${created._id}/export-image`).expect(200)).body;
+    expect(picture.svg).toContain('<svg xmlns=');expect(picture.svg).toContain(defaultConfiguration.frameset);expect(picture.svg).not.toContain('<script');
+    expect(picture.filename).toBe('Daily-rider.svg');
+    for(let i=1;i<8;i++)await post(c,`/builds/${created._id}/export`).expect(200);
+    await post(c,`/builds/${created._id}/export-image`).expect(409);
+  });
   it('upgrades the old draft placeholder but retains an edited research draft', async()=>{
     const placeholder={id:'cinelli-vigorelli',brand:'Cinelli',name:'Vigorelli frame-kit',slot:'frameset',status:'draft',illustrative:false,description:'Manufacturer reference record. Authentic model geometry and licensed product assets are not registered, so selection is unavailable.',variants:[{id:'cinelli-vigorelli-reference',label:'Reference only',color:'#808080',specs:{}}]};
     await ProductModel.updateOne({_id:placeholder.id},{$set:{data:placeholder}});
@@ -79,20 +103,52 @@ describe('guest restrictions', () => {
     expect(restored.body.user).toBeNull(); expect(restored.body.usage.changes).toBe(1);
   });
   it('does not charge repeated selections, browsing or invalid compatibility', async () => { const c = await guest(); const w = await workspace(c); await post(c, '/workspace/change', { token: w.token, slot: 'wheels', variantId: 'studio-classic' }).expect(200); await c.agent.get('/api/catalog?slot=tires').expect(200); const next = await post(c, '/workspace/change', { token: w.token, slot: 'tires', variantId: 'studio-tire28' }).expect(200); await post(c, '/workspace/change', { token: next.body.token, slot: 'frameset', variantId: 'studio-pursuit-forest' }).expect(422); const s = await c.agent.get('/api/session'); expect(s.body.usage.changes).toBe(1); });
-  it('enforces twelve accepted changes and persists counters across reload/bootstrap', async () => { const c = await guest(); let w = await workspace(c); for (let i = 0; i < 12; i++) w = (await post(c, '/workspace/change', { token: w.token, slot: 'wheels', variantId: i % 2 ? 'studio-classic' : 'studio-deep' }).expect(200)).body; await post(c, '/workspace/change', { token: w.token, slot: 'wheels', variantId: 'studio-deep' }).expect(409); const fresh = await workspace(c); const exhausted = await post(c, '/workspace/change', { token: fresh.token, slot: 'wheels', variantId: 'studio-deep' }).expect(409); expect(exhausted.body.error.code).toBe('GUEST_CHANGE_LIMIT'); expect(exhausted.body.error.details.resetAt).toBeTruthy(); expect((await c.agent.get('/api/session')).body.usage.changes).toBe(12); });
-  it('serializes concurrent guest changes without exceeding twelve', async () => { const c = await guest(); const w = await workspace(c); const results = await Promise.all(Array.from({ length: 15 }, () => post(c, '/workspace/change', { token: w.token, slot: 'wheels', variantId: 'studio-deep' }))); expect(results.filter(r => r.status === 200)).toHaveLength(12); expect(results.filter(r => r.status === 409)).toHaveLength(3); });
-  it('limits 3D grants and rejects tampered or another guest’s workspace', async () => { const c = await guest(), other = await guest(); const w = await workspace(c); await post(c, '/workspace/preview', { token: w.token }).expect(200); const denied = await post(c, '/workspace/preview', { token: w.token }).expect(409); expect(denied.body.error.code).toBe('GUEST_PREVIEW_LIMIT'); await post(other, '/workspace/change', { token: w.token, slot: 'wheels', variantId: 'studio-deep' }).expect(400); await post(c, '/workspace/change', { token: sign({ configuration: defaultConfiguration }, 'a-wrong-secret'), slot: 'wheels', variantId: 'studio-deep' }).expect(400); });
+  it('enforces 24 accepted changes and persists counters across reload/bootstrap', async () => { const c = await guest(); let w = await workspace(c); for (let i = 0; i < 24; i++) w = (await post(c, '/workspace/change', { token: w.token, slot: 'wheels', variantId: i % 2 ? 'studio-classic' : 'studio-deep' }).expect(200)).body; await post(c, '/workspace/change', { token: w.token, slot: 'wheels', variantId: 'studio-deep' }).expect(409); const fresh = await workspace(c); const exhausted = await post(c, '/workspace/change', { token: fresh.token, slot: 'wheels', variantId: 'studio-deep' }).expect(409); expect(exhausted.body.error.code).toBe('GUEST_CHANGE_LIMIT'); expect(exhausted.body.error.details.resetAt).toBeTruthy(); expect((await c.agent.get('/api/session')).body.usage.changes).toBe(24); });
+  it('serializes distinct guest changes at 24 and deduplicates identical operations',async()=>{
+    const c=await guest(),w=await workspace(c);
+    await Promise.all(Array.from({length:8},()=>post(c,'/workspace/change',{token:w.token,slot:'wheels',variantId:'studio-deep'}).expect(200)));
+    expect((await c.agent.get('/api/session')).body.usage.changes).toBe(1);
+    const options=seedCatalog.filter(p=>p.status==='published').flatMap(p=>p.variants.filter(v=>v.id!==defaultConfiguration[p.slot]).map(v=>({slot:p.slot,variantId:v.id}))).filter(v=>v.variantId!=='studio-deep');
+    const results=await Promise.all(options.map(value=>post(c,'/workspace/change',{token:w.token,...value})));
+    expect(results.filter(r=>r.status===200)).toHaveLength(23);expect(results.filter(r=>r.status===409).length).toBeGreaterThan(0);
+    expect((await c.agent.get('/api/session')).body.usage.changes).toBe(24);
+  });
+  it('reuses a valid 10-minute 3D grant, permits two sessions, and validates expiry and identity',async()=>{
+    const c=await guest(),other=await guest(),w=await workspace(c);
+    const first=(await post(c,'/workspace/preview',{token:w.token}).expect(200)).body;
+    expect(Date.parse(first.expiresAt)-Date.now()).toBeLessThanOrEqual(600000);
+    const reused=(await post(c,'/workspace/preview',{token:w.token}).expect(200)).body;
+    expect(reused.grant).toBe(first.grant);
+    await post(c,'/workspace/preview/validate',{grant:first.grant}).expect(200);
+    await post(other,'/workspace/preview/validate',{grant:first.grant}).expect(409);
+    await Subject.updateMany({},{$set:{previewUntil:new Date(0)}});
+    await post(c,'/workspace/preview/validate',{grant:first.grant}).expect(409);
+    await post(c,'/workspace/preview',{token:w.token}).expect(200);
+    await Subject.updateMany({},{$set:{previewUntil:new Date(0)}});
+    expect((await post(c,'/workspace/preview',{token:w.token}).expect(409)).body.error.code).toBe('GUEST_PREVIEW_LIMIT');
+    await post(other,'/workspace/change',{token:w.token,slot:'wheels',variantId:'studio-deep'}).expect(400);
+    await post(c,'/workspace/change',{token:sign({configuration:defaultConfiguration},'a-wrong-secret'),slot:'wheels',variantId:'studio-deep'}).expect(400);
+  });
 });
 describe('garage lifecycle and quota races', () => {
   it('does not refund daily creation history after deletion', async () => { const c = await member(); const created = []; for (let i = 0; i < 3; i++) created.push((await post(c, '/builds', build).expect(201)).body); await del(c, `/builds/${created[0]._id}`).expect(200); const denied = await post(c, '/builds', build).expect(409); expect(denied.body.error.code).toBe('BUILD_DAILY_LIMIT'); expect((await Subject.findById(`user:${c.userId}`))?.creates).toHaveLength(3); });
   it('serializes concurrent daily creations to exactly three', async () => { const c = await member(); const results = await Promise.all(Array.from({ length: 6 }, () => post(c, '/builds', build))); expect(results.filter(r => r.status === 201)).toHaveLength(3); expect(await Build.countDocuments({ owner: c.userId })).toBe(3); });
-  it('protects the fifth active slot against concurrent creation and duplication', async () => { const c = await member(); const existing = await Build.create(Array.from({ length: 4 }, () => ({ ...build, owner: c.userId }))); const results = await Promise.all([post(c, '/builds', build), post(c, `/builds/${existing[0]._id}/duplicate`)]); expect(results.filter(r => r.status === 201)).toHaveLength(1); expect(results.filter(r => r.body.error?.code === 'BUILD_LIMIT_REACHED')).toHaveLength(1); expect(await Build.countDocuments({ owner: c.userId })).toBe(5); });
-  it('enforces historical monthly quota even after all builds are deleted', async () => { const c = await member(); await Subject.create({ _id: `user:${c.userId}`, creates: Array.from({ length: 20 }, () => Date.now() - 2 * 86400000) }); const result = await post(c, '/builds', build).expect(409); expect(result.body.error.code).toBe('BUILD_MONTHLY_LIMIT'); });
+  it('protects the eighth active slot against concurrent creation and duplication', async () => { const c = await member(); const existing = await Build.create(Array.from({ length: 7 }, () => ({ ...build, owner: c.userId }))); const results = await Promise.all([post(c, '/builds', build), post(c, `/builds/${existing[0]._id}/duplicate`)]); expect(results.filter(r => r.status === 201)).toHaveLength(1); expect(results.filter(r => r.body.error?.code === 'BUILD_LIMIT_REACHED')).toHaveLength(1); expect(await Build.countDocuments({ owner: c.userId })).toBe(8); });
+  it('enforces historical monthly quota even after all builds are deleted', async () => { const c = await member(); await Subject.create({ _id: `user:${c.userId}`, creates: Array.from({ length: 15 }, () => Date.now() - 2 * 86400000) }); const result = await post(c, '/builds', build).expect(409); expect(result.body.error.code).toBe('BUILD_MONTHLY_LIMIT'); });
   it('updates without consuming another build slot and rejects stale or concurrent editors', async () => { const c = await member(); const created = (await post(c, '/builds', build).expect(201)).body; const lease = (await post(c, `/builds/${created._id}/lease`).expect(200)).body; await post(c, `/builds/${created._id}/lease`).expect(409); const updated = await patch(c, `/builds/${created._id}`, { ...build, name: 'Updated ride', revision: 1 }, lease.editorToken).expect(200); expect(updated.body.revision).toBe(2); await patch(c, `/builds/${created._id}`, { ...build, revision: 1 }, lease.editorToken).expect(409); expect(await Build.countDocuments()).toBe(1); expect((await Subject.findById(`user:${c.userId}`))?.creates).toHaveLength(1); });
   it('isolates builds between accounts and public access', async () => { const a = await member('a@example.com'), b = await member('b@example.com'); const created = (await post(a, '/builds', build).expect(201)).body; await b.agent.get(`/api/builds/${created._id}`).expect(404); await del(b, `/builds/${created._id}`).expect(404); await post(b, `/builds/${created._id}/duplicate`).expect(404); await b.agent.get(`/api/public/builds/${created._id}`).expect(404); });
-  it('requires verified email to publish and caps exports at five', async () => { const c = await member(); const created = (await post(c, '/builds', build).expect(201)).body; const lease = (await post(c, `/builds/${created._id}/lease`).expect(200)).body; await patch(c, `/builds/${created._id}`, { ...build, revision: 1, visibility: 'public' }, lease.editorToken).expect(403); for (let i = 0; i < 5; i++) await post(c, `/builds/${created._id}/export`).expect(200); const denied = await post(c, `/builds/${created._id}/export`).expect(409); expect(denied.body.error.code).toBe('EXPORT_LIMIT_REACHED'); });
+  it('requires verified email to publish and caps exports at eight', async () => { const c = await member(); const created = (await post(c, '/builds', build).expect(201)).body; const lease = (await post(c, `/builds/${created._id}/lease`).expect(200)).body; await patch(c, `/builds/${created._id}`, { ...build, revision: 1, visibility: 'public' }, lease.editorToken).expect(403); for (let i = 0; i < 8; i++) await post(c, `/builds/${created._id}/export`).expect(200); const denied = await post(c, `/builds/${created._id}/export`).expect(409); expect(denied.body.error.code).toBe('EXPORT_LIMIT_REACHED'); });
 });
 describe('API boundaries', () => {
+  it('allows reviewed manufacturer maintenance while rejecting missing provenance or unregistered assets',async()=>{
+    const c=await member();await User.updateOne({_id:c.userId},{$set:{role:'admin'}});
+    const reviewed=structuredClone(seedCatalog.find(p=>p.id==='cinelli-vigorelli')!);
+    const put=(body:object)=>c.agent.put('/api/admin/catalog/cinelli-vigorelli').set('Origin',origin).set('X-CSRF-Token',c.csrf).send(body);
+    await put(reviewed).expect(200);
+    await put({...reviewed,provenance:undefined}).expect(422);
+    reviewed.variants[0].asset3D={...reviewed.variants[0].asset3D!,url:'/models/frames/not-reviewed.glb'};
+    await put(reviewed).expect(422);
+  });
   it('preserves archived references and blocks changing a variant used by saved builds', async () => {
     const c = await member(); const created = (await post(c, '/builds', build).expect(201)).body;
     expect(created.catalogSnapshot).toHaveLength(6);
@@ -108,11 +164,11 @@ describe('API boundaries', () => {
     expect(draftAttempt.body.error.code).toBe('VARIANT_UNAVAILABLE');
     const g = await guest(); const w = await workspace(g); expect(w.configuration.frameset).toBe('studio-pursuit-forest');
   });
-  it('publishes only three builds and immediately revokes an unpublished share link', async () => {
+  it('publishes only four builds and immediately revokes an unpublished share link', async () => {
     const c = await member(); await User.updateOne({ _id: c.userId }, { $set: { verified: true } });
-    const builds = await Build.create(Array.from({ length: 4 }, (_, i) => ({ ...build, name: `Build ${i}`, owner: c.userId })));
+    const builds = await Build.create(Array.from({ length: 5 }, (_, i) => ({ ...build, name: `Build ${i}`, owner: c.userId })));
     const published: { id: string; publicId: string; editorToken: string }[] = [];
-    for (let i = 0; i < builds.length; i++) { const id = String(builds[i]._id); const lease = (await post(c, `/builds/${id}/lease`).expect(200)).body; const result = await patch(c, `/builds/${id}`, { ...build, revision: 1, visibility: 'public' }, lease.editorToken).expect(i < 3 ? 200 : 409); if (i < 3) published.push({ id, publicId: result.body.publicId, editorToken: lease.editorToken }); else expect(result.body.error.code).toBe('PUBLISH_LIMIT_REACHED'); }
+    for (let i = 0; i < builds.length; i++) { const id = String(builds[i]._id); const lease = (await post(c, `/builds/${id}/lease`).expect(200)).body; const result = await patch(c, `/builds/${id}`, { ...build, revision: 1, visibility: 'public' }, lease.editorToken).expect(i < 4 ? 200 : 409); if (i < 4) published.push({ id, publicId: result.body.publicId, editorToken: lease.editorToken }); else expect(result.body.error.code).toBe('PUBLISH_LIMIT_REACHED'); }
     const first = published[0]; await c.agent.get(`/api/public/builds/${first.publicId}`).expect(200);
     await patch(c, `/builds/${first.id}`, { ...build, revision: 2, visibility: 'private' }, first.editorToken).expect(200);
     await c.agent.get(`/api/public/builds/${first.publicId}`).expect(404);

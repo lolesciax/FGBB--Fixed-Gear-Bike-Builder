@@ -1,15 +1,20 @@
+import { useId } from "react";
 import { Bike, Cog, SlidersHorizontal } from "lucide-react";
 import { assemblyGeometry, type Product } from "@tracklab/domain";
 export function PartThumbnail({
   product,
   color,
+  variant,
 }: {
   product: Product;
   color?: string;
+  variant?: Product["variants"][number];
 }) {
+  const uid = useId().replace(/:/g, "");
   if (product.slot === "frameset") {
     const g = assemblyGeometry(
-      product.variants.find((v) => v.color === color)?.specs ||
+      variant?.specs ||
+        product.variants.find((v) => v.color === color)?.specs ||
         product.variants[0].specs,
     );
     const { rear, front, bb, seat, head, headBottom } = g;
@@ -18,10 +23,22 @@ export function PartThumbnail({
         viewBox={`-40 ${seat.y - 50} ${front.x + 90} ${-seat.y + 110}`}
         aria-hidden="true"
       >
+        <defs>
+          <linearGradient id={`thumbnail-${uid}`} x1="0" y1="0" x2="0" y2="1">
+            <stop
+              stopColor={color || variant?.color || product.variants[0].color}
+            />
+            <stop offset=".5" stopColor="#848c97" />
+            <stop
+              offset="1"
+              stopColor={color || variant?.color || product.variants[0].color}
+            />
+          </linearGradient>
+        </defs>
         <g
           fill="none"
-          stroke={color || "#535963"}
-          strokeWidth="23"
+          stroke={`url(#thumbnail-${uid})`}
+          strokeWidth={g.frameWidth}
           strokeLinejoin="round"
           strokeLinecap="round"
         >

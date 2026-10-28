@@ -1,3 +1,7 @@
+import { loadAccessPolicy } from './access-policy';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { Bike2D } from '../../web/src/features/builder/Bike2D';
 import express, { type Request, type Response, type NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -6,16 +10,16 @@ import argon2 from 'argon2';
 import mongoose from 'mongoose';
 import { z, ZodError } from 'zod';
 import { randomUUID } from 'node:crypto';
-import { assetRegistry, configurationSchema, buildInput, productSchema, compatibility, validateConfiguration, variantById, slotSchema, slots, brandDisclaimer, technicalDisclaimer, type Configuration, type Product } from '@tracklab/domain';
+import { registeredFrameAssets, quotaPolicySchema, type QuotaPolicy, assetRegistry, configurationSchema, buildInput, productSchema, compatibility, validateConfiguration, variantById, slotSchema, slots, brandDisclaimer, technicalDisclaimer, type Configuration, type Product } from '@tracklab/domain';
 import type { Config } from './config';
-import { Audit, Build, ProductModel, RecoveryToken, Session, Subject, User } from './models';
+import { AccessPolicy, RequestReceipt, Audit, Build, ProductModel, RecoveryToken, Session, Subject, User } from './models';
 import { ApiError, hash, privateKey, randomToken, sign, unsign, type RateStore } from './security';
 import { charge, DAY, withSubject } from './quotas';
 import { defaultConfiguration } from './catalog';
 import type { SendMail } from './mail';
 
 type Identity = { subject: string; guestId: string; csrf: string; sessionId: string; user: { id: string; email: string; name: string; role: string; verified: boolean; theme: string } | null };
-declare module 'express-serve-static-core' { interface Request { identity: Identity; traceId: string } }
+declare module 'express-serve-static-core' { interface Request { policy: QuotaPolicy; policyVersion: number; identity: Identity; traceId: string } }
 const HOUR = 3600000;
 const idSchema = z.string().regex(/^[a-f\d]{24}$/i);
 const credentials = z.object({ email: z.email().max(254).transform(v => v.toLowerCase()), password: z.string().min(12).max(128) });
@@ -76,6 +80,7 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
       if (req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'OPTIONS') {
         if (req.get('Origin') !== config.FRONTEND_URL || req.get('X-CSRF-Token') !== session.csrf) throw new ApiError(403, 'CSRF_INVALID', 'Your security token expired. Refresh the page and try again.');
       }
+      const access=await loadAccessPolicy(config); req.policy=access.policy; req.policyVersion=access.version;
       await rate.consume(`general:${req.identity.subject}`, config.GENERAL_RPM, 60000);
       next();
     } catch (error) { next(error); }
@@ -83,7 +88,8 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
   app.get('/api/session', async (req, res) => {
     const subject = await Subject.findById(req.identity.subject).lean();
     const changes = (subject?.changes ?? []).filter(t => t > Date.now() - DAY), previews = (subject?.previews ?? []).filter(t => t > Date.now() - DAY);
-    res.json({ user: req.identity.user, csrf: req.identity.csrf, workspaceKey: privateKey(req.identity.subject, config.SESSION_SECRET), mode: config.DEVELOPMENT_EPHEMERAL ? 'ephemeral-development' : 'connected', limits: { builds: config.BUILD_LIMIT, publish: config.PUBLISH_LIMIT, changes: config.GUEST_CHANGES, previews: config.GUEST_PREVIEWS }, usage: { changes: changes.length, previews: previews.length, changesResetAt: changes.length ? new Date(changes[0] + DAY).toISOString() : null, previewsResetAt: previews.length ? new Date(previews[0] + DAY).toISOString() : null } });
+    const accountUsage=req.identity.user?{active:await Build.countDocuments({owner:req.identity.user.id}),published:await Build.countDocuments({owner:req.identity.user.id,visibility:'public'}),createdToday:(subject?.creates||[]).filter(t=>t>Date.now()-DAY).length,createdMonth:(subject?.creates||[]).filter(t=>t>Date.now()-30*DAY).length,exportsToday:(subject?.exports||[]).filter(t=>t>Date.now()-DAY).length}:null;
+    res.json({ accountUsage, policy: req.policy, user: req.identity.user, csrf: req.identity.csrf, workspaceKey: privateKey(req.identity.subject, config.SESSION_SECRET), mode: config.DEVELOPMENT_EPHEMERAL ? 'ephemeral-development' : 'connected', limits: { builds: req.policy.builds, publish: req.policy.publish, changes: req.policy.guestChanges, previews: req.policy.guestPreviews }, usage: { changes: changes.length, previews: previews.length, changesResetAt: changes.length ? new Date(changes[0] + DAY).toISOString() : null, previewsResetAt: previews.length ? new Date(previews[0] + DAY).toISOString() : null } });
   });
   const authRate = async (req: Request, category: string, limit: number, window: number, email?: string) => {
     await rate.consume(`${category}:ip:${privateKey(req.ip || '', config.SESSION_SECRET)}`, category === 'login' ? 30 : limit, window);
@@ -180,7 +186,12 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
     if (current[input.slot] === input.variantId) { res.json({ configuration: current, token: input.token, changed: false }); return; }
     const next = { ...current, [input.slot]: input.variantId };
     const result = await validated(next);
-    if (!req.identity.user) await withSubject(req.identity.subject, async subject => { charge(subject as unknown as Record<string, unknown>, 'changes', config.GUEST_CHANGES, DAY, 'GUEST_CHANGE_LIMIT'); });
+    if (!req.identity.user) await withSubject(req.identity.subject, async (subject,session) => {
+      const key=privateKey(JSON.stringify([req.identity.subject,input.token,input.slot,input.variantId]),config.SESSION_SECRET);
+      if(await RequestReceipt.exists({_id:key}).session(session)) return;
+      charge(subject as unknown as Record<string,unknown>,'changes',req.policy.guestChanges,DAY,'GUEST_CHANGE_LIMIT');
+      await RequestReceipt.create([{_id:key,expiresAt:new Date(Date.now()+DAY)}],{session});
+    });
     res.json({ configuration: next, token: workspaceToken(req, next), compatibility: result, changed: true });
   });
   app.post('/api/workspace/preview', async (req, res) => {
@@ -188,20 +199,32 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
     const { token } = z.object({ token: z.string().max(4096) }).parse(req.body); const configuration = readWorkspace(req, token);
     const products = await catalog();
     if (!Object.values(configuration).every(id => { const product=variantById(products,id)?.product; return product?.illustrative || (product?.visual?.fidelity === 'measurement-schematic' && product.visual.assetId in assetRegistry && product.provenance?.reviewedAt); })) throw new ApiError(422, 'ASSET_UNAVAILABLE', 'A reviewed illustrative 3D representation is not registered for this assembly.');
-    if (!req.identity.user) await withSubject(req.identity.subject, async subject => { charge(subject as unknown as Record<string, unknown>, 'previews', config.GUEST_PREVIEWS, DAY, 'GUEST_PREVIEW_LIMIT'); });
-    res.json({ grant: sign({ subject: req.identity.subject, expires: Date.now() + HOUR }, config.SESSION_SECRET), expiresAt: new Date(Date.now() + HOUR).toISOString(), illustrative: true });
+    const active=await withSubject(req.identity.subject,async subject=>{
+      if(subject.previewId && subject.previewUntil && subject.previewUntil.getTime()>Date.now()) return {id:subject.previewId,expires:subject.previewUntil.getTime()};
+      if(!req.identity.user) charge(subject as unknown as Record<string,unknown>,'previews',req.policy.guestPreviews,DAY,'GUEST_PREVIEW_LIMIT');
+      const id=randomToken(),expires=Date.now()+(req.identity.user?HOUR:req.policy.guestPreviewMinutes*60000);
+      subject.set({previewId:id,previewUntil:new Date(expires)});return {id,expires};
+    });
+    res.json({grant:sign({kind:'preview',subject:req.identity.subject,...active},config.SESSION_SECRET),expiresAt:new Date(active.expires).toISOString(),illustrative:true});
+  });
+  app.post('/api/workspace/preview/validate',async(req,res)=>{
+    const {grant}=z.object({grant:z.string().max(4096)}).strict().parse(req.body);
+    const payload=unsign<{kind:string;subject:string;id:string;expires:number}>(grant,config.SESSION_SECRET);
+    const subject=await Subject.findById(req.identity.subject).lean();
+    if(payload.kind!=='preview'||payload.subject!==req.identity.subject||!Number.isFinite(payload.expires)||payload.expires<=Date.now()||subject?.previewId!==payload.id||!subject.previewUntil||subject.previewUntil.getTime()<=Date.now()) throw new ApiError(409,'PREVIEW_EXPIRED','Your 3D session ended. Start another available session to continue.');
+    res.json({expiresAt:new Date(payload.expires).toISOString()});
   });
   app.post('/api/compatibility', async (req, res) => { await rate.consume(`compatibility:${req.identity.subject}`, 30, 60000); const configuration = configurationSchema.parse(req.body); const products = await catalog(true); res.json(compatibility(configuration, products)); });
-  app.get('/api/builds', async (req, res) => { const user = guard(req); const builds = await Build.find({ owner: user.id }).sort({ updatedAt: -1 }).select('-leaseHash').lean(); res.json({ items: builds, limit: config.BUILD_LIMIT }); });
+  app.get('/api/builds', async (req, res) => { const user = guard(req); const builds = await Build.find({ owner: user.id }).sort({ updatedAt: -1 }).select('-leaseHash').lean(); res.json({ items: builds, limit: req.policy.builds }); });
   app.get('/api/builds/:id', async (req, res) => { const user = guard(req); const build = await Build.findOne({ _id: idSchema.parse(req.params.id), owner: user.id }).select('-leaseHash').lean(); if (!build) throw new ApiError(404, 'NOT_FOUND', 'Build not found.'); res.json(build); });
   async function createBuild(req: Request, input: z.infer<typeof buildInput>) {
     const user = guard(req); await validated(input.configuration, true);
     return withSubject(req.identity.subject, async (subject, session) => {
-      if (await Build.countDocuments({ owner: user.id }).session(session) >= config.BUILD_LIMIT) throw new ApiError(409, 'BUILD_LIMIT_REACHED', `You have ${config.BUILD_LIMIT} saved builds. Delete a build to create another.`);
+      if (await Build.countDocuments({ owner: user.id }).session(session) >= req.policy.builds) throw new ApiError(409, 'BUILD_LIMIT_REACHED', `You have ${req.policy.builds} saved builds. Delete a build to create another.`);
       const events = subject.creates.filter(t => t > Date.now() - DAY);
-      if (events.length >= config.CREATE_DAILY_LIMIT) throw new ApiError(409, 'BUILD_DAILY_LIMIT', 'Daily build creation allowance reached.', { resetAt: new Date(events[0] + DAY).toISOString() });
-      charge(subject as unknown as Record<string, unknown>, 'creates', config.CREATE_MONTHLY_LIMIT, 30 * DAY, 'BUILD_MONTHLY_LIMIT');
-      charge(subject as unknown as Record<string, unknown>, 'saves', config.SAVE_HOURLY_LIMIT, HOUR, 'SAVE_LIMIT_REACHED');
+      if (events.length >= req.policy.createDaily) throw new ApiError(409, 'BUILD_DAILY_LIMIT', 'Daily build creation allowance reached.', { resetAt: new Date(events[0] + DAY).toISOString() });
+      charge(subject as unknown as Record<string, unknown>, 'creates', req.policy.createMonthly, 30 * DAY, 'BUILD_MONTHLY_LIMIT');
+      charge(subject as unknown as Record<string, unknown>, 'saves', req.policy.saveHourly, HOUR, 'SAVE_LIMIT_REACHED');
       const [build] = await Build.create([{ ...input, owner: user.id, catalogSnapshot: await catalogSnapshot(input.configuration) }], { session });
       return build;
     });
@@ -225,8 +248,8 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
       if (!current) throw new ApiError(404, 'NOT_FOUND', 'Build not found.');
       if (current.revision !== input.revision) throw new ApiError(409, 'REVISION_CONFLICT', 'This build has changed. Reopen it to load the latest revision.');
       if (current.leaseHash !== hash(req.get('X-Editor-Token') || '') || !current.leaseUntil || current.leaseUntil.getTime() < Date.now()) throw new ApiError(409, 'EDITOR_LOCKED', 'Your editor lease expired. Reopen this build.');
-      if (input.visibility === 'public' && current.visibility !== 'public' && await Build.countDocuments({ owner: user.id, visibility: 'public' }).session(session) >= config.PUBLISH_LIMIT) throw new ApiError(409, 'PUBLISH_LIMIT_REACHED', 'Unpublish another build before publishing this one.');
-      charge(subject as unknown as Record<string, unknown>, 'saves', config.SAVE_HOURLY_LIMIT, HOUR, 'SAVE_LIMIT_REACHED');
+      if (input.visibility === 'public' && current.visibility !== 'public' && await Build.countDocuments({ owner: user.id, visibility: 'public' }).session(session) >= req.policy.publish) throw new ApiError(409, 'PUBLISH_LIMIT_REACHED', 'Unpublish another build before publishing this one.');
+      charge(subject as unknown as Record<string, unknown>, 'saves', req.policy.saveHourly, HOUR, 'SAVE_LIMIT_REACHED');
       current.set({ name: input.name, configuration: input.configuration, catalogSnapshot: await catalogSnapshot(input.configuration), revision: input.revision + 1, visibility: input.visibility, publicId: input.visibility === 'public' ? current.publicId || randomToken() : undefined });
       await current.save({ session });
       return { ...current.toObject(), leaseHash: undefined };
@@ -234,21 +257,48 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
     res.json(result);
   });
   app.delete('/api/builds/:id', async (req, res) => { const user = guard(req); await withSubject(req.identity.subject, async (_subject, session) => { const result = await Build.deleteOne({ _id: idSchema.parse(req.params.id), owner: user.id }, { session }); if (!result.deletedCount) throw new ApiError(404, 'NOT_FOUND', 'Build not found.'); }); res.json({ success: true }); });
-  app.post('/api/builds/:id/export', async (req, res) => { const user = guard(req); const build = await Build.findOne({ _id: idSchema.parse(req.params.id), owner: user.id }).select('name configuration revision').lean(); if (!build) throw new ApiError(404, 'NOT_FOUND', 'Build not found.'); await withSubject(req.identity.subject, async subject => { charge(subject as unknown as Record<string, unknown>, 'exports', config.EXPORT_DAILY_LIMIT, DAY, 'EXPORT_LIMIT_REACHED'); }); res.json({ schemaVersion: 1, build, exportedAt: new Date().toISOString(), brandDisclaimer, technicalDisclaimer }); });
+  app.post('/api/builds/:id/export', async (req, res) => { const user = guard(req); const build = await Build.findOne({ _id: idSchema.parse(req.params.id), owner: user.id }).select('name configuration revision').lean(); if (!build) throw new ApiError(404, 'NOT_FOUND', 'Build not found.'); await withSubject(req.identity.subject, async subject => { charge(subject as unknown as Record<string, unknown>, 'exports', req.policy.exports, DAY, 'EXPORT_LIMIT_REACHED'); }); res.json({ schemaVersion: 1, build, exportedAt: new Date().toISOString(), brandDisclaimer, technicalDisclaimer }); });
   app.get('/api/public/builds/:id', async (req, res) => { const build = await Build.findOne({ publicId: z.string().max(100).parse(req.params.id), visibility: 'public' }).select('name configuration catalogSnapshot updatedAt revision').lean(); if (!build) throw new ApiError(404, 'NOT_FOUND', 'Public build not found.'); res.json(build); });
+  app.post('/api/builds/:id/export-image',async(req,res)=>{
+    const user=guard(req),build=await Build.findOne({_id:idSchema.parse(req.params.id),owner:user.id}).lean();
+    if(!build) throw new ApiError(404,'NOT_FOUND','Build not found.');
+    const products=await catalog(true),snapshot=(build.catalogSnapshot||[]) as Product[];
+    const merged=[...products,...snapshot.filter(p=>!products.some(current=>current.id===p.id))];
+    const drawing=renderToStaticMarkup(createElement(Bike2D,{configuration:configurationSchema.parse(build.configuration),catalog:merged}));
+    const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000"><rect width="1600" height="1000" fill="#e8ebef"/><g transform="translate(40 10)">${drawing.replace('<svg ','<svg width="1520" height="920" ')}</g><text x="40" y="970" font-family="sans-serif" font-size="18" fill="#465160">TrackLab / Illustrative planning preview. Verify all dimensions and assembly.</text></svg>`;
+    await withSubject(req.identity.subject,async subject=>{charge(subject as unknown as Record<string,unknown>,'exports',req.policy.exports,DAY,'EXPORT_LIMIT_REACHED');});
+    res.json({svg,filename:`${build.name.replace(/[^a-z0-9]/gi,'-').slice(0,60)}.svg`,fidelity:'illustrative'});
+  });
   app.post('/api/public/builds/:id/duplicate', async (req, res) => { guard(req); const build = await Build.findOne({ publicId: z.string().max(100).parse(req.params.id), visibility: 'public' }); if (!build) throw new ApiError(404, 'NOT_FOUND', 'Public build not found.'); res.status(201).json(await createBuild(req, { name: `${build.name.slice(0, 73)} (copy)`, configuration: build.configuration as Configuration })); });
   app.get('/api/admin/catalog', async (req, res) => { requireAdmin(req); const page = z.coerce.number().int().min(1).max(100).default(1).parse(req.query.page); res.json({ items: await ProductModel.find().skip((page - 1) * 30).limit(30).lean() }); });
+  app.get('/api/admin/policy', (req,res)=>{requireAdmin(req);res.json({policy:req.policy,version:req.policyVersion,plans:['guest','registered','administrator']});});
+  app.put('/api/admin/policy',async(req,res)=>{
+    const user=requireAdmin(req);await rate.consume(`policy:${user.id}`,10,60000);
+    const input=z.object({version:z.number().int().min(0),policy:quotaPolicySchema}).strict().parse(req.body);
+    const version=await mongoose.connection.transaction(async session=>{
+      const current=await AccessPolicy.findById('access').session(session);
+      if((current?.version||0)!==input.version) throw new ApiError(409,'POLICY_CONFLICT','The policy changed. Reload it before saving.');
+      const next=input.version+1;
+      if(current){current.set({data:input.policy,version:next});await current.save({session});}
+      else await AccessPolicy.create([{_id:'access',data:input.policy,version:next}],{session});
+      await Audit.create([{actor:user.id,action:'policy.update',target:`access:${next}`,details:{before:req.policy,after:input.policy,version:next}}],{session});return next;
+    });res.json({policy:input.policy,version});
+  });
   app.put('/api/admin/catalog/:id', async (req, res) => {
     const user = requireAdmin(req); await rate.consume(`admin:${user.id}`, 15, 60000);
     const input = productSchema.parse(req.body);
     if (input.id !== req.params.id) throw new ApiError(422, 'ID_MISMATCH', 'Product ID must match the URL.');
-    if (!input.illustrative && input.status === 'published') throw new ApiError(422, 'PUBLICATION_REVIEW_REQUIRED', 'Manufacturer publishing is gated until per-field provenance, variant geometry and asset permissions have been reviewed. Keep this record as a draft.');
+    if(!input.illustrative&&input.status==='published'){
+      const reviewed=input.slot==='frameset'&&input.source&&input.verifiedAt&&input.provenance?.reviewedAt&&input.provenance.limitations&&input.visual?.assetId==='tracklab-parametric-v2'&&input.visual.license==='CC0-1.0'&&input.variants.every(v=>['seatTube','headTube','headAngle','seatAngle','chainstay','bbDrop'].every(key=>typeof v.specs[key]==='number'&&Number(v.specs[key])>0));
+      if(!reviewed)throw new ApiError(422,'PUBLICATION_REVIEW_REQUIRED','Manufacturer publication requires reviewed source data, geometry and an independent permitted representation. Keep this record as a draft.');
+      if(input.variants.some(v=>v.asset3D&&!registeredFrameAssets.some(asset=>asset.variantId===v.id&&asset.url===v.asset3D?.url)))throw new ApiError(422,'ASSET_REVIEW_REQUIRED','This frame asset is not in the reviewed registry.');
+    }
     const others = await ProductModel.find({ _id: { $ne: input.id } }).lean();
     const previous = (await ProductModel.findById(input.id).lean())?.data as Product | undefined;
     if (previous) for (const variant of previous.variants) {
       if (await Build.exists({ [`configuration.${previous.slot}`]: variant.id })) {
         const replacement = input.variants.find(v => v.id === variant.id);
-        if (!replacement || input.slot !== previous.slot || JSON.stringify(replacement) !== JSON.stringify(variant)) throw new ApiError(409, 'REFERENCED_VARIANT_IMMUTABLE', 'This variant is used by saved builds. Preserve it and add a new variant for revisions.');
+        if (!replacement || input.slot !== previous.slot || JSON.stringify({ ...replacement,asset3D:undefined }) !== JSON.stringify({ ...variant,asset3D:undefined })) throw new ApiError(409, 'REFERENCED_VARIANT_IMMUTABLE', 'This variant is used by saved builds. Preserve it and add a new variant for revisions.');
       }
     }
     if (others.some(p => (p.data as Product).variants.some(v => input.variants.some(i => i.id === v.id)))) throw new ApiError(409, 'DUPLICATE_VARIANT', 'Variant identifiers must be globally unique.');

@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo, useRef } from "react";
 import { useThree } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { OrbitControls, ContactShadows } from "@react-three/drei";
+import { FrameKit } from "./FrameKit";
 import type { OrbitControls as Controls } from "three-stdlib";
 import * as THREE from "three";
 import {
@@ -11,6 +12,18 @@ import {
   type Slot,
 } from "@tracklab/domain";
 type Point = { x: number; y: number };
+function CurvedBar({ points, z }: { points: Point[]; z: number }) {
+  const curve = useMemo(
+    () => new THREE.CatmullRomCurve3(points.map((point) => vec(point, z))),
+    [points, z],
+  );
+  return (
+    <mesh>
+      <tubeGeometry args={[curve, 32, 0.012, 10, false]} />
+      <meshStandardMaterial color="#343d49" metalness={0.2} roughness={0.72} />
+    </mesh>
+  );
+}
 const vec = (point: Point, z = 0) =>
   new THREE.Vector3(point.x / 1000, -point.y / 1000, z);
 function Tube({
@@ -73,11 +86,13 @@ export function ProceduralAssembly({
   catalog,
   resetKey,
   onSelect,
+  cameraView = "side",
 }: {
   configuration: Configuration;
   catalog: Product[];
   resetKey: number;
   onSelect: (slot: Slot) => void;
+  cameraView?: "side" | "front" | "rear" | "three-quarter";
 }) {
   const get = (slot: Slot) =>
     variantById(catalog, configuration[slot])?.variant;
@@ -89,18 +104,43 @@ export function ProceduralAssembly({
   useLayoutEffect(() => {
     if (!group.current || !(camera instanceof THREE.PerspectiveCamera)) return;
     const box = new THREE.Box3().setFromObject(group.current),
-      center = box.getCenter(new THREE.Vector3()),
-      extent = box.getSize(new THREE.Vector3());
+      center = box.getCenter(new THREE.Vector3());
     const fov = THREE.MathUtils.degToRad(camera.fov),
       aspect = size.width / size.height;
-    const distance =
-      Math.max(
-        extent.y / 2 / Math.tan(fov / 2),
-        extent.x / 2 / (Math.tan(fov / 2) * aspect),
-      ) * 1.17;
-    camera.position
-      .copy(center)
-      .add(new THREE.Vector3(distance * 0.1, distance * 0.06, distance));
+    const direction = new THREE.Vector3(
+      ...((cameraView === "front"
+        ? [1, 0.03, 0]
+        : cameraView === "rear"
+          ? [-1, 0.03, 0]
+          : cameraView === "three-quarter"
+            ? [1, 0.3, 1]
+            : [0, 0.025, 1]) as [number, number, number]),
+    ).normalize();
+    const right = new THREE.Vector3()
+        .crossVectors(new THREE.Vector3(0, 1, 0), direction)
+        .normalize(),
+      up = new THREE.Vector3().crossVectors(direction, right).normalize();
+    let distance = 0;
+    // Fit component bounds rather than the empty corners of one assembly-wide box.
+    group.current.traverse(node=>{
+      if(!(node instanceof THREE.Mesh))return;
+      if(!node.geometry.boundingBox)node.geometry.computeBoundingBox();
+      const part=node.geometry.boundingBox!;
+      for (const x of [part.min.x, part.max.x])
+      for (const y of [part.min.y, part.max.y])
+        for (const z of [part.min.z, part.max.z]) {
+          const delta = new THREE.Vector3(x, y, z).applyMatrix4(node.matrixWorld).sub(center);
+          distance = Math.max(
+            distance,
+            delta.dot(direction) +
+              Math.max(
+                Math.abs(delta.dot(right)) / (Math.tan(fov / 2) * aspect),
+                Math.abs(delta.dot(up)) / Math.tan(fov / 2),
+              ),
+          );
+        }
+    });
+    camera.position.copy(center).add(direction.multiplyScalar(distance * 1.06));
     camera.lookAt(center);
     camera.updateProjectionMatrix();
     controls.current?.target.copy(center);
@@ -108,6 +148,7 @@ export function ProceduralAssembly({
     invalidate();
   }, [
     configuration.frameset,
+    cameraView,
     resetKey,
     size.width,
     size.height,
@@ -126,25 +167,31 @@ export function ProceduralAssembly({
     <>
       <group ref={group}>
         <group {...pick("frameset")}>
-          {[
-            [rear, seat, 7],
-            [rear, bb, 9],
-            [seat, head, g.frameWidth / 2],
-            [bb, seat, g.frameWidth / 2],
-            [bb, headBottom, g.frameWidth / 2 + 5],
-            [head, headBottom, g.frameWidth / 2 + 6],
-          ].map(([a, b, r], i) => (
-            <Tube
-              key={i}
-              a={a as Point}
-              b={b as Point}
-              radius={r as number}
-              color={paint}
-            />
-          ))}
-          {[-0.035, 0.035].map((z) => (
-            <Tube key={z} a={headBottom} b={front} radius={12} z={z} />
-          ))}
+          {get("frameset")?.asset3D ? (
+            <FrameKit variant={get("frameset")!} bb={bb} />
+          ) : (
+            <>
+              {[
+                [rear, seat, 7],
+                [rear, bb, 9],
+                [seat, head, g.frameWidth / 2],
+                [bb, seat, g.frameWidth / 2],
+                [bb, headBottom, g.frameWidth / 2 + 5],
+                [head, headBottom, g.frameWidth / 2 + 6],
+              ].map(([a, b, r], i) => (
+                <Tube
+                  key={i}
+                  a={a as Point}
+                  b={b as Point}
+                  radius={r as number}
+                  color={paint}
+                />
+              ))}
+              {[-0.035, 0.035].map((z) => (
+                <Tube key={z} a={headBottom} b={front} radius={12} z={z} />
+              ))}
+            </>
+          )}
         </group>
         {[rear, front].map((axle, i) => (
           <group key={i} {...pick("wheels")}>
@@ -207,35 +254,32 @@ export function ProceduralAssembly({
           <Tube a={head} b={{ x: head.x - 7, y: head.y - 48 }} radius={13} />
           <Tube a={{ x: head.x - 7, y: head.y - 48 }} b={bar} radius={13} />
           {[-0.18, 0.18].map((z) => (
-            <group key={z}>
-              <Tube
-                a={bar}
-                b={{
-                  x: bar.x + 75,
-                  y:
-                    bar.y +
-                    (get("cockpit")?.specs.shape === "riser" ? -30 : 25),
-                }}
-                z={z}
-                radius={12}
-              />
-              {get("cockpit")?.specs.shape !== "riser" && (
-                <>
-                  <Tube
-                    a={{ x: bar.x + 75, y: bar.y + 25 }}
-                    b={{ x: bar.x + 80, y: bar.y + 90 }}
-                    z={z}
-                    radius={12}
-                  />
-                  <Tube
-                    a={{ x: bar.x + 80, y: bar.y + 90 }}
-                    b={{ x: bar.x + 20, y: bar.y + 120 }}
-                    z={z}
-                    radius={12}
-                  />
-                </>
-              )}
-            </group>
+            <CurvedBar
+              key={z}
+              z={z}
+              points={
+                get("cockpit")?.specs.shape === "riser"
+                  ? [
+                      bar,
+                      { x: bar.x + 45, y: bar.y - 25 },
+                      { x: bar.x + 105, y: bar.y - 30 },
+                    ]
+                  : get("cockpit")?.specs.shape === "bullhorn"
+                    ? [
+                        bar,
+                        { x: bar.x + 75, y: bar.y - 20 },
+                        { x: bar.x + 110, y: bar.y - 85 },
+                      ]
+                    : [
+                        bar,
+                        { x: bar.x + 55, y: bar.y + 3 },
+                        { x: bar.x + 86, y: bar.y + 24 },
+                        { x: bar.x + 92, y: bar.y + 65 },
+                        { x: bar.x + 65, y: bar.y + 108 },
+                        { x: bar.x + 20, y: bar.y + 117 },
+                      ]
+              }
+            />
           ))}
           <mesh position={vec(bar)} rotation={[Math.PI / 2, 0, 0]}>
             <cylinderGeometry args={[0.012, 0.012, 0.36, 20]} />
@@ -291,6 +335,13 @@ export function ProceduralAssembly({
           </mesh>
         </group>
       </group>
+      <ContactShadows
+        position={[front.x / 2000, -0.35, 0]}
+        opacity={0.22}
+        scale={4}
+        blur={2.5}
+        far={1}
+      />
       <OrbitControls
         ref={controls}
         minDistance={1}

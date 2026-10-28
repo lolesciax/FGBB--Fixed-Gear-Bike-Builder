@@ -7,6 +7,7 @@ The original functional specification remains in force. The continuation brief c
 - [Original full implementation specification](requirements/original-implementation.md).
 - [Continuation: integrated UI/UX and distinct identity](requirements/continuation-ui-ux.md).
 - [Builder refinement: compact workspace, visualization and branded framesets](requirements/builder-visual-improvements.md). This supersedes the earlier permanently expanded summary and oversized heading composition.
+- [Brand-specific visualization and revised user experience](requirements/brand-authentic-upgrade.md) supersedes older numeric quotas. Implementation detail: [access policy](development/access-policy.md) and [3D production](development/3d-production.md).
 - Current phase plan, evidence and status: [development roadmap](development/roadmap.md). This remains the canonical plan/status document; do not create competing status files.
 - Design requirements and implementation tokens: [design system](DESIGN_SYSTEM.md).
 - Unfinished work and verification gaps: [known issues](KNOWN_ISSUES.md).
@@ -21,9 +22,9 @@ Preserve accounts, session rotation, CSRF, ownership checks, API validation, dis
 
 ## Access and quotas
 
-Guests may browse publicly, keep one memory-only draft, make 12 accepted component changes and receive one 3D preview grant per rolling 24 hours. They may not save, publish, export or access a private garage. Browsing, repeated selections and rejected incompatible changes do not consume change allowance. Usage identity survives normal session rotation; the app must not claim that all public-client circumvention is preventable.
+Guests may browse publicly, keep one memory-only draft, make 24 accepted component changes and receive two 3D sessions of up to ten minutes each per rolling 24 hours. Valid grants are reused across modes without additional charging. They may not save, publish, export or access a private garage. Browsing, duplicate operations, repeated selections and rejected incompatible changes do not consume change allowance. Usage identity survives normal session rotation; the app must not claim that all public-client circumvention is preventable.
 
-Registered accounts are limited to five active builds, three creations per rolling day, twenty per rolling thirty days, thirty updates per hour, three published builds and five exports per rolling day. Duplication consumes creation allowance. Editing consumes no new slot. Deletion frees a slot without refunding historical creation allowance. Keep these rules atomic on the server and show actual API usage in the interface.
+Registered accounts default to eight active builds, three creations per rolling day, fifteen per rolling thirty days, four published builds and eight combined SVG-image/JSON-information exports per rolling day. Save writes have bounded fair-use throttling (120/hour by default). Duplication consumes creation allowance. Editing consumes no new slot. Deletion frees a slot without refunding historical creation allowance. Keep these rules atomic on the server and show actual API usage in the interface. Administrators may change supported policy values within validated bounds with version checks and audit history; existing builds are never deleted when caps change.
 
 ## New visual and interaction requirements
 

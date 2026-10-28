@@ -1,0 +1,71 @@
+{
+  "variantId": "dosnoventa-03-det-l",
+  "source": "https://dosnoventabikes.com/frames/detroit/detroit-frame-true-silver-5/",
+  "geometry": {
+    "size": "L",
+    "finish": "Jet Black Gloss",
+    "colorApproximate": true,
+    "material": "7005-T6 alloy",
+    "seatpost": 27.2,
+    "bottomBracket": "BSA-68",
+    "tireClearance": 28,
+    "seatTube": 580,
+    "headTube": 140,
+    "effectiveTopTube": 565,
+    "headAngle": 74,
+    "seatAngle": 76,
+    "stack": 516,
+    "reach": 436,
+    "bbDrop": 41,
+    "chainstay": 382,
+    "forkRake": 45,
+    "geometry": "pursuit",
+    "headset": "Columbus Compass 1-1/8 inch"
+  },
+  "anchors": {
+    "anchor_rear": [
+      -0.3797933648709519,
+      0.041,
+      0
+    ],
+    "anchor_front": [
+      0.6172040582354338,
+      0.041,
+      0
+    ],
+    "anchor_seat": [
+      -0.1403146994478074,
+      0.562771521240078,
+      0
+    ],
+    "anchor_head": [
+      0.436,
+      0.516,
+      0
+    ],
+    "anchor_headBottom": [
+      0.4745892298143799,
+      0.38142336256863535,
+      0
+    ],
+    "anchor_bb": [
+      0,
+      0,
+      0
+    ]
+  },
+  "bounds": {
+    "min": [
+      -0.3881024233301423,
+      -0.016368727699784397,
+      -0.0560000017285347
+    ],
+    "max": [
+      0.6266512870788574,
+      0.5797158123776031,
+      0.0560000017285347
+    ]
+  },
+  "fidelity": "illustrative",
+  "license": "CC0-1.0"
+}

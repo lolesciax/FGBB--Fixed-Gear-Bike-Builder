@@ -25,3 +25,7 @@ Brands have stable MongoDB IDs. Products have stable IDs and each size/finish co
 Both SVG and Three.js use the same frame-derived anchor function. Known measurements change component positions; remaining tube, fork, cockpit and saddle profiles are schematic. SVG uses a complete-assembly viewBox with uniform aspect fitting. Three.js fits an actual Box3 against camera aspect and field of view on frame changes, resize and reset. Existing schematic GLBs remain in the repository as historical assets; the active assembly now uses procedural geometry to keep attachment points aligned across frame sizes.
 
 Authentic branded geometry, finish graphics and manufacturer-supplied models remain unavailable. The viewer and catalog disclose this explicitly. No branding is painted onto the independent geometry.
+
+## Asset-loading upgrade · 28 October 2026
+
+The procedural registry above remains the shared geometry fallback. Published manufacturer variants now also register 14 independent, texture-free illustrative GLBs, generated from those same anchors. Each size/finish loads its own file; these files do not establish authentic tube profiles or finish graphics. See [production contract and Blender workflow](3d-production.md). The importer can attach this reviewed rendering metadata to matching published specifications without replacing technical records, archived entries or saved configurations.

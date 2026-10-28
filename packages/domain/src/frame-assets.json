@@ -1,0 +1,226 @@
+[
+  {
+    "variantId": "cinelli-vigorelli-rainbow-xs",
+    "url": "/models/frames/cinelli-vigorelli-rainbow-xs.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "cinelli-vigorelli-rainbow-s",
+    "url": "/models/frames/cinelli-vigorelli-rainbow-s.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "cinelli-vigorelli-rainbow-m",
+    "url": "/models/frames/cinelli-vigorelli-rainbow-m.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "cinelli-vigorelli-rainbow-l",
+    "url": "/models/frames/cinelli-vigorelli-rainbow-l.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "cinelli-vigorelli-rainbow-xl",
+    "url": "/models/frames/cinelli-vigorelli-rainbow-xl.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "dosnoventa-02-la-s",
+    "url": "/models/frames/dosnoventa-02-la-s.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "dosnoventa-02-la-m",
+    "url": "/models/frames/dosnoventa-02-la-m.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "dosnoventa-02-la-l",
+    "url": "/models/frames/dosnoventa-02-la-l.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "dosnoventa-03-det-s",
+    "url": "/models/frames/dosnoventa-03-det-s.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "dosnoventa-03-det-m",
+    "url": "/models/frames/dosnoventa-03-det-m.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "dosnoventa-03-det-l",
+    "url": "/models/frames/dosnoventa-03-det-l.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "dosnoventa-01-bcn-s",
+    "url": "/models/frames/dosnoventa-01-bcn-s.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "dosnoventa-01-bcn-m",
+    "url": "/models/frames/dosnoventa-01-bcn-m.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "dosnoventa-01-bcn-l",
+    "url": "/models/frames/dosnoventa-01-bcn-l.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  }
+]

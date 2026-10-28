@@ -30,7 +30,8 @@
     "setup:development": "node scripts/setup-development.mjs",
     "check:secrets": "node scripts/check-secrets.mjs",
     "assets:generate": "node scripts/generate-models.mjs",
-    "validate:deployment": "node scripts/validate-deployment.mjs"
+    "validate:deployment": "node scripts/validate-deployment.mjs",
+    "assets:frames": "tsx scripts/export-frame-kits.ts"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",

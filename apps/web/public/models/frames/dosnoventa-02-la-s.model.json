@@ -1,0 +1,71 @@
+{
+  "variantId": "dosnoventa-02-la-s",
+  "source": "https://dosnoventabikes.com/frames/los-angeles/los-angeles-jet-black-frame/",
+  "geometry": {
+    "size": "S",
+    "finish": "Jet Black Gloss",
+    "colorApproximate": true,
+    "material": "7005-T6 alloy",
+    "seatpost": 27.2,
+    "bottomBracket": "BSA-68",
+    "tireClearance": 32,
+    "seatTube": 500,
+    "headTube": 110,
+    "effectiveTopTube": 510,
+    "headAngle": 73.5,
+    "seatAngle": 75,
+    "stack": 481,
+    "reach": 389,
+    "bbDrop": 41,
+    "chainstay": 382,
+    "forkRake": 45,
+    "geometry": "track",
+    "headset": "Columbus Compass 1-1/8 inch"
+  },
+  "anchors": {
+    "anchor_rear": [
+      -0.3797933648709519,
+      0.041,
+      0
+    ],
+    "anchor_front": [
+      0.5643339377833153,
+      0.041,
+      0
+    ],
+    "anchor_seat": [
+      -0.12940952255126037,
+      0.4829629131445342,
+      0
+    ],
+    "anchor_head": [
+      0.389,
+      0.481,
+      0
+    ],
+    "anchor_headBottom": [
+      0.4202416879174315,
+      0.3755298291644988,
+      0
+    ],
+    "anchor_bb": [
+      0,
+      0,
+      0
+    ]
+  },
+  "bounds": {
+    "min": [
+      -0.387726188441043,
+      -0.015658881961976234,
+      -0.0560000017285347
+    ],
+    "max": [
+      0.573661744594574,
+      0.4999627922189247,
+      0.0560000017285347
+    ]
+  },
+  "fidelity": "illustrative",
+  "license": "CC0-1.0"
+}

@@ -1,0 +1,71 @@
+{
+  "variantId": "cinelli-vigorelli-rainbow-l",
+  "source": "https://usa.cinelli-milano.com/products/vigorelli-track-alu-frame",
+  "geometry": {
+    "size": "L",
+    "finish": "Rainbow",
+    "colorApproximate": true,
+    "material": "Columbus Airplane alloy",
+    "seatTube": 590,
+    "headTube": 145,
+    "headAngle": 74,
+    "seatAngle": 74,
+    "stack": 530,
+    "reach": 435,
+    "wheelbase": 993,
+    "chainstay": 377,
+    "bbDrop": 50,
+    "forkRake": 45,
+    "bottomBracket": "BSA-68",
+    "tireClearance": 28,
+    "seatpostInterface": "Dedicated aero seatpost; demo round post not verified",
+    "brakeMount": "caliper",
+    "geometry": "track"
+  },
+  "anchors": {
+    "anchor_rear": [
+      -0.37366964019036925,
+      0.05,
+      0
+    ],
+    "anchor_front": [
+      0.6193303598096308,
+      0.05,
+      0
+    ],
+    "anchor_seat": [
+      -0.1626260399320295,
+      0.5671444006036082,
+      0
+    ],
+    "anchor_head": [
+      0.435,
+      0.53,
+      0
+    ],
+    "anchor_headBottom": [
+      0.4749674165934649,
+      0.39061705408894376,
+      0
+    ],
+    "anchor_bb": [
+      0,
+      0,
+      0
+    ]
+  },
+  "bounds": {
+    "min": [
+      -0.3822896865572577,
+      -0.016219460161274846,
+      -0.0560000017285347
+    ],
+    "max": [
+      0.6287399530410767,
+      0.5841116609774379,
+      0.0560000017285347
+    ]
+  },
+  "fidelity": "illustrative",
+  "license": "CC0-1.0"
+}

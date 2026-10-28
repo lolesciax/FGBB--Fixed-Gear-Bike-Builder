@@ -1,0 +1,68 @@
+{
+  "variantId": "dosnoventa-01-bcn-m",
+  "source": "https://dosnoventabikes.com/frames/barcelona/dosnoventa01-bcn-fighter-blue-frameset/",
+  "geometry": {
+    "size": "M",
+    "finish": "Fighter Blue Matt",
+    "colorApproximate": true,
+    "material": "steel",
+    "seatpost": 27.2,
+    "bottomBracket": "BSA-68",
+    "tireClearance": 28,
+    "seatTube": 520,
+    "headTube": 112,
+    "effectiveTopTube": 535,
+    "headAngle": 73,
+    "seatAngle": 74.5,
+    "bbDrop": 48.5,
+    "chainstay": 400,
+    "geometry": "track",
+    "headset": "1 inch ITA threaded"
+  },
+  "anchors": {
+    "anchor_rear": [
+      -0.39704880052708885,
+      0.0485,
+      0
+    ],
+    "anchor_front": [
+      0.5937379765296382,
+      0.0485,
+      0
+    ],
+    "anchor_seat": [
+      -0.1389639555606936,
+      0.5010878356684839,
+      0
+    ],
+    "anchor_head": [
+      0.39999999999999997,
+      0.535,
+      0
+    ],
+    "anchor_headBottom": [
+      0.43274563092894647,
+      0.42789386733214,
+      0
+    ],
+    "anchor_bb": [
+      0,
+      0,
+      0
+    ]
+  },
+  "bounds": {
+    "min": [
+      -0.4049314429165837,
+      -0.01102175936777297,
+      -0.0560000017285347
+    ],
+    "max": [
+      0.6032769680023193,
+      0.546477303707009,
+      0.0560000017285347
+    ]
+  },
+  "fidelity": "illustrative",
+  "license": "CC0-1.0"
+}

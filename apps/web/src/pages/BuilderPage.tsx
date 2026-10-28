@@ -97,6 +97,11 @@ export function BuilderPage() {
     [pan, setPan] = useState({ x: 0, y: 0 });
   const [reconnect, setReconnect] = useState(0),
     [saving, setSaving] = useState(false);
+  const [autoSave, setAutoSave] = useState(false);
+  const [saveFailed,setSaveFailed]=useState(false);
+  const [showIntro, setShowIntro] = useState(
+    () => sessionStorage.getItem("tracklab-frame-intro") !== "dismissed",
+  );
   const infoRef = useRef<HTMLDialogElement>(null),
     drag = useRef<{
       x: number;
@@ -106,6 +111,31 @@ export function BuilderPage() {
     } | null>(null);
   const selectionLocked =
     !session.user && session.usage.changes >= session.limits.changes;
+  useEffect(() => {
+    if (b.mode !== "3d" || !b.previewGrant) return;
+    const end = () => {
+      useBuilder
+        .getState()
+        .set({ mode: "2d", previewExpiresAt: 0, previewGrant: "" });
+      setActionError(
+        "Your 3D session ended. Start another available session to continue.",
+      );
+    };
+    const expiry = setTimeout(
+      end,
+      Math.max(0, b.previewExpiresAt - Date.now()),
+    );
+    const validation = setInterval(() => {
+      void api("/workspace/preview/validate", {
+        method: "POST",
+        body: { grant: b.previewGrant },
+      }).catch(end);
+    }, 30000);
+    return () => {
+      clearTimeout(expiry);
+      clearInterval(validation);
+    };
+  }, [b.mode, b.previewGrant, b.previewExpiresAt]);
   const hasEditorLease = Boolean(b.editorToken);
   useEffect(() => {
     if (!compact) setSheetOpen(false);
@@ -274,10 +304,6 @@ export function BuilderPage() {
       return;
     }
     if (b.pending) return;
-    if (b.previewExpiresAt > Date.now()) {
-      b.set({ mode });
-      return;
-    }
     const testCanvas = document.createElement("canvas");
     const gl =
       testCanvas.getContext("webgl2") || testCanvas.getContext("webgl");
@@ -291,13 +317,29 @@ export function BuilderPage() {
     b.set({ pending: true });
     setActionError("");
     try {
-      const r = await api<{ expiresAt: string }>("/workspace/preview", {
-        method: "POST",
-        body: { token: b.token },
+      if (b.previewGrant && b.previewExpiresAt > Date.now()) {
+        const valid = await api<{ expiresAt: string }>(
+          "/workspace/preview/validate",
+          { method: "POST", body: { grant: b.previewGrant } },
+        );
+        b.set({ mode: "3d", previewExpiresAt: Date.parse(valid.expiresAt) });
+        return;
+      }
+      const r = await api<{ expiresAt: string; grant: string }>(
+        "/workspace/preview",
+        {
+          method: "POST",
+          body: { token: b.token },
+        },
+      );
+      b.set({
+        mode: "3d",
+        previewGrant: r.grant,
+        previewExpiresAt: new Date(r.expiresAt).getTime(),
       });
-      b.set({ mode: "3d", previewExpiresAt: new Date(r.expiresAt).getTime() });
       await refresh();
     } catch (error) {
+      b.set({ mode: "2d", previewExpiresAt: 0, previewGrant: "" });
       setActionError(errorMessage(error));
     } finally {
       b.set({ pending: false });
@@ -309,7 +351,7 @@ export function BuilderPage() {
       return;
     }
     if (!b.configuration || saving) return;
-    setSaving(true);
+    setSaveFailed(false);setSaving(true);
     setActionError("");
     try {
       const saved = await api<SavedBuild>(
@@ -327,18 +369,37 @@ export function BuilderPage() {
         },
       );
       b.set({ saved, dirty: false });
+      await refresh();
       await client.invalidateQueries({ queryKey: ["builds"] });
       notify("Build saved to your garage.");
       if (!id) navigate(`/builder/${saved._id}`, { replace: true });
     } catch (error) {
+      setAutoSave(false);setSaveFailed(true);
       setActionError(errorMessage(error));
     } finally {
       setSaving(false);
     }
   }
+  // Debounce current editor state. New unsaved drafts always require an explicit Save.
+  useEffect(() => {
+    if (
+      !autoSave ||
+      !session.user ||
+      !b.saved ||
+      !b.dirty ||
+      b.pending ||
+      saving ||
+      !b.editorToken
+    )
+      return;
+    const timer = setTimeout(() => {
+      void save().catch(() => setAutoSave(false));
+    }, 2500);
+    return () => clearTimeout(timer);
+  });
   const quotaNotice = selectionLocked ? (
     <div className="notice quota-notice" role="status">
-      <strong>Your {session.limits.changes} component changes are used.</strong>
+      <strong>Daily customization limit reached.</strong>
       <p>
         Your current bicycle stays here. You can keep browsing specifications
         and moving the view.
@@ -361,7 +422,29 @@ export function BuilderPage() {
       locked={selectionLocked}
       loading={catalog.isPending}
       onSelect={(slot, variant) => void change(slot, variant)}
-      notice={quotaNotice}
+      notice={
+        <>
+          {quotaNotice}
+          {showIntro && b.slot === "frameset" && !selectionLocked && (
+            <div className="frame-intro">
+              <p>
+                Choose a real brand, model and size below. Dimension-based
+                previews remain illustrative.
+              </p>
+              <button
+                className="text-button"
+                aria-label="Dismiss frameset introduction"
+                onClick={() => {
+                  setShowIntro(false);
+                  sessionStorage.setItem("tracklab-frame-intro", "dismissed");
+                }}
+              >
+                Got it
+              </button>
+            </div>
+          )}
+        </>
+      }
       onCategory={compact ? (slot) => b.set({ slot }) : undefined}
     />
   );
@@ -383,11 +466,12 @@ export function BuilderPage() {
               "Your workshop"
             ) : (
               <>
-                <span>Guest / </span>
+                <span>Guest Mode / </span>
                 {Math.max(
                   0,
                   session.limits.changes - session.usage.changes,
-                )} of {session.limits.changes} component changes left
+                )}{" "}
+                changes remaining
               </>
             )}
           </summary>
@@ -395,7 +479,8 @@ export function BuilderPage() {
             {session.user ? (
               <>
                 <p>
-                  Up to five saved builds. Creation and update limits apply.
+                  Up to {session.policy.builds} saved builds. Creation and
+                  update limits apply.
                 </p>
                 <button
                   className="text-button"
@@ -407,8 +492,9 @@ export function BuilderPage() {
             ) : (
               <>
                 <p>
-                  Temporary build - refresh or closing may discard it. One 3D
-                  grant per rolling 24 hours.
+                  Temporary build - refresh or closing may discard it.{" "}
+                  {session.policy.guestPreviews} 3D sessions per rolling day, up
+                  to {session.policy.guestPreviewMinutes} minutes each.
                 </p>
                 <p>
                   {session.usage.changesResetAt
@@ -427,6 +513,16 @@ export function BuilderPage() {
           </div>
         </details>
         <div className="workspace-actions">
+          {session.user && b.saved && (
+            <label className="autosave-control">
+              <input
+                type="checkbox"
+                checked={autoSave}
+                onChange={(e) => setAutoSave(e.target.checked)}
+              />
+              Autosave
+            </label>
+          )}
           <label className="build-name">
             <span className="build-name-label">Build name</span>
             <input
@@ -450,7 +546,7 @@ export function BuilderPage() {
             {saving
               ? "Saving…"
               : session.user
-                ? "Save build"
+                ? saveFailed ? 'Retry save' : "Save build"
                 : "Create account to save"}
           </button>
         </div>
@@ -617,6 +713,7 @@ export function BuilderPage() {
                       b.set({ slot });
                       if (compact) setSheetOpen(true);
                     }}
+                    cameraView={b.cameraView}
                     resetKey={resetKey}
                   />
                 </Suspense>
@@ -629,6 +726,23 @@ export function BuilderPage() {
             )}
           </div>
           <div className="viewer-controls">
+            {b.mode === "3d" && (
+              <label className="camera-preset">
+                <span className="sr-only">Camera view</span>
+                <select
+                  aria-label="Camera view"
+                  value={b.cameraView}
+                  onChange={(e) =>
+                    b.set({ cameraView: e.target.value as typeof b.cameraView })
+                  }
+                >
+                  <option value="side">Side</option>
+                  <option value="front">Front</option>
+                  <option value="rear">Rear</option>
+                  <option value="three-quarter">Three-quarter</option>
+                </select>
+              </label>
+            )}
             <button
               className="icon-button"
               aria-label="Undo last selection"
@@ -737,7 +851,7 @@ export function BuilderPage() {
             <span>
               {session.user
                 ? "Your workshop"
-                : `${Math.max(0, session.limits.changes - session.usage.changes)} of ${session.limits.changes} changes left`}
+                : `${Math.max(0, session.limits.changes - session.usage.changes)} changes remaining`}
             </span>
           </div>
           <button
@@ -859,8 +973,10 @@ export function BuilderPage() {
           </ul>
           <h3>Guest workspace</h3>
           <p className="small muted">
-            Twelve accepted component changes and one 3D grant per rolling 24
-            hours. Undo and redo are component changes. Browsing and rejected
+            {session.policy.guestChanges} accepted component changes and{" "}
+            {session.policy.guestPreviews} 3D sessions of up to{" "}
+            {session.policy.guestPreviewMinutes} minutes per rolling 24 hours.
+            Undo and redo are component changes. Browsing and rejected
             incompatible selections use no component allowance. Your guest build
             stays only in memory.
           </p>

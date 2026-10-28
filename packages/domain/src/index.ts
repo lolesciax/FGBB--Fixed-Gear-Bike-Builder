@@ -1,4 +1,9 @@
 import { z } from 'zod';
+import frameAssets from './frame-assets.json';
+export const frameAssetSchema=z.object({variantId:z.string(),url:z.string().regex(/^\/models\/frames\/[a-z0-9-]+\.glb$/),fidelity:z.literal('illustrative'),license:z.literal('CC0-1.0'),source:z.string(),scale:z.literal(1),rotation:z.tuple([z.number(),z.number(),z.number()]),origin:z.literal('bottom-bracket'),units:z.literal('metres'),revision:z.literal('frame-kit-v1')}).strict();
+export const registeredFrameAssets=z.array(frameAssetSchema).parse(frameAssets);
+export { quotaPolicySchema, defaultQuotaPolicy, type QuotaPolicy } from './policy';
+export { visualizationInfo } from './fidelity';
 export { assemblyGeometry, assetRegistry } from './visual';
 
 export const slots = ['frameset', 'wheels', 'tires', 'cockpit', 'drivetrain', 'saddle'] as const;
@@ -21,6 +26,7 @@ export const productSchema = z.object({
   variants: z.array(z.object({
     id: z.string().regex(/^[a-z0-9-]{1,100}$/), label: z.string().max(100), color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
     specs: z.record(z.string(), z.union([z.string().max(200), z.number().finite(), z.boolean()])),
+    asset3D:frameAssetSchema.optional(),
   }).strict()).min(1).max(30),
 }).strict();
 export type Product = z.infer<typeof productSchema>;
