@@ -214,14 +214,16 @@ describe('guest restrictions', () => {
   });
   it('does not charge repeated selections, browsing or invalid compatibility', async () => { const c = await guest(); const w = await workspace(c); await post(c, '/workspace/change', { token: w.token, slot: 'wheels', variantId: 'studio-classic' }).expect(200); await c.agent.get('/api/catalog?slot=tires').expect(200); const next = await post(c, '/workspace/change', { token: w.token, slot: 'tires', variantId: 'studio-tire28' }).expect(200); await post(c, '/workspace/change', { token: next.body.token, slot: 'frameset', variantId: 'studio-pursuit-forest' }).expect(422); const s = await c.agent.get('/api/session'); expect(s.body.usage.changes).toBe(1); });
   it('enforces 24 accepted changes and persists counters across reload/bootstrap', async () => { const c = await guest(); let w = await workspace(c); for (let i = 0; i < 24; i++) w = (await post(c, '/workspace/change', { token: w.token, slot: 'wheels', variantId: i % 2 ? 'studio-classic' : 'studio-deep' }).expect(200)).body; await post(c, '/workspace/change', { token: w.token, slot: 'wheels', variantId: 'studio-deep' }).expect(409); const fresh = await workspace(c); const exhausted = await post(c, '/workspace/change', { token: fresh.token, slot: 'wheels', variantId: 'studio-deep' }).expect(409); expect(exhausted.body.error.code).toBe('GUEST_CHANGE_LIMIT'); expect(exhausted.body.error.details.resetAt).toBeTruthy(); expect((await c.agent.get('/api/session')).body.usage.changes).toBe(24); });
-  it('serializes distinct guest changes at 24 and deduplicates identical operations',async()=>{
+  it('serializes concurrent changes at the configured cap and deduplicates identical operations',async()=>{
+    // Exercise the same boundary with fewer contending transactions; the default 24 is verified above.
+    app=createApp({...config,GUEST_CHANGES:4},new DevelopmentRateStore(),async(email,kind,token)=>{letters.push({email,kind,token});});
     const c=await guest(),w=await workspace(c);
     await Promise.all(Array.from({length:8},()=>post(c,'/workspace/change',{token:w.token,slot:'wheels',variantId:'studio-deep'}).expect(200)));
     expect((await c.agent.get('/api/session')).body.usage.changes).toBe(1);
-    const options=seedCatalog.filter(p=>p.status==='published').flatMap(p=>p.variants.filter(v=>v.id!==defaultConfiguration[p.slot]).map(v=>({slot:p.slot,variantId:v.id}))).filter(v=>v.variantId!=='studio-deep').slice(0,32);
+    const options=seedCatalog.filter(p=>p.status==='published').flatMap(p=>p.variants.filter(v=>v.id!==defaultConfiguration[p.slot]).map(v=>({slot:p.slot,variantId:v.id}))).filter(v=>v.variantId!=='studio-deep').slice(0,8);
     const results=await Promise.all(options.map(value=>post(c,'/workspace/change',{token:w.token,...value})));
-    expect(results.filter(r=>r.status===200)).toHaveLength(23);expect(results.filter(r=>r.status===409).length).toBeGreaterThan(0);
-    expect((await c.agent.get('/api/session')).body.usage.changes).toBe(24);
+    expect(results.filter(r=>r.status===200)).toHaveLength(3);expect(results.filter(r=>r.status===409)).toHaveLength(5);
+    expect((await c.agent.get('/api/session')).body.usage.changes).toBe(4);
   });
   it('reuses a valid 10-minute 3D grant, permits two sessions, and validates expiry and identity',async()=>{
     const c=await guest(),other=await guest(),w=await workspace(c);
