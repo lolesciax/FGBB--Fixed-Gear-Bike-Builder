@@ -4,14 +4,6 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 ## Push workflow
 
-## Task · Temporary unrestricted development usage — completed and verified, 28 October 2026
-
-- Applied the user's later instruction after pushing the catalog expansion. Added the explicit local `DEVELOPMENT_DISABLE_QUOTAS` switch and enabled it in the ignored workspace `.env`. Production startup rejects it. Normal-policy values and histories remain intact; turning it off restores quota enforcement without deleting over-limit builds.
-- Bypasses component/3D-session counts, active saved-build caps, daily/monthly creation, publication count, exports and business save-write quotas. UI copy across landing, builder, registration, garage, account and policy editor reflects development access. Guest drafts remain memory-only; accounts are still required for persistent saves. Authentication, CSRF, ownership, email verification for public builds, editor revisions/leases, compatibility, asset review and request-abuse limits remain active. Technical grants expire separately and can renew during an authorized development workspace.
-- Checks: 59 local tests passed with one live Redis integration skipped; the revised HTTP fixture's 35 API tests passed again. TypeScript, lint and both builds passed. All 16 normal-policy browser flows and both PWA tests passed. A separate isolated development-browser flow passed 26 guest changes, 3D access, registration and saving with no business quota lock. Tests verify production rejection, quota restoration, retained history, unauthorized access and ownership protection.
-- CI had reported a concurrent Supertest socket failure in the previous milestone. Test agents now use explicitly listening ephemeral HTTP servers with per-test cleanup, retaining the 32-request business-quota race. This fixes test-server lifetime rather than weakening the concurrency assertion. CI is inspected after this push; local checks do not substitute for that result.
-- Actual `npm run dev` startup/readback against `tracklab_dev` confirmed `developmentUnlimited: true`, connected mode and frontend readiness at localhost:5180. No database policy reset, credential exposure or deployment. The asset/data gaps listed in the expansion review remain unchanged.
-
 1. Implement one coherent phase or important task.
 2. Run the checks relevant to that change and document their actual results.
 3. Stage source and documentation, then run `npm run check:secrets`.
@@ -19,6 +11,14 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 5. Inspect CI. Fix failures in a follow-up commit rather than presenting an unverified phase as complete.
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
+
+## Task · Temporary unrestricted development usage — completed and verified, 28 October 2026
+
+- Applied the user's later instruction after pushing the catalog expansion. Added the explicit local `DEVELOPMENT_DISABLE_QUOTAS` switch and enabled it in the ignored workspace `.env`. Production startup rejects it. Normal-policy values and histories remain intact; turning it off restores quota enforcement without deleting over-limit builds.
+- Bypasses component/3D-session counts, active saved-build caps, daily/monthly creation, publication count, exports and business save-write quotas. UI copy across landing, builder, registration, garage, account and policy editor reflects development access. Guest drafts remain memory-only; accounts are still required for persistent saves. Authentication, CSRF, ownership, email verification for public builds, editor revisions/leases, compatibility, asset review and request-abuse limits remain active. Technical grants expire separately and can renew during an authorized development workspace.
+- Checks: 59 local tests passed with one live Redis integration skipped; the revised HTTP fixture's 35 API tests passed again. TypeScript, lint and both builds passed. All 16 normal-policy browser flows and both PWA tests passed. A separate isolated development-browser flow passed 26 guest changes, 3D access, registration and saving with no business quota lock. Tests verify production rejection, quota restoration, retained history, unauthorized access and ownership protection.
+- CI had reported a concurrent Supertest socket failure in the previous milestone. Test agents now use explicitly listening ephemeral HTTP servers with per-test cleanup, retaining the 32-request business-quota race. This fixes test-server lifetime rather than weakening the concurrency assertion. CI is inspected after this push; local checks do not substitute for that result.
+- Actual `npm run dev` startup/readback against `tracklab_dev` confirmed `developmentUnlimited: true`, connected mode and frontend readiness at localhost:5180. No database policy reset, credential exposure or deployment. The asset/data gaps listed in the expansion review remain unchanged.
 
 ## Current phase status after continuation audit
 
@@ -63,8 +63,6 @@ This implements the feasible application work in the [brand-authentic upgrade br
 - Verification: TypeScript, lint, both builds, 57 local tests (one live Redis test skipped), 16 isolated Chromium workflows and both PWA tests. Browser checks include source-specific GLBs, repair cancel/apply, per-slot usage, grouped history, eight catalog widths and admin flows at 375/768/1440px. [Catalog evidence](../design/catalog-expansion.png) was inspected. Random admin fixtures exist only in the ignored, guarded temporary test environment.
 - Atlas import/readback targeted only `tracklab_dev`: 28 products and 39 frame asset references. Quotas remained intact for this milestone. No quota reset, build deletion, deployment or manufacturer-image redistribution occurred. The subsequent request to remove local development usage quotas is a separate next task.
 
-## Verified baseline
-
 ## Task · Expansion registry and shared rendering boundary — completed and verified, 28 October 2026
 
 - Archived the new expansion brief and reviewed the ten manufacturers' official sites. Added eight manufacturer records and 30 model research records alongside the existing brands. Research entries store source/check time, exact revision where established, specification status and remaining dependencies. They are separate from selectable product variants; a directory entry does not establish 2D/3D support. Source conflicts and inaccessible charts are recorded in [the review](../brands/source-review.md).
@@ -72,6 +70,8 @@ This implements the feasible application work in the [brand-authentic upgrade br
 - Removed the API-to-frontend SVG dependency. The browser-safe renderer now lives behind `@tracklab/domain/svg`; existing frontend imports re-export it and server image exports use the same shared code. Kept the established `apps`/`packages` layout, scripts and deployment configuration instead of creating duplicate directory trees.
 - Checks: all 30 isolated API tests, TypeScript, both production builds and lint passed. Browser checks for the upcoming selection UI are pending. Atlas import is deferred until the complete expansion milestone is verified. No quota changes or deployment.
 - Next dependencies: publish only reviewed, renderable variants; surface support status in the catalog; enable atomic compatible frame/seating changes; verify actual 2D/3D selection, old builds and responsive behavior. Models lacking sufficient geometry stay unavailable rather than receiving generic dimensions.
+
+## Verified baseline
 
 On 27 October 2026: Atlas connectivity and transactions passed. A temporary account, saved build, session and creation quota survived a complete API/database reconnection; the fixture was removed afterward. TypeScript and lint passed. The local baseline Vitest run passed 34 tests and skipped the live Redis test because no test Redis server was configured. The initial GitHub CI run passed all 35 tests, including the two-client atomic Redis quota race, and all four browser workflows: [baseline CI evidence](https://github.com/lolesciax/FGBB--Fixed-Gear-Bike-Builder/actions/runs/40503274845).
 
