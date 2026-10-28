@@ -10,7 +10,7 @@
     "packages/domain"
   ],
   "scripts": {
-    "dev": "concurrently -k -n api,web \"npm:dev:api\" \"npm:dev:web\"",
+    "dev": "tsx scripts/dev-server.ts",
     "dev:api": "tsx watch apps/api/src/server.ts",
     "dev:web": "vite --config apps/web/vite.config.ts",
     "dev:test": "tsx scripts/e2e-server.ts",

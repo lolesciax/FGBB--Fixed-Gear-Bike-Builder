@@ -18,6 +18,8 @@ npm run dev
 
 Open **http://127.0.0.1:5180**. The API runs at `http://127.0.0.1:4000` and Vite proxies `/api` to it.
 
+`npm run dev` waits for the API/database before starting Vite. Open the exact URL printed by the launcher (for example `http://localhost:5180` when that is your `FRONTEND_URL`) and keep the terminal open. Ctrl+C stops both servers. A lost Vite connection plus `ERR_CONNECTION_REFUSED` means the local server is no longer listening: check the terminal error, then restart. The launcher reports occupied ports instead of starting a second copy.
+
 The ignored root `.env` contains the Atlas connection URI and a generated session secret. `MONGODB_DB_NAME=tracklab_dev` selects TrackLab's separate development database, even if the reused URI names another database. No migration, deletion or overwrite of another application's database is required. Keep credentials out of Git, chat, browser code, and `VITE_` variables.
 
 The current development configuration uses persistent Atlas storage and explicitly permits in-process API request counters without Redis. Business quotas, accounts, sessions, and saved builds live in MongoDB. Request counters reset on API restart; persisted business quota history does not. Production rejects this development rate-limit fallback.

@@ -40,7 +40,14 @@ On 27 October 2026: Atlas connectivity and transactions passed. A temporary acco
 - Local verification: all four Chromium workflows passed against the new isolated launcher. TypeScript and lint passed. A regression test covers removal of inherited external service credentials.
 - Remaining dependencies: browser performance/offline checks and additional guest-transition coverage. No deployment was performed.
 
-## Next tasks
+## Task · Development startup readiness and diagnostics — completed and verified, 28 October 2026
+
+- Investigated reported 502 responses followed by lost Vite connection and refused catalog/workspace requests. Neither development port was listening when inspected. A clean start reached Atlas successfully. The original process-exit cause is unconfirmed without the preceding terminal output; it is not attributed to authentication or catalog data.
+- Replaced simultaneous `concurrently` startup with a local launcher that checks port availability, starts the API watcher, waits for healthy database/catalog initialization, and then starts Vite. This removes the interval in which the frontend could issue API calls before the API listened.
+- The launcher binds/displays the configured loopback hostname, validates its port against Vite, retains startup diagnostics, explains that the terminal must stay open, and stops its own child process trees on exit/Ctrl+C. It never kills an existing unrelated app to free a port. Production startup and isolated browser-test orchestration are unchanged.
+- Verified actual `npm run dev` startup against `tracklab_dev`; localhost session, catalog and signed workspace requests returned 200. A second command failed clearly with port-in-use diagnostics, leaving the running app intact. Ctrl+C released ports 4000/5180. TypeScript, lint and two focused readiness/occupied-port/cancellation tests passed. No component-change quota, saved build, production service or deployment was modified.
+
+## Next feature tasks
 
 1. Complete page-specific graphite/blue composition and interaction reviews for landing, catalog, garage, account and admin; the shared foundation and builder are verified below.
 2. Extend mobile keyboard/device and assistive-technology coverage beyond the browser viewport checks.
