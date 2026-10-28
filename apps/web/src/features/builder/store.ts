@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Configuration, Slot } from '@tracklab/domain';
 import type { SavedBuild } from '../../services/api';
-type History = { slot: Slot; before: string; after: string };
+type History = { slot: Slot; before: string; after: string; beforeConfiguration?:Configuration; afterConfiguration?:Configuration };
 type Workspace = {
   configuration: Configuration | null; token: string; slot: Slot; dirty: boolean; pending: boolean; past: History[]; future: History[];
   cameraView: 'side'|'front'|'rear'|'three-quarter'; name: string; ownerKey: string; previewGrant: string; previewExpiresAt: number; saved: SavedBuild | null; editorToken: string; zoom: number; mode: '2d' | '3d';

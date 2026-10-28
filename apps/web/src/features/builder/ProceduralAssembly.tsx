@@ -237,7 +237,7 @@ export function ProceduralAssembly({
           </group>
         ))}
         <group {...pick("saddle")}>
-          <Tube a={seat} b={saddle} radius={11} />
+          <Tube a={seat} b={saddle} radius={(Number(get('saddle')?.specs.seatpost)||22)/2} />
           <mesh
             position={vec({ x: saddle.x, y: saddle.y - 10 })}
             scale={[

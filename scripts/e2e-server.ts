@@ -28,7 +28,7 @@ async function assertPortAvailable(port: number) {
 }
 process.once('SIGTERM', () => stop()); process.once('SIGINT', () => stop());
 await Promise.all([assertPortAvailable(4010), assertPortAvailable(5190)]);
-const api = launch('../node_modules/tsx/dist/cli.mjs', ['apps/api/src/server.ts']);
+const api = launch('../node_modules/tsx/dist/cli.mjs', ['scripts/e2e-api.ts']);
 try {
   let ready = false;
   for (let attempt = 0; attempt < 480 && !stopping; attempt++) {

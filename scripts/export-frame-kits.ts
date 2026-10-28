@@ -74,7 +74,7 @@ for (const product of manufacturerCatalog.filter(
       tube(`paint_chainstay_${z}`, v(g.bb, z), v(g.rear, z), 0.009);
       const curve = new THREE.QuadraticBezierCurve3(
         v(g.headBottom, z),
-        v({ x: g.headBottom.x + 35, y: g.headBottom.y + 160 }, z),
+        String(variant.specs.forkProfile||'').startsWith('straight')?v({x:(g.headBottom.x+g.front.x)/2,y:g.headBottom.y/2},z):v({ x: g.headBottom.x + 35, y: g.headBottom.y + 160 }, z),
         v(g.front, z),
       );
       const fork = new THREE.Mesh(

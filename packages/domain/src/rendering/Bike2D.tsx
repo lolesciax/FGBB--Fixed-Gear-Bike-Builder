@@ -1,4 +1,4 @@
-import { useId, type KeyboardEvent } from "react";
+import React, { useId, type KeyboardEvent } from "react";
 import {
   assemblyGeometry,
   variantById,
@@ -188,13 +188,13 @@ export function Bike2D({
           {tube(bb, headBottom, g.frameWidth + 10)}
           {tube(head, headBottom, g.frameWidth + 9)}
           <path
-            d={`M${headBottom.x} ${headBottom.y} Q${headBottom.x + 38} ${headBottom.y + 110} ${front.x} 0`}
+            d={String(frame?.specs.forkProfile||'').startsWith('straight')?`M${headBottom.x} ${headBottom.y} L${front.x} 0`:`M${headBottom.x} ${headBottom.y} Q${headBottom.x + 38} ${headBottom.y + 110} ${front.x} 0`}
             fill="none"
             stroke="#20252d"
             strokeWidth="25"
           />
           <path
-            d={`M${headBottom.x + 1} ${headBottom.y + 10} Q${headBottom.x + 40} ${headBottom.y + 110} ${front.x + 1} -8`}
+            d={String(frame?.specs.forkProfile||'').startsWith('straight')?`M${headBottom.x+1} ${headBottom.y+10} L${front.x+1} -8`:`M${headBottom.x + 1} ${headBottom.y + 10} Q${headBottom.x + 40} ${headBottom.y + 110} ${front.x + 1} -8`}
             fill="none"
             stroke="#636c78"
             strokeWidth="6"
@@ -203,7 +203,7 @@ export function Bike2D({
           <circle cx={front.x} cy="0" r="8" fill="#abb3bf" />
         </g>
         <g {...interactive("saddle")}>
-          {tube(seat, saddle, 22, `url(#${uid}-metal)`)}
+          {tube(seat, saddle, Number(get('saddle')?.specs.seatpost)||22, `url(#${uid}-metal)`)}
           <path
             d={`M${saddle.x - 44} ${saddle.y - 3} Q${saddle.x} ${saddle.y + 15} ${saddle.x + 62} ${saddle.y - 4}`}
             fill="none"

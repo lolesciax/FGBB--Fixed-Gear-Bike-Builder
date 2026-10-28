@@ -356,3 +356,76 @@
     gap: 8px;
   }
 }
+.model-directory,
+.registry-editor {
+  margin-top: 24px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.model-directory > summary,
+.registry-editor > summary {
+  font-weight: 650;
+  cursor: pointer;
+  min-height: 32px;
+}
+.model-directory > label {
+  max-width: 360px;
+  margin: 16px 0;
+}
+.model-records,
+.registry-forms {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.model-record {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.model-record h3 {
+  margin: 4px 0 12px;
+}
+.model-record p {
+  overflow-wrap: anywhere;
+}
+.registry-forms form {
+  min-width: 0;
+  padding-top: 12px;
+}
+.registry-forms label {
+  margin-bottom: 12px;
+}
+.frame-change-dialog {
+  width: min(600px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+.frame-change-dialog label {
+  margin: 12px 0;
+}
+.frame-change-dialog select {
+  max-width: 100%;
+  text-overflow: ellipsis;
+}
+.frame-change-dialog .dialog-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+@media (max-width: 650px) {
+  .model-records,
+  .registry-forms {
+    grid-template-columns: 1fr;
+  }
+  .model-directory,
+  .registry-editor {
+    padding: 14px;
+  }
+  .frame-change-dialog .dialog-actions button {
+    flex: 1;
+  }
+}

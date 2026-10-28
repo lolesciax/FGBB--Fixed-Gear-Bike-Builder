@@ -7,7 +7,9 @@ test('guest selection, undo, quota persistence and compatibility rejection', asy
   await page.getByRole('button', { name: 'Undo last selection' }).click(); await expect(page.getByRole('button', { name: 'Studio Track Graphite finish' })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Tires', exact: true }).click(); await page.getByRole('button', { name: 'Select Road 28 · tan wall' }).click();
   await page.getByRole('button', { name: 'Frameset', exact: true }).click(); await page.getByRole('button', { name: 'Select Studio Pursuit', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText('conflicts with your current parts');
+  const frameReview=page.getByRole('dialog',{name:'Review dependent parts'});await expect(frameReview).toBeVisible();
+  await expect(frameReview.getByRole('alert')).toContainText('Frame tire clearance');
+  await frameReview.getByRole('button',{name:'Cancel frame change'}).click();
   await expect(page.getByRole('button', { name: 'Select Studio Track', exact: true })).toHaveAttribute('aria-pressed', 'true');
   page.once('dialog', d => d.accept()); await page.reload();
   await expect(page.getByText('21 changes remaining', { exact: false })).toBeVisible();

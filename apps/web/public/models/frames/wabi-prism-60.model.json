@@ -1,0 +1,72 @@
+{
+  "variantId": "wabi-prism-60",
+  "source": "https://wabicycles.com/products/wabi-prism-frameset",
+  "geometry": {
+    "material": "steel",
+    "tireClearance": 38,
+    "wheelBsd": 622,
+    "seatTubeMeasurement": "center-to-top",
+    "geometrySource": "https://wabicycles.com/pages/tech-specs",
+    "forkProfile": "straight steel blades; surface dimensions unverified",
+    "size": "60",
+    "finish": "Haze Grey",
+    "colorApproximate": true,
+    "seatTube": 600,
+    "headTube": 175,
+    "headAngle": 72.5,
+    "seatAngle": 73,
+    "chainstay": 400,
+    "bbDrop": 62,
+    "stack": 580,
+    "reach": 395,
+    "wheelbase": 1007,
+    "effectiveTopTube": 570,
+    "forkRake": 40
+  },
+  "anchors": {
+    "anchor_rear": [
+      -0.39516578799283725,
+      0.062,
+      0
+    ],
+    "anchor_front": [
+      0.6118342120071627,
+      0.062,
+      0
+    ],
+    "anchor_seat": [
+      -0.17542302283364206,
+      0.5737828535778212,
+      0
+    ],
+    "anchor_head": [
+      0.3950000000000001,
+      0.58,
+      0
+    ],
+    "anchor_headBottom": [
+      0.4476235149132479,
+      0.4130995336190603,
+      0
+    ],
+    "anchor_bb": [
+      0,
+      0,
+      0
+    ]
+  },
+  "bounds": {
+    "min": [
+      -0.4036731521756423,
+      -0.011390613293731172,
+      -0.0560000017285347
+    ],
+    "max": [
+      0.6217982769012451,
+      0.591499317133003,
+      0.0560000017285347
+    ]
+  },
+  "fidelity": "illustrative",
+  "license": "CC0-1.0"
+}

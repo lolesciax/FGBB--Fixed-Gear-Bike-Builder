@@ -222,5 +222,405 @@
     "origin": "bottom-bracket",
     "units": "metres",
     "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "skream-magnum-xs",
+    "url": "/models/frames/skream-magnum-xs.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "skream-magnum-s",
+    "url": "/models/frames/skream-magnum-s.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "skream-magnum-m",
+    "url": "/models/frames/skream-magnum-m.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "skream-magnum-l",
+    "url": "/models/frames/skream-magnum-l.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "skream-magnum-xl",
+    "url": "/models/frames/skream-magnum-xl.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "skream-ranger-xs",
+    "url": "/models/frames/skream-ranger-xs.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "skream-ranger-s",
+    "url": "/models/frames/skream-ranger-s.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "skream-ranger-m",
+    "url": "/models/frames/skream-ranger-m.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "skream-ranger-l",
+    "url": "/models/frames/skream-ranger-l.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "skream-ranger-xl",
+    "url": "/models/frames/skream-ranger-xl.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "state-black-label-v3-49",
+    "url": "/models/frames/state-black-label-v3-49.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "state-black-label-v3-52",
+    "url": "/models/frames/state-black-label-v3-52.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "state-black-label-v3-55",
+    "url": "/models/frames/state-black-label-v3-55.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "state-black-label-v3-58",
+    "url": "/models/frames/state-black-label-v3-58.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "state-black-label-v3-61",
+    "url": "/models/frames/state-black-label-v3-61.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "8bar-krzberg-v8-s",
+    "url": "/models/frames/8bar-krzberg-v8-s.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "8bar-krzberg-v8-m",
+    "url": "/models/frames/8bar-krzberg-v8-m.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "8bar-krzberg-v8-l",
+    "url": "/models/frames/8bar-krzberg-v8-l.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "8bar-krzberg-v8-xl",
+    "url": "/models/frames/8bar-krzberg-v8-xl.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "wabi-prism-47",
+    "url": "/models/frames/wabi-prism-47.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "wabi-prism-51",
+    "url": "/models/frames/wabi-prism-51.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "wabi-prism-54",
+    "url": "/models/frames/wabi-prism-54.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "wabi-prism-57",
+    "url": "/models/frames/wabi-prism-57.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "wabi-prism-60",
+    "url": "/models/frames/wabi-prism-60.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
+  },
+  {
+    "variantId": "wabi-prism-62",
+    "url": "/models/frames/wabi-prism-62.glb",
+    "fidelity": "illustrative",
+    "license": "CC0-1.0",
+    "source": "Independently authored TrackLab frame-kit geometry",
+    "scale": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "origin": "bottom-bracket",
+    "units": "metres",
+    "revision": "frame-kit-v1"
   }
 ]

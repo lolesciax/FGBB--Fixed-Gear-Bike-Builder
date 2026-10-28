@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { assemblyGeometry, compatibility, validateConfiguration, productSchema } from '@tracklab/domain';
+import { withHistoricalCatalog,assemblyGeometry, compatibility, validateConfiguration, productSchema } from '@tracklab/domain';
 import { defaultConfiguration, seedCatalog } from '../apps/api/src/catalog';
 describe('compatibility engine', () => {
+  it('merges a saved retired variant into an existing product without exposing it for new selections',()=>{
+    const snapshot=structuredClone(seedCatalog.find(p=>p.id==='studio-track')!);
+    const current={...snapshot,variants:snapshot.variants.filter(v=>v.id!==defaultConfiguration.frameset)};
+    const merged=withHistoricalCatalog([current],[snapshot]);
+    expect(merged[0].variants.find(v=>v.id===defaultConfiguration.frameset)?.status).toBe('archived');
+    const all=[...seedCatalog.filter(p=>p.id!==current.id),...merged];
+    expect(()=>validateConfiguration(defaultConfiguration,all)).toThrow();
+    expect(()=>validateConfiguration(defaultConfiguration,all,true)).not.toThrow();
+  });
   it('uses reviewed size geometry while leaving unknown manufacturer interfaces unresolved',()=>{
     const la=seedCatalog.find(p=>p.id==='dosnoventa-02-la')!;
     const medium=la.variants.find(v=>v.specs.size==='M')!;

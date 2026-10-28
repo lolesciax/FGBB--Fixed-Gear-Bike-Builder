@@ -1,4 +1,5 @@
 import { registeredFrameAssets, type Product } from "@tracklab/domain";
+import { expandedFramesets, expandedDrafts } from './modules/catalog/expanded-framesets';
 
 const reviewedAt = "2026-10-27T13:50:00.000Z";
 const visual: Product["visual"] = {
@@ -101,7 +102,7 @@ const dos = (
       };
     }),
   );
-export const manufacturerCatalog: Product[] = [
+const existingManufacturerCatalog: Product[] = [
   // Sizes and dimensional tables transcribed from the official Americas product page.
   // Finish swatch is a neutral placeholder: Rainbow graphics are not reproduced.
   frame(
@@ -213,6 +214,7 @@ export const manufacturerCatalog: Product[] = [
     ],
   },
 ];
+export const manufacturerCatalog:Product[]=[...existingManufacturerCatalog,...expandedFramesets,...expandedDrafts];
 export const seedBrands = [
   {
     id: "cinelli",

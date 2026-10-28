@@ -39,6 +39,7 @@ import { useBuilder } from "../features/builder/store";
 import { Bike2D } from "../features/builder/Bike2D";
 import { PartsInspector } from "../features/builder/PartsInspector";
 import { PartsSheet } from "../features/builder/PartsSheet";
+import { FrameChangeReview } from '../features/builder/FrameChangeReview';
 import { useMediaQuery } from "../components/useMediaQuery";
 const Bike3D = lazy(() => import("../features/builder/Bike3D"));
 const categories = {
@@ -83,6 +84,7 @@ export function BuilderPage() {
     navigate = useNavigate(),
     client = useQueryClient();
   const catalog = useQuery({ queryKey: ["catalog"], queryFn: loadCatalog });
+  const [frameReview,setFrameReview]=useState<Configuration|null>(null);
   const userId = session.user?.id;
   const workspaceKey = session.workspaceKey;
   const compact = useMediaQuery("(max-width: 1100px)");
@@ -268,28 +270,31 @@ export function BuilderPage() {
     slot: Slot,
     variantId: string,
     direction?: "undo" | "redo",
+    replacements?: Partial<Configuration>,
   ) {
     const current = useBuilder.getState();
     if (
       !current.configuration ||
       current.pending ||
-      current.configuration[slot] === variantId
+      (current.configuration[slot] === variantId && !replacements)
     )
       return;
     if (selectionLocked) return;
+    if(slot==='frameset'&&!direction&&!replacements){const proposed={...current.configuration,frameset:variantId};if(compatibility(proposed,data).state==='incompatible'){setFrameReview(proposed);return;}}
     current.set({ pending: true });
     setActionError("");
     try {
       const next = await api<{ configuration: Configuration; token: string }>(
         "/workspace/change",
-        { method: "POST", body: { token: current.token, slot, variantId } },
+        { method: "POST", body: { token: current.token, slot, variantId, ...(replacements?{replacements}:{}) } },
       );
       current.accept(
         next.configuration,
         next.token,
-        { slot, before: current.configuration[slot], after: variantId },
+        { slot, before: current.configuration[slot], after: variantId, beforeConfiguration:current.configuration,afterConfiguration:next.configuration },
         direction,
       );
+      setFrameReview(null);
       await refresh();
     } catch (error) {
       setActionError(errorMessage(error));
@@ -750,7 +755,7 @@ export function BuilderPage() {
               disabled={!b.past.length || b.pending || selectionLocked}
               onClick={() => {
                 const h = b.past.at(-1)!;
-                void change(h.slot, h.before, "undo");
+                void change(h.slot, h.before, "undo", h.beforeConfiguration);
               }}
             >
               <Undo2 size={16} />
@@ -761,7 +766,7 @@ export function BuilderPage() {
               disabled={!b.future.length || b.pending || selectionLocked}
               onClick={() => {
                 const h = b.future.at(-1)!;
-                void change(h.slot, h.after, "redo");
+                void change(h.slot, h.after, "redo", h.afterConfiguration);
               }}
             >
               <Redo2 size={16} />
@@ -988,6 +993,7 @@ export function BuilderPage() {
           </button>
         </dialog>
       )}
+      {frameReview&&b.configuration&&<FrameChangeReview guest={!session.user} current={b.configuration} proposed={frameReview} catalog={data} pending={b.pending} onClose={()=>setFrameReview(null)} onApply={configuration=>void change('frameset',configuration.frameset,undefined,configuration)}/>}
     </main>
   );
 }

@@ -4,19 +4,20 @@ import mongoose from 'mongoose';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { resolve } from 'node:path';
 import { createServer } from 'node:http';
+import { readFile,unlink } from 'node:fs/promises';
 import { createApp } from '../apps/api/src/app';
 import { parseConfig } from '../apps/api/src/config';
 import { DevelopmentRateStore, sign } from '../apps/api/src/security';
 import { Build, ProductModel, Subject, User, initializeModels, Session, Audit } from '../apps/api/src/models';
 import { seedCatalog, defaultConfiguration } from '../apps/api/src/catalog';
 import { importCatalog } from '../apps/api/src/catalog-import';
-import { Brand, ModelRecordModel } from '../apps/api/src/models';
+import { Brand, ModelRecordModel, AssetReview } from '../apps/api/src/models';
 const origin = 'http://localhost:5173';
 const config = parseConfig({ NODE_ENV: 'test', FRONTEND_URL: origin });
 let repl: MongoMemoryReplSet, app: ReturnType<typeof createApp>;
 let letters: { email: string; kind: string; token: string }[];
 type Client = { agent: Agent; csrf: string; userId?: string; guestCookie: string };
-async function guest(): Promise<Client> { const server = createServer(app); server.setMaxListeners(30); /* The quota race deliberately makes 15 simultaneous Supertest calls. */ const agent = request.agent(server); const s = await agent.get('/api/session').expect(200); const guestCookie = (s.headers['set-cookie'] as unknown as string[]).find(value => value.startsWith('tracklab-guest='))?.split(';')[0]; if (!guestCookie) throw new Error('Guest usage cookie was not issued.'); return { agent, csrf: s.body.csrf, guestCookie }; }
+async function guest(): Promise<Client> { const server = createServer(app); server.setMaxListeners(64); /* The quota race deliberately makes 32 simultaneous Supertest calls. */ const agent = request.agent(server); const s = await agent.get('/api/session').expect(200); const guestCookie = (s.headers['set-cookie'] as unknown as string[]).find(value => value.startsWith('tracklab-guest='))?.split(';')[0]; if (!guestCookie) throw new Error('Guest usage cookie was not issued.'); return { agent, csrf: s.body.csrf, guestCookie }; }
 function post(c: Client, path: string, body: object = {}) { return c.agent.post(`/api${path}`).set('Origin', origin).set('X-CSRF-Token', c.csrf).send(body); }
 function patch(c: Client, path: string, body: object = {}, editorToken = '') { return c.agent.patch(`/api${path}`).set('Origin', origin).set('X-CSRF-Token', c.csrf).set('X-Editor-Token', editorToken).send(body); }
 function del(c: Client, path: string) { return c.agent.delete(`/api${path}`).set('Origin', origin).set('X-CSRF-Token', c.csrf); }
@@ -50,6 +51,62 @@ describe('authentication and authorization', () => {
     expect(picture.filename).toBe('Daily-rider.svg');
     for(let i=1;i<8;i++)await post(c,`/builds/${created._id}/export`).expect(200);
     await post(c,`/builds/${created._id}/export-image`).expect(409);
+  });
+  it('archives individual variants without removing saved selections or allowing new selection of retired variants',async()=>{
+    const c=await member(),w=await workspace(c);
+    const saved=(await post(c,'/builds',build).expect(201)).body;
+    await User.updateOne({_id:c.userId},{$set:{role:'admin'}});
+    const product=structuredClone(seedCatalog.find(p=>p.id==='studio-track')!);
+    product.variants.find(v=>v.id===defaultConfiguration.frameset)!.status='archived';
+    await c.agent.put('/api/admin/catalog/studio-track').set('Origin',origin).set('X-CSRF-Token',c.csrf).send(product).expect(200);
+    const item=(await c.agent.get('/api/catalog/studio-track').expect(200)).body;
+    expect(item.variants.some((v:{id:string})=>v.id===defaultConfiguration.frameset)).toBe(false);
+    const changed=await post(c,'/workspace/change',{token:w.token,slot:'wheels',variantId:'studio-deep'}).expect(200);
+    expect(changed.body.configuration.frameset).toBe(defaultConfiguration.frameset);
+    await c.agent.get(`/api/builds/${saved._id}`).expect(200);
+    const g=await guest(),gw=await workspace(g);
+    await post(g,'/workspace/change',{token:gw.token,slot:'frameset',variantId:defaultConfiguration.frameset}).expect(422);
+  });
+  it('keeps rights-attested uploads private and pending, rejecting external-resource models and unprivileged uploads',async()=>{
+    const c=await member();
+    const query=new URLSearchParams({productId:'skream-magnum',filename:'frame.glb',license:'Original CC0 geometry',evidence:'https://example.com/permission',permission:'confirmed'});
+    const upload=(bytes:Buffer)=>c.agent.post('/api/admin/asset-reviews?'+query).set('Origin',origin).set('X-CSRF-Token',c.csrf).set('Content-Type','model/gltf-binary').send(bytes);
+    const data=await readFile(resolve('apps/web/public/models/frames/skream-magnum-m.glb'));
+    await upload(data).expect(403);await User.updateOne({_id:c.userId},{$set:{role:'admin'}});
+    await upload(Buffer.from('not a model file')).expect(422);
+    const external=Buffer.from(JSON.stringify({asset:{version:'2.0'},buffers:[{uri:'https://example.com/external.bin'}]}));
+    const invalid=Buffer.alloc(20+external.length);invalid.write('glTF');invalid.writeUInt32LE(2,4);invalid.writeUInt32LE(invalid.length,8);invalid.writeUInt32LE(external.length,12);invalid.writeUInt32LE(0x4e4f534a,16);external.copy(invalid,20);
+    await upload(invalid).expect(422);
+    const uploaded=(await upload(data).expect(201)).body;expect(uploaded.status).toBe('pending');
+    const stored=await AssetReview.findById(uploaded.id).lean();expect(stored?.bytes).toBe(data.length);
+    const listing=(await c.agent.get('/api/admin/asset-reviews').expect(200)).body.items;
+    expect(listing[0].storageKey).toBeUndefined();
+    const download=await c.agent.get(`/api/admin/asset-reviews/${uploaded.id}/file`).expect(200);expect(download.headers['content-disposition']).toContain('attachment');
+    expect((await ProductModel.findById('skream-magnum'))?.data.variants.find((v:{id:string})=>v.id==='skream-magnum-m').asset3D.url).toBe('/models/frames/skream-magnum-m.glb');
+    expect(stored?.storageKey).toMatch(/^[a-f0-9-]+\.glb$/);
+    await unlink(resolve('.local/test-asset-review',stored!.storageKey!));
+  });
+  it('applies dependent frame/seating changes atomically, charges per changed slot and deduplicates retries',async()=>{
+    const c=await guest(),w=await workspace(c);
+    await post(c,'/workspace/change',{token:w.token,slot:'frameset',variantId:'skream-magnum-m'}).expect(422);
+    expect((await c.agent.get('/api/session')).body.usage.changes).toBe(0);
+    const input={token:w.token,slot:'frameset',variantId:'skream-magnum-m',replacements:{saddle:'studio-race-316'}};
+    const first=await post(c,'/workspace/change',input).expect(200);
+    await post(c,'/workspace/change',input).expect(200);
+    expect(first.body.configuration).toMatchObject({frameset:'skream-magnum-m',saddle:'studio-race-316'});
+    expect((await c.agent.get('/api/session')).body.usage.changes).toBe(2);
+    await post(c,'/workspace/preview',{token:first.body.token}).expect(200);
+    await post(c,'/workspace/change',{...input,replacements:{saddle:'studio-classic'}}).expect(422);
+    expect((await c.agent.get('/api/session')).body.usage.changes).toBe(2);
+  });
+  it('rolls back an entire dependent change when only one guest change remains',async()=>{
+    const c=await guest(),w=await workspace(c),subject=await Subject.findOne();
+    // Initialize this guest's usage subject through one accepted replacement.
+    await post(c,'/workspace/change',{token:w.token,slot:'wheels',variantId:'studio-deep'}).expect(200);
+    const usage=await Subject.findOne();expect(subject).toBeNull();
+    await Subject.updateOne({_id:usage!._id},{$set:{changes:Array(23).fill(Date.now())}});
+    await post(c,'/workspace/change',{token:w.token,slot:'frameset',variantId:'skream-magnum-m',replacements:{saddle:'studio-race-316'}}).expect(409);
+    expect((await c.agent.get('/api/session')).body.usage.changes).toBe(23);
   });
   it('keeps model research distinct from selectable products and preserves edited registry records', async()=>{
     await importCatalog(); const c=await guest();
@@ -134,7 +191,7 @@ describe('guest restrictions', () => {
     const c=await guest(),w=await workspace(c);
     await Promise.all(Array.from({length:8},()=>post(c,'/workspace/change',{token:w.token,slot:'wheels',variantId:'studio-deep'}).expect(200)));
     expect((await c.agent.get('/api/session')).body.usage.changes).toBe(1);
-    const options=seedCatalog.filter(p=>p.status==='published').flatMap(p=>p.variants.filter(v=>v.id!==defaultConfiguration[p.slot]).map(v=>({slot:p.slot,variantId:v.id}))).filter(v=>v.variantId!=='studio-deep');
+    const options=seedCatalog.filter(p=>p.status==='published').flatMap(p=>p.variants.filter(v=>v.id!==defaultConfiguration[p.slot]).map(v=>({slot:p.slot,variantId:v.id}))).filter(v=>v.variantId!=='studio-deep').slice(0,32);
     const results=await Promise.all(options.map(value=>post(c,'/workspace/change',{token:w.token,...value})));
     expect(results.filter(r=>r.status===200)).toHaveLength(23);expect(results.filter(r=>r.status===409).length).toBeGreaterThan(0);
     expect((await c.agent.get('/api/session')).body.usage.changes).toBe(24);

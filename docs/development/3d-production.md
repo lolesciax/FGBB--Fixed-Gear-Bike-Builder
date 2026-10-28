@@ -1,6 +1,6 @@
 # How TrackLab produces 3D
 
-The active viewer combines original component meshes with **14 separate illustrative GLB framesets**, one for each published size/finish variant. These are not licensed manufacturer replicas. Frame anchors use reviewed dimensions where present; tube sections, fork profiles, component shapes and finish graphics still include documented approximations. A sourced product name does not certify its visual accuracy.
+The active viewer combines original component meshes with **39 separate illustrative GLB framesets**, one for each published size/finish variant. These are not licensed manufacturer replicas. Frame anchors use reviewed dimensions where present; tube sections, fork profiles, component shapes and finish graphics still include documented approximations. A sourced product name does not certify its visual accuracy.
 
 ## Reproducible assets now
 
@@ -31,6 +31,8 @@ The importer attaches these references only to matching source/specification rec
 Three.js loads registered files through the [glTF loader](https://threejs.org/docs/pages/GLTFLoader). The app assembles wheels, cockpit, drivetrain and seating at frame-derived anchors, uses studio lights/contact shadows, and offers side/front/rear/three-quarter views. Camera framing is recomputed from the assembled bounds and viewport aspect. The lightweight landing page uses SVG and does not download 3D assets.
 
 ## What remains unavailable
+
+The admin asset inbox accepts rights-attested self-contained GLBs and PNG/JPEG/WebP references, at most 2 MB each, into private `.local/asset-review` storage with MongoDB metadata. Test uploads use `.local/test-asset-review`. Admins can download files for review; public API routes never serve them. SVG uploads and externally linked GLB resources are rejected. Uploading does not publish an asset, assert its fidelity or replace a reviewed renderer. Publication still requires source/rights/anchor/transform checks and registration in the tested asset manifest. This inbox is deliberately local; production uploads fail closed until a durable review store is configured. No hosting or storage service was provisioned.
 
 Blender was not available on PATH in this environment, so artist editing and Blender export were **not** executed here. No authentic brand models, approved decal sheets, exact tube-profile surveys or manufacturer-provided finish textures were supplied. Those remain asset-production dependencies. AI image generation was used for interface concepts, not to invent editable or accurate bicycle meshes.
 

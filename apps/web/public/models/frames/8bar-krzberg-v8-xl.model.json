@@ -1,0 +1,75 @@
+{
+  "variantId": "8bar-krzberg-v8-xl",
+  "source": "https://8bar-bikes.com/shop/8bar-krzberg-v8-singlespeed-frameset/",
+  "geometry": {
+    "material": "6061 alloy",
+    "seatpost": 27.2,
+    "bottomBracket": "BSA-68",
+    "tireClearance": 32,
+    "wheelBsd": 622,
+    "rearSpacing": 120,
+    "rearAxleDiameter": 10,
+    "steerer": "tapered-28.6-38.1",
+    "headset": "IS42/28.6 | IS52/40",
+    "maxChainring": 52,
+    "size": "XL",
+    "finish": "Black",
+    "colorApproximate": true,
+    "seatTube": 570,
+    "headTube": 180,
+    "headAngle": 73,
+    "seatAngle": 74,
+    "chainstay": 395,
+    "bbDrop": 50,
+    "stack": 564,
+    "reach": 433,
+    "wheelbase": 1028,
+    "effectiveTopTube": 587
+  },
+  "anchors": {
+    "anchor_rear": [
+      -0.39182266396930127,
+      0.05,
+      0
+    ],
+    "anchor_front": [
+      0.6361773360306987,
+      0.05,
+      0
+    ],
+    "anchor_seat": [
+      -0.15711329281568953,
+      0.5479191666848418,
+      0
+    ],
+    "anchor_head": [
+      0.433,
+      0.564,
+      0
+    ],
+    "anchor_headBottom": [
+      0.48562690685009263,
+      0.3918651439266536,
+      0
+    ],
+    "anchor_bb": [
+      0,
+      0,
+      0
+    ]
+  },
+  "bounds": {
+    "min": [
+      -0.4001230037119762,
+      -0.016342882388251823,
+      -0.0560000017285347
+    ],
+    "max": [
+      0.645461916923523,
+      0.5809936920865466,
+      0.0560000017285347
+    ]
+  },
+  "fidelity": "illustrative",
+  "license": "CC0-1.0"
+}

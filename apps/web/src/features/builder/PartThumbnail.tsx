@@ -11,6 +11,7 @@ export function PartThumbnail({
   variant?: Product["variants"][number];
 }) {
   const uid = useId().replace(/:/g, "");
+  if(product.slot==='frameset'&&!product.illustrative&&!product.visual) return <span className="unavailable-thumbnail">Preview unavailable</span>;
   if (product.slot === "frameset") {
     const g = assemblyGeometry(
       variant?.specs ||

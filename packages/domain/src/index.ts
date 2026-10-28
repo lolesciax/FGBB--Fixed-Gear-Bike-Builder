@@ -29,6 +29,7 @@ export const productSchema = z.object({
   variants: z.array(z.object({
     id: z.string().regex(/^[a-z0-9-]{1,100}$/), label: z.string().max(100), color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
     specs: z.record(z.string(), z.union([z.string().max(200), z.number().finite(), z.boolean()])),
+    status:z.enum(['draft','published','archived']).optional(),
     asset3D:frameAssetSchema.optional(),
   }).strict()).min(1).max(30),
 }).strict();
@@ -44,12 +45,12 @@ export function variantById(catalog: Product[], id: string) {
   return undefined;
 }
 export function withHistoricalCatalog(current: Product[], snapshot: Product[] = []): Product[] {
-  return [...current, ...snapshot.filter(p => !current.some(c => c.id === p.id))];
+  return [...current.map(product=>({...product,variants:[...product.variants,...(snapshot.find(p=>p.id===product.id)?.variants||[]).filter(v=>!product.variants.some(c=>c.id===v.id)).map(v=>({...v,status:'archived' as const}))]})), ...snapshot.filter(p => !current.some(c => c.id === p.id)).map(p=>({...p,status:'archived' as const}))];
 }
 export function validateConfiguration(config: Configuration, catalog: Product[], allowArchived = false) {
   for (const slot of slots) {
     const record = variantById(catalog, config[slot]);
-    if (!record || record.product.slot !== slot || (record.product.status !== 'published' && !(allowArchived && record.product.status === 'archived')))
+    if (!record || record.product.slot !== slot || (record.product.status !== 'published' && !(allowArchived && record.product.status === 'archived')) || (record.variant.status && record.variant.status!=='published' && !(allowArchived&&record.variant.status==='archived')))
       throw new Error(`The ${slot} selection is unavailable. Choose a published variant.`);
   }
 }
@@ -63,16 +64,24 @@ export function compatibility(config: Configuration, catalog: Product[]) {
     rules.push({ id, state, message: `${label}: ${state === 'unverified' ? 'manufacturer measurements needed' : state === 'compatible' ? 'listed dimensions agree' : 'dimensions do not match'}.`, slots: [a, b], missing, sources: [selected[a]?.product.source, selected[b]?.product.source].filter((v): v is string => !!v) });
   };
   check('wheel-diameter', 'wheels', 'bsd', 'tires', 'bsd', 'Rim and tire bead-seat diameter');
+  check('frame-wheel-diameter', 'frameset', 'wheelBsd', 'wheels', 'bsd', 'Frame wheel size');
   check('clearance', 'frameset', 'tireClearance', 'tires', 'width', 'Frame tire clearance', (x, y) => Number(x) >= Number(y));
+  check('fork-clearance', 'frameset', 'forkTireClearance', 'tires', 'width', 'Fork tire clearance', (x,y)=>Number(x)>=Number(y));
   check('rear-spacing', 'frameset', 'rearSpacing', 'wheels', 'rearSpacing', 'Rear hub spacing');
   check('front-spacing', 'frameset', 'frontSpacing', 'wheels', 'frontSpacing', 'Front hub spacing');
   check('axle', 'frameset', 'axle', 'wheels', 'axle', 'Axle and dropout interface');
+  check('front-axle-diameter', 'frameset', 'frontAxleDiameter', 'wheels', 'frontAxleDiameter', 'Front axle diameter');
+  check('rear-axle-diameter', 'frameset', 'rearAxleDiameter', 'wheels', 'rearAxleDiameter', 'Rear axle diameter');
   check('seatpost', 'frameset', 'seatpost', 'saddle', 'seatpost', 'Seatpost diameter');
   check('clamp', 'frameset', 'stemClamp', 'cockpit', 'stemClamp', 'Stem and handlebar clamp');
   check('bottom-bracket', 'frameset', 'bottomBracket', 'drivetrain', 'bottomBracket', 'Bottom bracket interface');
   check('chain-width', 'drivetrain', 'chainWidth', 'wheels', 'cogWidth', 'Chain and cog width');
   check('chainline', 'drivetrain', 'chainline', 'wheels', 'chainline', 'Chainline');
   check('brakes', 'frameset', 'brakeMount', 'cockpit', 'brakeMount', 'Brake interface');
+  check('front-brake', 'frameset', 'frontBrakeType', 'wheels', 'frontBrakeType', 'Front brake and hub provision');
+  check('headset', 'frameset', 'headset', 'cockpit', 'headset', 'Headset assembly');
+  check('stem-steerer', 'frameset', 'stemSteerer', 'cockpit', 'stemSteerer', 'Stem steerer clamp');
+  check('chainring-clearance', 'frameset', 'maxChainring', 'drivetrain', 'frontTeeth', 'Maximum chainring', (x,y)=>Number(x)>=Number(y));
   if (Object.values(selected).some(v => v?.product.illustrative)) rules.push({ id: 'illustrative', state: 'unverified', message: 'Demo parts use illustrative dimensions. This is not a manufacturer-verified assembly.', slots: [...slots], missing: ['verified manufacturer assembly data'], sources: [] });
   const state: State = rules.some(r => r.state === 'incompatible') ? 'incompatible' : rules.some(r => r.state === 'unverified') ? 'unverified' : 'compatible';
   const front = selected.drivetrain?.variant.specs.frontTeeth, rear = selected.drivetrain?.variant.specs.rearTeeth;

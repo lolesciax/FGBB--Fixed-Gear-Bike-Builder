@@ -1,0 +1,79 @@
+{
+  "variantId": "skream-ranger-s",
+  "source": "https://skreambikes.com/products/ranger-forest-frameset",
+  "geometry": {
+    "material": "6066-T6 alloy",
+    "seatpost": 31.6,
+    "bottomBracket": "BSA-68",
+    "tireClearance": 43,
+    "wheelBsd": 622,
+    "steerer": "tapered-28.6-38.1",
+    "headset": "IS41.8/51.8",
+    "forkLength": 395,
+    "forkRake": 45,
+    "frontBrakeType": "disc",
+    "bottleMounts": true,
+    "rackMounts": true,
+    "fenderMounts": true,
+    "geometry": "tracklocross",
+    "size": "S",
+    "finish": "Forest",
+    "colorApproximate": true,
+    "seatTube": 525,
+    "headTube": 120,
+    "headAngle": 71.5,
+    "seatAngle": 75,
+    "chainstay": 425,
+    "bbDrop": 57,
+    "stack": 531,
+    "reach": 398,
+    "wheelbase": 1030,
+    "effectiveTopTube": 540
+  },
+  "anchors": {
+    "anchor_rear": [
+      -0.42116030202287585,
+      0.057,
+      0
+    ],
+    "anchor_front": [
+      0.6088396979771241,
+      0.057,
+      0
+    ],
+    "anchor_seat": [
+      -0.13587999867882342,
+      0.5071110588017609,
+      0
+    ],
+    "anchor_head": [
+      0.398,
+      0.531,
+      0
+    ],
+    "anchor_headBottom": [
+      0.436076558768611,
+      0.4172011613752561,
+      0
+    ],
+    "anchor_bb": [
+      0,
+      0,
+      0
+    ]
+  },
+  "bounds": {
+    "min": [
+      -0.42872297962004524,
+      -0.015174017815271557,
+      -0.0560000017285347
+    ],
+    "max": [
+      0.617901623249054,
+      0.5479830072075281,
+      0.0560000017285347
+    ]
+  },
+  "fidelity": "illustrative",
+  "license": "CC0-1.0"
+}

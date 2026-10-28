@@ -206,9 +206,7 @@ export function PartsInspector({
                         : "Manufacturer reference"}
                     </span>
                     <span className="render-support">
-                      {product.illustrative
-                        ? "Schematic 2D / 3D"
-                        : "Asset support unverified"}
+                      {fidelity.mode2D?'2D supported':'2D unavailable'} / {fidelity.mode3D?'3D supported':'3D unavailable'}
                     </span>
                   </div>
                   {isSelected && (
@@ -261,7 +259,7 @@ export function PartsInspector({
                     onChange={(event) => onSelect(slot, event.target.value)}
                   >
                     {product.variants.map((variant) => (
-                      <option key={variant.id} value={variant.id}>
+                      <option key={variant.id} value={variant.id} disabled={variant.status==='archived'||variant.status==='draft'}>
                         {variant.label}
                       </option>
                     ))}

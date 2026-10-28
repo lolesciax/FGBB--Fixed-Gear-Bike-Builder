@@ -1,0 +1,75 @@
+{
+  "variantId": "skream-magnum-xs",
+  "source": "https://skreambikes.com/products/magnum-shade-frameset",
+  "geometry": {
+    "material": "6066-T6 alloy",
+    "seatpost": 31.6,
+    "bottomBracket": "BSA-68",
+    "tireClearance": 35,
+    "forkTireClearance": 35,
+    "wheelBsd": 622,
+    "steerer": "tapered-28.6-38.1",
+    "headset": "IS41.8/51.8",
+    "forkLength": 370,
+    "geometry": "track",
+    "size": "XS",
+    "finish": "Shade",
+    "colorApproximate": true,
+    "seatTube": 505,
+    "headTube": 100,
+    "headAngle": 73,
+    "seatAngle": 75.5,
+    "chainstay": 393,
+    "bbDrop": 57,
+    "stack": 494,
+    "reach": 387,
+    "wheelbase": 952,
+    "effectiveTopTube": 515
+  },
+  "anchors": {
+    "anchor_rear": [
+      -0.38884444190447165,
+      0.057,
+      0
+    ],
+    "anchor_front": [
+      0.5631555580955283,
+      0.057,
+      0
+    ],
+    "anchor_seat": [
+      -0.12644190204749292,
+      0.48891455839094444,
+      0
+    ],
+    "anchor_head": [
+      0.387,
+      0.494,
+      0
+    ],
+    "anchor_headBottom": [
+      0.41623717047227365,
+      0.39836952440369644,
+      0
+    ],
+    "anchor_bb": [
+      0,
+      0,
+      0
+    ]
+  },
+  "bounds": {
+    "min": [
+      -0.39659197906173815,
+      -0.015171291144579074,
+      -0.0560000017285347
+    ],
+    "max": [
+      0.5725167989730835,
+      0.5109991670615668,
+      0.0560000017285347
+    ]
+  },
+  "fidelity": "illustrative",
+  "license": "CC0-1.0"
+}

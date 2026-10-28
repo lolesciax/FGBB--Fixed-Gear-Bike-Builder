@@ -1,5 +1,6 @@
 import { loadAccessPolicy } from './access-policy';
 import { registryRoutes } from './modules/catalog/registry-routes';
+import { assetReviewRoutes } from './modules/catalog/asset-review';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Bike2D } from '@tracklab/domain/svg';
@@ -27,7 +28,7 @@ const credentials = z.object({ email: z.email().max(254).transform(v => v.toLowe
 const publicUser = (u: { _id: unknown; email: string; name: string; role: string; verified: boolean; theme: string }) => ({ id: String(u._id), email: u.email, name: u.name, role: u.role, verified: u.verified, theme: u.theme });
 const guard = (req: Request) => { if (!req.identity.user) throw new ApiError(401, 'AUTH_REQUIRED', 'Create an account or sign in to save and manage builds.'); return req.identity.user; };
 const requireAdmin = (req: Request) => { const u = guard(req); if (u.role !== 'admin') throw new ApiError(403, 'FORBIDDEN', 'Administrator access is required.'); return u; };
-async function catalog(includeArchived = false): Promise<Product[]> { return (await ProductModel.find(includeArchived ? {} : { 'data.status': 'published' }).lean()).map(p => p.data as Product); }
+async function catalog(includeArchived = false): Promise<Product[]> { const items=(await ProductModel.find(includeArchived ? {} : { 'data.status': 'published' }).lean()).map(p => p.data as Product); return includeArchived?items:items.map(p=>({...p,variants:p.variants.filter(v=>!v.status||v.status==='published')})).filter(p=>p.variants.length); }
 async function catalogSnapshot(configuration: Configuration) { const selected = new Set(Object.values(configuration)); return (await catalog(true)).filter(p => p.variants.some(v => selected.has(v.id))).map(p => ({ ...p, variants: p.variants.filter(v => selected.has(v.id)) })); }
 function initialConfiguration(products: Product[]): Configuration { return Object.fromEntries(slots.map(slot => { const original = variantById(products, defaultConfiguration[slot]); const id = original?.product.status === 'published' ? original.variant.id : (products.find(p => p.slot === slot && p.status === 'published' && p.illustrative) || products.find(p => p.slot === slot && p.status === 'published'))?.variants[0].id; if (!id) throw new ApiError(503, 'CATALOG_INCOMPLETE', `No published ${slot} is available. Please try again later.`); return [slot, id]; })) as Configuration; }
 async function validated(config: Configuration, includeArchived = false) { const products = await catalog(includeArchived); try { validateConfiguration(config, products, includeArchived); } catch (e) { throw new ApiError(422, 'VARIANT_UNAVAILABLE', (e as Error).message); } const result = compatibility(config, products); if (result.state === 'incompatible') throw new ApiError(422, 'INCOMPATIBLE_SELECTION', 'This selection conflicts with your current parts. Review the affected interfaces.', result); return result; }
@@ -170,6 +171,7 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
     res.clearCookie(cookieName, cookieOptions); res.json({ message: 'Your account and personal build data have been deleted.' });
   });
   app.use('/api', registryRoutes(requireAdmin));
+  app.use('/api', assetReviewRoutes(config,requireAdmin,rate));
   app.get('/api/catalog', async (req, res) => {
     await rate.consume(`catalog:${req.identity.subject}`, req.identity.user ? config.CATALOG_USER_RPM : config.CATALOG_GUEST_RPM, 60000);
     const query = z.object({ slot: slotSchema.optional(), q: z.string().max(80).optional(), brand: z.string().max(80).optional(), page: z.coerce.number().int().min(1).max(100).default(1), limit: z.coerce.number().int().min(1).max(30).default(30) }).parse(req.query);
@@ -177,21 +179,23 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
     const all = published.filter(p => (!query.slot || p.slot === query.slot) && (!query.brand || p.brand === query.brand) && (!query.q || `${p.name} ${p.brand}`.toLowerCase().includes(query.q.toLowerCase())));
     res.json({ items: all.slice((query.page - 1) * query.limit, query.page * query.limit), total: all.length, page: query.page, limit: query.limit, configuration: initialConfiguration(published) });
   });
-  app.get('/api/catalog/:id', async (req, res) => { await rate.consume(`catalog:${req.identity.subject}`, req.identity.user ? config.CATALOG_USER_RPM : config.CATALOG_GUEST_RPM, 60000); const item = await ProductModel.findOne({ _id: String(req.params.id), 'data.status': 'published' }).lean(); if (!item) throw new ApiError(404, 'NOT_FOUND', 'Product not found.'); res.json(item.data); });
+  app.get('/api/catalog/:id', async (req, res) => { await rate.consume(`catalog:${req.identity.subject}`, req.identity.user ? config.CATALOG_USER_RPM : config.CATALOG_GUEST_RPM, 60000); const item = (await catalog()).find(p=>p.id===req.params.id); if (!item) throw new ApiError(404, 'NOT_FOUND', 'Product not found.'); res.json(item); });
   function workspaceToken(req: Request, configuration: Configuration) { return sign({ subject: req.identity.subject, configuration, expires: Date.now() + DAY }, config.SESSION_SECRET); }
   function readWorkspace(req: Request, token: string) { const payload = unsign<{ subject: string; configuration: Configuration; expires: number }>(token, config.SESSION_SECRET); if (payload.subject !== req.identity.subject || payload.expires < Date.now()) throw new ApiError(400, 'WORKSPACE_EXPIRED', 'Your workspace expired. Reopen the builder.'); return configurationSchema.parse(payload.configuration); }
   app.post('/api/workspace', async (req, res) => { await rate.consume(`bootstrap:${req.identity.subject}`, 30, 60000); const body = z.object({ configuration: configurationSchema.optional() }).parse(req.body); const configuration = req.identity.user && body.configuration ? body.configuration : initialConfiguration(await catalog()); await validated(configuration, !!req.identity.user); res.json({ configuration, token: workspaceToken(req, configuration) }); });
   app.post('/api/workspace/change', async (req, res) => {
     await rate.consume(`workspace:${req.identity.subject}`, 60, 60000);
-    const input = z.object({ token: z.string().max(4096), slot: slotSchema, variantId: z.string().max(100) }).strict().parse(req.body);
+    const input = z.object({ token: z.string().max(4096), slot: slotSchema, variantId: z.string().max(100), replacements: configurationSchema.partial().optional() }).strict().parse(req.body);
     const current = readWorkspace(req, input.token);
-    if (current[input.slot] === input.variantId) { res.json({ configuration: current, token: input.token, changed: false }); return; }
-    const next = { ...current, [input.slot]: input.variantId };
-    const result = await validated(next);
+    const next = { ...current, ...input.replacements, [input.slot]: input.variantId };
+    const changedSlots=slots.filter(slot=>current[slot]!==next[slot]);
+    if (!changedSlots.length) { res.json({ configuration: current, token: input.token, changed: false }); return; }
+    const published=await catalog();for(const slot of changedSlots){const record=variantById(published,next[slot]);if(!record||record.product.slot!==slot)throw new ApiError(422,'VARIANT_UNAVAILABLE',`The ${slot} selection is unavailable. Choose a published variant.`);}
+    const result = await validated(next,true);
     if (!req.identity.user) await withSubject(req.identity.subject, async (subject,session) => {
-      const key=privateKey(JSON.stringify([req.identity.subject,input.token,input.slot,input.variantId]),config.SESSION_SECRET);
+      const key=privateKey(JSON.stringify([req.identity.subject,input.token,next]),config.SESSION_SECRET);
       if(await RequestReceipt.exists({_id:key}).session(session)) return;
-      charge(subject as unknown as Record<string,unknown>,'changes',req.policy.guestChanges,DAY,'GUEST_CHANGE_LIMIT');
+      changedSlots.forEach(()=>charge(subject as unknown as Record<string,unknown>,'changes',req.policy.guestChanges,DAY,'GUEST_CHANGE_LIMIT'));
       await RequestReceipt.create([{_id:key,expiresAt:new Date(Date.now()+DAY)}],{session});
     });
     res.json({ configuration: next, token: workspaceToken(req, next), compatibility: result, changed: true });
@@ -300,7 +304,7 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
     if (previous) for (const variant of previous.variants) {
       if (await Build.exists({ [`configuration.${previous.slot}`]: variant.id })) {
         const replacement = input.variants.find(v => v.id === variant.id);
-        if (!replacement || input.slot !== previous.slot || JSON.stringify({ ...replacement,asset3D:undefined }) !== JSON.stringify({ ...variant,asset3D:undefined })) throw new ApiError(409, 'REFERENCED_VARIANT_IMMUTABLE', 'This variant is used by saved builds. Preserve it and add a new variant for revisions.');
+        if (!replacement || input.slot !== previous.slot || JSON.stringify({ ...replacement,asset3D:undefined,status:undefined }) !== JSON.stringify({ ...variant,asset3D:undefined,status:undefined })) throw new ApiError(409, 'REFERENCED_VARIANT_IMMUTABLE', 'This variant is used by saved builds. Preserve it and add a new variant for revisions.');
       }
     }
     if (others.some(p => (p.data as Product).variants.some(v => input.variants.some(i => i.id === v.id)))) throw new ApiError(409, 'DUPLICATE_VARIANT', 'Variant identifiers must be globally unique.');

@@ -1,0 +1,72 @@
+{
+  "variantId": "wabi-prism-54",
+  "source": "https://wabicycles.com/products/wabi-prism-frameset",
+  "geometry": {
+    "material": "steel",
+    "tireClearance": 38,
+    "wheelBsd": 622,
+    "seatTubeMeasurement": "center-to-top",
+    "geometrySource": "https://wabicycles.com/pages/tech-specs",
+    "forkProfile": "straight steel blades; surface dimensions unverified",
+    "size": "54",
+    "finish": "Haze Grey",
+    "colorApproximate": true,
+    "seatTube": 540,
+    "headTube": 122,
+    "headAngle": 71.5,
+    "seatAngle": 74,
+    "chainstay": 400,
+    "bbDrop": 62,
+    "stack": 530,
+    "reach": 390,
+    "wheelbase": 1000,
+    "effectiveTopTube": 540,
+    "forkRake": 45
+  },
+  "anchors": {
+    "anchor_rear": [
+      -0.39516578799283725,
+      0.062,
+      0
+    ],
+    "anchor_front": [
+      0.6048342120071627,
+      0.062,
+      0
+    ],
+    "anchor_seat": [
+      -0.14884417214117954,
+      0.5190813158066921,
+      0
+    ],
+    "anchor_head": [
+      0.39000000000000007,
+      0.53,
+      0
+    ],
+    "anchor_headBottom": [
+      0.42871116808142123,
+      0.4143045140648437,
+      0
+    ],
+    "anchor_bb": [
+      0,
+      0,
+      0
+    ]
+  },
+  "bounds": {
+    "min": [
+      -0.4032034266694229,
+      -0.011145829123090562,
+      -0.0560000017285347
+    ],
+    "max": [
+      0.6146732568740845,
+      0.5414976399271955,
+      0.0560000017285347
+    ]
+  },
+  "fidelity": "illustrative",
+  "license": "CC0-1.0"
+}

@@ -5,9 +5,9 @@ export type SavedBuild = { _id: string; name: string; configuration: Configurati
 export class RequestError extends Error { constructor(public code: string, message: string, public details?: unknown, public retryAfterSeconds?: number) { super(message); } }
 let csrf = '';
 export function setCsrf(value: string) { csrf = value; }
-export async function api<T>(path: string, options: { method?: string; body?: unknown; editorToken?: string; signal?: AbortSignal } = {}): Promise<T> {
+export async function api<T>(path: string, options: { method?: string; body?: unknown; raw?:Blob; editorToken?: string; signal?: AbortSignal } = {}): Promise<T> {
   let response: Response;
-  try { response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api${path}`, { method: options.method || 'GET', credentials: 'include', signal: options.signal, headers: { ...(options.body !== undefined ? { 'Content-Type': 'application/json' } : {}), ...(options.method && options.method !== 'GET' ? { 'X-CSRF-Token': csrf } : {}), ...(options.editorToken ? { 'X-Editor-Token': options.editorToken } : {}) }, body: options.body !== undefined ? JSON.stringify(options.body) : undefined }); }
+  try { response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api${path}`, { method: options.method || 'GET', credentials: 'include', signal: options.signal, headers: { ...(options.raw ? { 'Content-Type': options.raw.type || 'model/gltf-binary' } : options.body !== undefined ? { 'Content-Type': 'application/json' } : {}), ...(options.method && options.method !== 'GET' ? { 'X-CSRF-Token': csrf } : {}), ...(options.editorToken ? { 'X-Editor-Token': options.editorToken } : {}) }, body: options.raw || (options.body !== undefined ? JSON.stringify(options.body) : undefined) }); }
   catch (error) { if ((error as Error).name === 'AbortError') throw error; throw new RequestError('NETWORK_ERROR', 'The workshop could not connect to the API. Check your connection and retry.'); }
   let result;
   try { result = await response.json(); } catch { throw new RequestError('INVALID_RESPONSE', 'The API returned an unexpected response. Please retry.'); }
@@ -16,4 +16,12 @@ export async function api<T>(path: string, options: { method?: string; body?: un
   return result as T;
 }
 export const loadSession = () => api<SessionInfo>('/session').then(s => { setCsrf(s.csrf); return s; });
-export const loadCatalog = () => api<{ items: Product[]; total: number; configuration: Configuration }>('/catalog');
+export async function loadCatalog() {
+  const first=await api<{items:Product[];total:number;configuration:Configuration}>('/catalog?limit=30');
+  const items=[...first.items];
+  for(let page=2;items.length<first.total&&page<=100;page++){
+    const next=await api<{items:Product[]}>('/catalog?limit=30&page='+page);
+    if(!next.items.length)break;items.push(...next.items);
+  }
+  return {...first,items};
+}

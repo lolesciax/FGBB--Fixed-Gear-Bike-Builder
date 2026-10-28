@@ -33,7 +33,7 @@ export function registryRoutes(requireAdmin: (req: Request) => { id: string }) {
       .lean();
     const products = (
       await ProductModel.find({ "data.status": "published" }).lean()
-    ).map((p) => p.data as Product);
+    ).map((p) => p.data as Product).map(p=>({...p,variants:p.variants.filter(v=>!v.status||v.status==='published')})).filter(p=>p.variants.length);
     res.json({
       items: records.map((record) => {
         const data = record.data as ModelRecord,

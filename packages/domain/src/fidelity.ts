@@ -24,9 +24,7 @@ export function visualizationInfo(product: Product, variant: Variant) {
         : "Specifications unverified",
     fidelity: !supported
       ? "Visualization unavailable"
-      : product.illustrative || missing.length
-        ? "Approximate illustrative model"
-        : "Independent dimension-based model",
+      : "Approximate illustrative model",
     missing,
     mode2D: supported,
     mode3D: supported,

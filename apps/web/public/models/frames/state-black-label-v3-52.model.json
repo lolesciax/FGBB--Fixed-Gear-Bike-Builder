@@ -1,0 +1,78 @@
+{
+  "variantId": "state-black-label-v3-52",
+  "source": "https://www.statebicycle.com/products/black-label-v3-frame-set-black-mirror",
+  "geometry": {
+    "material": "6061-T6 alloy",
+    "seatpost": 27.2,
+    "bottomBracket": "BSA-68",
+    "tireClearance": 35,
+    "wheelBsd": 622,
+    "forkLength": 388,
+    "forkRake": 45,
+    "frontSpacing": 100,
+    "rearSpacing": 120,
+    "frontAxleDiameter": 9,
+    "rearAxleDiameter": 10,
+    "steerer": "tapered-28.6-38.1",
+    "geometrySource": "https://cdn.shopify.com/s/files/1/0232/3305/files/2024-6061-Black-Label-v3-SizeSpec.pdf?v=1732731989",
+    "size": "52",
+    "finish": "Black / Mirror",
+    "colorApproximate": true,
+    "seatTube": 520,
+    "headTube": 115,
+    "headAngle": 72.5,
+    "seatAngle": 74,
+    "chainstay": 415,
+    "bbDrop": 68,
+    "stack": 511,
+    "reach": 402,
+    "wheelbase": 1009,
+    "effectiveTopTube": 544
+  },
+  "anchors": {
+    "anchor_rear": [
+      -0.40939101113727444,
+      0.068,
+      0
+    ],
+    "anchor_front": [
+      0.5996089888627255,
+      0.068,
+      0
+    ],
+    "anchor_seat": [
+      -0.1433314250248396,
+      0.49985608188792585,
+      0
+    ],
+    "anchor_head": [
+      0.4020000000000001,
+      0.511,
+      0
+    ],
+    "anchor_headBottom": [
+      0.4365811669429915,
+      0.4013225506639539,
+      0
+    ],
+    "anchor_bb": [
+      0,
+      0,
+      0
+    ]
+  },
+  "bounds": {
+    "min": [
+      -0.41709481441052815,
+      -0.015460414284081736,
+      -0.0560000017285347
+    ],
+    "max": [
+      0.6084569692611694,
+      0.5279964523442384,
+      0.0560000017285347
+    ]
+  },
+  "fidelity": "illustrative",
+  "license": "CC0-1.0"
+}

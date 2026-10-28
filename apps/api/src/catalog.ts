@@ -21,6 +21,8 @@ export const seedCatalog: Product[] = [
   demo('studio-48', 'Fixed 48 / 17', 'drivetrain', 'An alternative illustrative chainring and sprocket combination.', { frontTeeth: 48, rearTeeth: 17, chainWidth: '1/8', chainline: 42, bottomBracket: 'BSA-68' }),
   demo('studio-race', 'Track saddle', 'saddle', 'A slim racing silhouette with a matching seatpost.', { seatpost: 27.2, shape: 'race' }),
   demo('studio-comfort', 'Everyday saddle', 'saddle', 'A broader, softer-looking silhouette with a matching seatpost.', { seatpost: 27.2, shape: 'comfort' }),
+  demo('studio-race-316', 'Track saddle / 31.6 post', 'saddle', 'Independent seating demo with a 31.6 mm post. Rail and insertion fit remain unverified.', { seatpost:31.6, shape:'race' }),
+  demo('studio-classic-m9', 'Classic spokes / M9 front', 'wheels', 'Independent wheel demo with 9 mm front and 10 mm rear axle dimensions. Hardware and full physical fit are unverified.', {bsd:622,rearSpacing:120,frontSpacing:100,frontAxleDiameter:9,rearAxleDiameter:10,cogWidth:'1/8',chainline:42,rimDepth:25}),
   ...manufacturerCatalog,
 ];
 export const defaultConfiguration: Configuration = { frameset: 'studio-track-graphite', wheels: 'studio-classic', tires: 'studio-tire25', cockpit: 'studio-drop', drivetrain: 'studio-46', saddle: 'studio-race' };
