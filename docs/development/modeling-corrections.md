@@ -30,7 +30,7 @@ Use tooth-derived pitch circles and a closed external-tangent chain path; [KMC's
 | 5 Saddle | Implemented and checked | Rounded shaped shell/padding, converging rails, clamp and seat-axis post |
 | 6–7 Cockpit | Implemented; targeted browser checks passed | Four continuous symmetric bars, filter/thumbnails, canonical state and flat-bar save/export |
 | 8–9 Proportion/framing | Implemented and checked | Reviewed anchors retained, all vertices/instances fitted, eight presets, wheel-derived floor, owned studio resources |
-| 10 Verification | Local acceptance complete; CI pending | 73 unit/API checks, all 22 normal-policy browser scenarios, separate development scenario, both PWA checks, type/lint/build and screenshots passed |
+| 10 Verification | Complete for this targeted correction | 73 local unit/API checks, 22 normal-policy browser scenarios, separate development scenario, both PWA checks, type/lint/build, screenshots and pushed CI passed |
 
 ## Shared geometry and explicit assumptions
 
@@ -57,6 +57,8 @@ Visual review exposed a faint contact-plane triangle and GPU resource growth on 
 Original lightweight landing illustrations were refreshed from the corrected independent model, with no controls or manufacturer graphics baked in. Eight-view copy matches actual controls. The tablet toolbar now uses two rows before controls collide.
 
 ## Verification evidence
+
+Implementation commit `94070f6` passed [GitHub CI](https://github.com/lolesciax/FGBB--Fixed-Gear-Bike-Builder/actions/runs/40705511642), including the live Redis integration skipped locally, full browser suite, separate development-access scenario and production-preview PWA checks. This closes the targeted geometry correction; it does not certify manufacturer surfaces or complete the broader release roadmap.
 
 Browser work uses temporary MongoDB only. TypeScript, lint, 73 unit/API/asset checks and both production builds passed. The 53 API/domain/geometry checks passed again after removing incidental API-test formatting. One live Redis integration remains skipped locally and is covered by GitHub CI. All 22 normal-policy Chrome scenarios, the separate unlimited-development scenario and both rebuilt production-preview PWA scenarios passed sequentially. The first full run exposed an outdated exact GLB response URL assertion; it was corrected for revision parameters and the complete run passed. Expected missing-asset 404s are injected by the fallback/retry test. Three.js emits an upstream deprecated Clock notice and headless shader precision notices; no page errors occurred in the final visual review.
 
