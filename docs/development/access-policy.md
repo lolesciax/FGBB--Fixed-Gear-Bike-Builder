@@ -1,6 +1,16 @@
 # Access policy · revised 28 October 2026
 
-The brand-authentic continuation replaces the earlier 12-change/five-build rules and the intervening request for unlimited development use. The latest brief explicitly retains bounded permanent storage and backend fair-use protection. No unlimited mode or authorization bypass was introduced.
+The brand-authentic continuation replaced the earlier 12-change/five-build rules with the bounded policy below. A subsequent explicit user instruction now disables business quotas during local development while the product is polished. Production policy and authorization remain enforced.
+
+## Temporary local development access
+
+Set `DEVELOPMENT_DISABLE_QUOTAS=true` in the ignored root `.env`, then restart `npm run dev`. This is enabled in the current workspace. Component-change, 3D-session count, build storage, daily/monthly creation, publishing-count, export-count and business save-write quotas are bypassed. The UI displays Development access instead of misleading remaining allowances. Guests still need an account to save permanently; ownership, CSRF, verified-email publishing, revision/lease checks, compatibility, asset review and request-abuse throttling remain active.
+
+Usage events continue to be recorded without resetting existing histories. Set the flag to `false` and restart to restore the stored limits; existing over-limit builds are retained. Development 3D grants have a 24-hour authorization lifetime and can renew while the signed workspace remains valid. Technical expiry is separate from the disabled business viewing quota.
+
+Production startup rejects this flag. Normal browser tests explicitly disable it; a separate isolated development-browser configuration enables it for its own temporary database. No frontend query, role change or database policy edit can enable the bypass.
+
+## Retained normal policy
 
 | Rule | Default |
 | --- | --- |

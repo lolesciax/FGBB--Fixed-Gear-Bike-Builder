@@ -27,7 +27,7 @@ export function AuthDialog({ mode: initialMode, close }: { mode: AuthMode; close
     <button className="icon-button close-dialog" aria-label="Close sign in" onClick={close}><X size={20}/></button>
     <span className="wordmark">TRACKLAB</span>
     <h2>{mode === 'register' ? 'Make room for your next ride.' : mode === 'forgot' ? 'Back to your workshop.' : 'Good to have you back.'}</h2>
-    <p>{mode === 'register' ? `Save up to ${session.policy.builds} builds, edit your bikes, and share verified public builds.` : mode === 'forgot' ? 'We’ll send a link to reset your password.' : 'Sign in to pick up where you left off.'}</p>
+    <p>{mode === 'register' ? session.developmentUnlimited ? 'Save and edit builds without development usage quotas.' : `Save up to ${session.policy.builds} builds, edit your bikes, and share verified public builds.` : mode === 'forgot' ? 'We’ll send a link to reset your password.' : 'Sign in to pick up where you left off.'}</p>
     <form onSubmit={handleSubmit(submit)} noValidate>
       {mode === 'register' && <label>Your name<input autoComplete="name" {...register('name')} aria-invalid={!!errors.name}/>{errors.name && <span className="field-error">{errors.name.message}</span>}</label>}
       <label>Email address<input type="email" autoComplete="email" {...register('email')} aria-invalid={!!errors.email}/>{errors.email && <span className="field-error">{errors.email.message}</span>}</label>

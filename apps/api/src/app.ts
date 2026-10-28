@@ -16,12 +16,13 @@ import { registeredFrameAssets, quotaPolicySchema, type QuotaPolicy, assetRegist
 import type { Config } from './config';
 import { AccessPolicy, RequestReceipt, Audit, Build, ProductModel, RecoveryToken, Session, Subject, User } from './models';
 import { ApiError, hash, privateKey, randomToken, sign, unsign, type RateStore } from './security';
-import { charge, DAY, withSubject } from './quotas';
+import { charge, DAY, withSubject, type EventField } from './quotas';
 import { defaultConfiguration } from './catalog';
 import type { SendMail } from './mail';
 
 type Identity = { subject: string; guestId: string; csrf: string; sessionId: string; user: { id: string; email: string; name: string; role: string; verified: boolean; theme: string } | null };
-declare module 'express-serve-static-core' { interface Request { policy: QuotaPolicy; policyVersion: number; identity: Identity; traceId: string } }
+declare module 'express-serve-static-core' { interface Request { developmentUnlimited:boolean; policy: QuotaPolicy; policyVersion: number; identity: Identity; traceId: string } }
+function chargeBusiness(req:Request,subject:Record<string,unknown>,field:EventField,limit:number,window:number,code:string){charge(subject,field,req.developmentUnlimited?Number.MAX_SAFE_INTEGER:limit,window,code);}
 const HOUR = 3600000;
 const idSchema = z.string().regex(/^[a-f\d]{24}$/i);
 const credentials = z.object({ email: z.email().max(254).transform(v => v.toLowerCase()), password: z.string().min(12).max(128) });
@@ -82,7 +83,7 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
       if (req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'OPTIONS') {
         if (req.get('Origin') !== config.FRONTEND_URL || req.get('X-CSRF-Token') !== session.csrf) throw new ApiError(403, 'CSRF_INVALID', 'Your security token expired. Refresh the page and try again.');
       }
-      const access=await loadAccessPolicy(config); req.policy=access.policy; req.policyVersion=access.version;
+      const access=await loadAccessPolicy(config); req.policy=access.policy; req.policyVersion=access.version; req.developmentUnlimited=config.NODE_ENV!=='production'&&config.DEVELOPMENT_DISABLE_QUOTAS;
       await rate.consume(`general:${req.identity.subject}`, config.GENERAL_RPM, 60000);
       next();
     } catch (error) { next(error); }
@@ -91,7 +92,7 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
     const subject = await Subject.findById(req.identity.subject).lean();
     const changes = (subject?.changes ?? []).filter(t => t > Date.now() - DAY), previews = (subject?.previews ?? []).filter(t => t > Date.now() - DAY);
     const accountUsage=req.identity.user?{active:await Build.countDocuments({owner:req.identity.user.id}),published:await Build.countDocuments({owner:req.identity.user.id,visibility:'public'}),createdToday:(subject?.creates||[]).filter(t=>t>Date.now()-DAY).length,createdMonth:(subject?.creates||[]).filter(t=>t>Date.now()-30*DAY).length,exportsToday:(subject?.exports||[]).filter(t=>t>Date.now()-DAY).length}:null;
-    res.json({ accountUsage, policy: req.policy, user: req.identity.user, csrf: req.identity.csrf, workspaceKey: privateKey(req.identity.subject, config.SESSION_SECRET), mode: config.DEVELOPMENT_EPHEMERAL ? 'ephemeral-development' : 'connected', limits: { builds: req.policy.builds, publish: req.policy.publish, changes: req.policy.guestChanges, previews: req.policy.guestPreviews }, usage: { changes: changes.length, previews: previews.length, changesResetAt: changes.length ? new Date(changes[0] + DAY).toISOString() : null, previewsResetAt: previews.length ? new Date(previews[0] + DAY).toISOString() : null } });
+    res.json({ developmentUnlimited:req.developmentUnlimited, accountUsage, policy: req.policy, user: req.identity.user, csrf: req.identity.csrf, workspaceKey: privateKey(req.identity.subject, config.SESSION_SECRET), mode: config.DEVELOPMENT_EPHEMERAL ? 'ephemeral-development' : 'connected', limits: { builds: req.policy.builds, publish: req.policy.publish, changes: req.policy.guestChanges, previews: req.policy.guestPreviews }, usage: { changes: changes.length, previews: previews.length, changesResetAt: changes.length ? new Date(changes[0] + DAY).toISOString() : null, previewsResetAt: previews.length ? new Date(previews[0] + DAY).toISOString() : null } });
   });
   const authRate = async (req: Request, category: string, limit: number, window: number, email?: string) => {
     await rate.consume(`${category}:ip:${privateKey(req.ip || '', config.SESSION_SECRET)}`, category === 'login' ? 30 : limit, window);
@@ -195,7 +196,7 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
     if (!req.identity.user) await withSubject(req.identity.subject, async (subject,session) => {
       const key=privateKey(JSON.stringify([req.identity.subject,input.token,next]),config.SESSION_SECRET);
       if(await RequestReceipt.exists({_id:key}).session(session)) return;
-      changedSlots.forEach(()=>charge(subject as unknown as Record<string,unknown>,'changes',req.policy.guestChanges,DAY,'GUEST_CHANGE_LIMIT'));
+      changedSlots.forEach(()=>chargeBusiness(req,subject as unknown as Record<string,unknown>,'changes',req.policy.guestChanges,DAY,'GUEST_CHANGE_LIMIT'));
       await RequestReceipt.create([{_id:key,expiresAt:new Date(Date.now()+DAY)}],{session});
     });
     res.json({ configuration: next, token: workspaceToken(req, next), compatibility: result, changed: true });
@@ -207,8 +208,8 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
     if (!Object.values(configuration).every(id => { const product=variantById(products,id)?.product; return product?.illustrative || (product?.visual?.fidelity === 'measurement-schematic' && product.visual.assetId in assetRegistry && product.provenance?.reviewedAt); })) throw new ApiError(422, 'ASSET_UNAVAILABLE', 'A reviewed illustrative 3D representation is not registered for this assembly.');
     const active=await withSubject(req.identity.subject,async subject=>{
       if(subject.previewId && subject.previewUntil && subject.previewUntil.getTime()>Date.now()) return {id:subject.previewId,expires:subject.previewUntil.getTime()};
-      if(!req.identity.user) charge(subject as unknown as Record<string,unknown>,'previews',req.policy.guestPreviews,DAY,'GUEST_PREVIEW_LIMIT');
-      const id=randomToken(),expires=Date.now()+(req.identity.user?HOUR:req.policy.guestPreviewMinutes*60000);
+      if(!req.identity.user) chargeBusiness(req,subject as unknown as Record<string,unknown>,'previews',req.policy.guestPreviews,DAY,'GUEST_PREVIEW_LIMIT');
+      const id=randomToken(),expires=Date.now()+(req.developmentUnlimited?DAY:req.identity.user?HOUR:req.policy.guestPreviewMinutes*60000);
       subject.set({previewId:id,previewUntil:new Date(expires)});return {id,expires};
     });
     res.json({grant:sign({kind:'preview',subject:req.identity.subject,...active},config.SESSION_SECRET),expiresAt:new Date(active.expires).toISOString(),illustrative:true});
@@ -226,11 +227,11 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
   async function createBuild(req: Request, input: z.infer<typeof buildInput>) {
     const user = guard(req); await validated(input.configuration, true);
     return withSubject(req.identity.subject, async (subject, session) => {
-      if (await Build.countDocuments({ owner: user.id }).session(session) >= req.policy.builds) throw new ApiError(409, 'BUILD_LIMIT_REACHED', `You have ${req.policy.builds} saved builds. Delete a build to create another.`);
+      if (!req.developmentUnlimited && await Build.countDocuments({ owner: user.id }).session(session) >= req.policy.builds) throw new ApiError(409, 'BUILD_LIMIT_REACHED', `You have ${req.policy.builds} saved builds. Delete a build to create another.`);
       const events = subject.creates.filter(t => t > Date.now() - DAY);
-      if (events.length >= req.policy.createDaily) throw new ApiError(409, 'BUILD_DAILY_LIMIT', 'Daily build creation allowance reached.', { resetAt: new Date(events[0] + DAY).toISOString() });
-      charge(subject as unknown as Record<string, unknown>, 'creates', req.policy.createMonthly, 30 * DAY, 'BUILD_MONTHLY_LIMIT');
-      charge(subject as unknown as Record<string, unknown>, 'saves', req.policy.saveHourly, HOUR, 'SAVE_LIMIT_REACHED');
+      if (!req.developmentUnlimited && events.length >= req.policy.createDaily) throw new ApiError(409, 'BUILD_DAILY_LIMIT', 'Daily build creation allowance reached.', { resetAt: new Date(events[0] + DAY).toISOString() });
+      chargeBusiness(req,subject as unknown as Record<string, unknown>, 'creates', req.policy.createMonthly, 30 * DAY, 'BUILD_MONTHLY_LIMIT');
+      chargeBusiness(req,subject as unknown as Record<string, unknown>, 'saves', req.policy.saveHourly, HOUR, 'SAVE_LIMIT_REACHED');
       const [build] = await Build.create([{ ...input, owner: user.id, catalogSnapshot: await catalogSnapshot(input.configuration) }], { session });
       return build;
     });
@@ -254,8 +255,8 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
       if (!current) throw new ApiError(404, 'NOT_FOUND', 'Build not found.');
       if (current.revision !== input.revision) throw new ApiError(409, 'REVISION_CONFLICT', 'This build has changed. Reopen it to load the latest revision.');
       if (current.leaseHash !== hash(req.get('X-Editor-Token') || '') || !current.leaseUntil || current.leaseUntil.getTime() < Date.now()) throw new ApiError(409, 'EDITOR_LOCKED', 'Your editor lease expired. Reopen this build.');
-      if (input.visibility === 'public' && current.visibility !== 'public' && await Build.countDocuments({ owner: user.id, visibility: 'public' }).session(session) >= req.policy.publish) throw new ApiError(409, 'PUBLISH_LIMIT_REACHED', 'Unpublish another build before publishing this one.');
-      charge(subject as unknown as Record<string, unknown>, 'saves', req.policy.saveHourly, HOUR, 'SAVE_LIMIT_REACHED');
+      if (!req.developmentUnlimited && input.visibility === 'public' && current.visibility !== 'public' && await Build.countDocuments({ owner: user.id, visibility: 'public' }).session(session) >= req.policy.publish) throw new ApiError(409, 'PUBLISH_LIMIT_REACHED', 'Unpublish another build before publishing this one.');
+      chargeBusiness(req,subject as unknown as Record<string, unknown>, 'saves', req.policy.saveHourly, HOUR, 'SAVE_LIMIT_REACHED');
       current.set({ name: input.name, configuration: input.configuration, catalogSnapshot: await catalogSnapshot(input.configuration), revision: input.revision + 1, visibility: input.visibility, publicId: input.visibility === 'public' ? current.publicId || randomToken() : undefined });
       await current.save({ session });
       return { ...current.toObject(), leaseHash: undefined };
@@ -263,7 +264,7 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
     res.json(result);
   });
   app.delete('/api/builds/:id', async (req, res) => { const user = guard(req); await withSubject(req.identity.subject, async (_subject, session) => { const result = await Build.deleteOne({ _id: idSchema.parse(req.params.id), owner: user.id }, { session }); if (!result.deletedCount) throw new ApiError(404, 'NOT_FOUND', 'Build not found.'); }); res.json({ success: true }); });
-  app.post('/api/builds/:id/export', async (req, res) => { const user = guard(req); const build = await Build.findOne({ _id: idSchema.parse(req.params.id), owner: user.id }).select('name configuration revision').lean(); if (!build) throw new ApiError(404, 'NOT_FOUND', 'Build not found.'); await withSubject(req.identity.subject, async subject => { charge(subject as unknown as Record<string, unknown>, 'exports', req.policy.exports, DAY, 'EXPORT_LIMIT_REACHED'); }); res.json({ schemaVersion: 1, build, exportedAt: new Date().toISOString(), brandDisclaimer, technicalDisclaimer }); });
+  app.post('/api/builds/:id/export', async (req, res) => { const user = guard(req); const build = await Build.findOne({ _id: idSchema.parse(req.params.id), owner: user.id }).select('name configuration revision').lean(); if (!build) throw new ApiError(404, 'NOT_FOUND', 'Build not found.'); await withSubject(req.identity.subject, async subject => { chargeBusiness(req,subject as unknown as Record<string, unknown>, 'exports', req.policy.exports, DAY, 'EXPORT_LIMIT_REACHED'); }); res.json({ schemaVersion: 1, build, exportedAt: new Date().toISOString(), brandDisclaimer, technicalDisclaimer }); });
   app.get('/api/public/builds/:id', async (req, res) => { const build = await Build.findOne({ publicId: z.string().max(100).parse(req.params.id), visibility: 'public' }).select('name configuration catalogSnapshot updatedAt revision').lean(); if (!build) throw new ApiError(404, 'NOT_FOUND', 'Public build not found.'); res.json(build); });
   app.post('/api/builds/:id/export-image',async(req,res)=>{
     const user=guard(req),build=await Build.findOne({_id:idSchema.parse(req.params.id),owner:user.id}).lean();
@@ -272,7 +273,7 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
     const merged=[...products,...snapshot.filter(p=>!products.some(current=>current.id===p.id))];
     const drawing=renderToStaticMarkup(createElement(Bike2D,{configuration:configurationSchema.parse(build.configuration),catalog:merged}));
     const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000"><rect width="1600" height="1000" fill="#e8ebef"/><g transform="translate(40 10)">${drawing.replace('<svg ','<svg width="1520" height="920" ')}</g><text x="40" y="970" font-family="sans-serif" font-size="18" fill="#465160">TrackLab / Illustrative planning preview. Verify all dimensions and assembly.</text></svg>`;
-    await withSubject(req.identity.subject,async subject=>{charge(subject as unknown as Record<string,unknown>,'exports',req.policy.exports,DAY,'EXPORT_LIMIT_REACHED');});
+    await withSubject(req.identity.subject,async subject=>{chargeBusiness(req,subject as unknown as Record<string,unknown>,'exports',req.policy.exports,DAY,'EXPORT_LIMIT_REACHED');});
     res.json({svg,filename:`${build.name.replace(/[^a-z0-9]/gi,'-').slice(0,60)}.svg`,fidelity:'illustrative'});
   });
   app.post('/api/public/builds/:id/duplicate', async (req, res) => { guard(req); const build = await Build.findOne({ publicId: z.string().max(100).parse(req.params.id), visibility: 'public' }); if (!build) throw new ApiError(404, 'NOT_FOUND', 'Public build not found.'); res.status(201).json(await createBuild(req, { name: `${build.name.slice(0, 73)} (copy)`, configuration: build.configuration as Configuration })); });

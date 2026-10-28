@@ -15,7 +15,7 @@ const labels: Record<keyof QuotaPolicy, string> = {
   saveHourly: "Save writes / hour",
 };
 export function PolicyEditor() {
-  const { refresh } = useApp(),
+  const { refresh,session } = useApp(),
     [draft, setDraft] = useState<QuotaPolicy | null>(null),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
@@ -47,6 +47,7 @@ export function PolicyEditor() {
   return (
     <section className="policy-editor">
       <h2>Access policy</h2>
+      {session.developmentUnlimited&&<p className="notice">Development usage quotas are disabled. These stored limits apply when the development bypass is turned off.</p>}
       <p>
         Guests keep one temporary build. Registered users and administrators
         share storage limits; only administrators can change these bounded

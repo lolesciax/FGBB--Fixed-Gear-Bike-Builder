@@ -97,18 +97,20 @@ export function HomePage() {
         <div>
           <h2>Explore first. Keep the good ideas.</h2>
           <p>
-            Guests receive {session.policy.guestChanges} accepted replacements
+            {session.developmentUnlimited ? <>Development access: customize and explore 3D without usage quotas. Guest drafts stay in memory.</> : <>Guests receive {session.policy.guestChanges} accepted replacements
             and {session.policy.guestPreviews} 3D sessions of up to{" "}
             {session.policy.guestPreviewMinutes} minutes per rolling day. Your
             temporary draft stays in memory.
+            </>}
           </p>
           <p>
-            Register for up to {session.policy.builds} saved builds,{" "}
+            {session.developmentUnlimited ? <>Sign in to save, duplicate and export builds without development storage or daily usage quotas.</> : <>Register for up to {session.policy.builds} saved builds,{" "}
             {session.policy.createDaily} creations per day and{" "}
             {session.policy.createMonthly} per rolling month. Edit existing
             builds without using another slot. Export build information or an
             illustrative SVG image, sharing {session.policy.exports} exports per
             rolling day.
+            </>}
           </p>
         </div>
         <button className="button primary" onClick={() => auth("register")}>

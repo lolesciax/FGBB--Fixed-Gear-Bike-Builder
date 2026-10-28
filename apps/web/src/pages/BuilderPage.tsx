@@ -112,16 +112,21 @@ export function BuilderPage() {
       startY: number;
     } | null>(null);
   const selectionLocked =
-    !session.user && session.usage.changes >= session.limits.changes;
+    !session.developmentUnlimited && !session.user && session.usage.changes >= session.limits.changes;
   useEffect(() => {
     if (b.mode !== "3d" || !b.previewGrant) return;
-    const end = () => {
+    const stop = () => {
       useBuilder
         .getState()
         .set({ mode: "2d", previewExpiresAt: 0, previewGrant: "" });
       setActionError(
         "Your 3D session ended. Start another available session to continue.",
       );
+    };
+    const end=()=>{
+      if(!session.developmentUnlimited){stop();return;}
+      const current=useBuilder.getState();
+      void api<{grant:string;expiresAt:string}>('/workspace/preview',{method:'POST',body:{token:current.token}}).then(next=>{if(useBuilder.getState().ownerKey===current.ownerKey)current.set({previewGrant:next.grant,previewExpiresAt:Date.parse(next.expiresAt)});}).catch(stop);
     };
     const expiry = setTimeout(
       end,
@@ -137,7 +142,7 @@ export function BuilderPage() {
       clearTimeout(expiry);
       clearInterval(validation);
     };
-  }, [b.mode, b.previewGrant, b.previewExpiresAt]);
+  }, [b.mode, b.previewGrant, b.previewExpiresAt,session.developmentUnlimited]);
   const hasEditorLease = Boolean(b.editorToken);
   useEffect(() => {
     if (!compact) setSheetOpen(false);
@@ -467,7 +472,7 @@ export function BuilderPage() {
 
         <details className="quota-menu">
           <summary>
-            {session.user ? (
+            {session.developmentUnlimited ? "Development access" : session.user ? (
               "Your workshop"
             ) : (
               <>
@@ -481,7 +486,7 @@ export function BuilderPage() {
             )}
           </summary>
           <div className="quota-popover">
-            {session.user ? (
+            {session.developmentUnlimited ? <p>Development usage quotas are disabled. Guest builds stay in memory; sign in to save permanently.</p> : session.user ? (
               <>
                 <p>
                   Up to {session.policy.builds} saved builds. Creation and
@@ -856,7 +861,7 @@ export function BuilderPage() {
             <span>
               {session.user
                 ? "Your workshop"
-                : `${Math.max(0, session.limits.changes - session.usage.changes)} changes remaining`}
+                : session.developmentUnlimited ? "Development access" : `${Math.max(0, session.limits.changes - session.usage.changes)} changes remaining`}
             </span>
           </div>
           <button
@@ -978,12 +983,14 @@ export function BuilderPage() {
           </ul>
           <h3>Guest workspace</h3>
           <p className="small muted">
+            {session.developmentUnlimited ? <>Development usage quotas are disabled. Your guest draft stays in memory. Sign in to save builds.</> : <>
             {session.policy.guestChanges} accepted component changes and{" "}
             {session.policy.guestPreviews} 3D sessions of up to{" "}
             {session.policy.guestPreviewMinutes} minutes per rolling 24 hours.
             Undo and redo are component changes. Browsing and rejected
             incompatible selections use no component allowance. Your guest build
             stays only in memory.
+            </>}
           </p>
           <button
             className="button primary full"
@@ -993,7 +1000,7 @@ export function BuilderPage() {
           </button>
         </dialog>
       )}
-      {frameReview&&b.configuration&&<FrameChangeReview guest={!session.user} current={b.configuration} proposed={frameReview} catalog={data} pending={b.pending} onClose={()=>setFrameReview(null)} onApply={configuration=>void change('frameset',configuration.frameset,undefined,configuration)}/>}
+      {frameReview&&b.configuration&&<FrameChangeReview guest={!session.user&&!session.developmentUnlimited} current={b.configuration} proposed={frameReview} catalog={data} pending={b.pending} onClose={()=>setFrameReview(null)} onApply={configuration=>void change('frameset',configuration.frameset,undefined,configuration)}/>}
     </main>
   );
 }

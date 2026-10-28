@@ -23,6 +23,8 @@ Preserve accounts, session rotation, CSRF, ownership checks, API validation, dis
 
 ## Access and quotas
 
+The user's later development instruction enables a temporary local business-quota bypass using `DEVELOPMENT_DISABLE_QUOTAS=true`. Production rejects it. The defaults below remain the retained normal policy, and usage history is preserved for re-enabling limits. Authentication, ownership, compatibility, asset review and request-abuse protections remain active. See [the switch and restoration behavior](development/access-policy.md).
+
 Guests may browse publicly, keep one memory-only draft, make 24 accepted component changes and receive two 3D sessions of up to ten minutes each per rolling 24 hours. Valid grants are reused across modes without additional charging. They may not save, publish, export or access a private garage. Browsing, duplicate operations, repeated selections and rejected incompatible changes do not consume change allowance. Usage identity survives normal session rotation; the app must not claim that all public-client circumvention is preventable.
 
 Registered accounts default to eight active builds, three creations per rolling day, fifteen per rolling thirty days, four published builds and eight combined SVG-image/JSON-information exports per rolling day. Save writes have bounded fair-use throttling (120/hour by default). Duplication consumes creation allowance. Editing consumes no new slot. Deletion frees a slot without refunding historical creation allowance. Keep these rules atomic on the server and show actual API usage in the interface. Administrators may change supported policy values within validated bounds with version checks and audit history; existing builds are never deleted when caps change.

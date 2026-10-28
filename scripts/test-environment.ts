@@ -8,6 +8,7 @@ export function makeTestEnvironment(source: NodeJS.ProcessEnv = process.env): No
     NODE_ENV: 'test', PORT: '4010', FRONTEND_URL: 'http://127.0.0.1:5190',
     MONGODB_URI: '', MONGODB_DB_NAME: 'tracklab_e2e', REDIS_URL: '',
     DEVELOPMENT_EPHEMERAL: 'true', DEVELOPMENT_MEMORY_RATE_LIMITS: 'true',
+    DEVELOPMENT_DISABLE_QUOTAS: source.TRACKLAB_E2E_QUOTA_BYPASS==='true'?'true':'false',
     SESSION_SECRET: randomBytes(48).toString('base64url'),
     SMTP_HOST: '', SMTP_USER: '', SMTP_PASS: '', EMAIL_FROM: 'TrackLab test <noreply@example.test>',
     PRICING_ENABLED: 'false', TRUST_PROXY_HOPS: '0', COOKIE_SAME_SITE: 'lax',

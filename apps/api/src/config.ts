@@ -12,6 +12,7 @@ const schema = z.object({
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
   DEVELOPMENT_EPHEMERAL: z.enum(['true', 'false']).default('false').transform(v => v === 'true'),
   DEVELOPMENT_MEMORY_RATE_LIMITS: z.enum(['true', 'false']).default('false').transform(v => v === 'true'),
+  DEVELOPMENT_DISABLE_QUOTAS: z.enum(['true','false']).default('false').transform(v=>v==='true'),
   GUEST_CHANGES: z.coerce.number().int().min(1).max(100).default(defaults.guestChanges), GUEST_PREVIEWS: z.coerce.number().int().min(1).max(10).default(defaults.guestPreviews),
   GUEST_PREVIEW_MINUTES: z.coerce.number().int().min(1).max(30).default(defaults.guestPreviewMinutes),
   BUILD_LIMIT: z.coerce.number().int().min(1).max(25).default(defaults.builds), CREATE_DAILY_LIMIT: z.coerce.number().int().min(1).max(10).default(defaults.createDaily), CREATE_MONTHLY_LIMIT: z.coerce.number().int().min(1).max(50).default(defaults.createMonthly),
@@ -23,7 +24,7 @@ const schema = z.object({
 });
 export function parseConfig(env: Record<string, string | undefined>) {
   const c = schema.parse(env);
-  if (c.NODE_ENV === 'production' && (c.DEVELOPMENT_EPHEMERAL || c.DEVELOPMENT_MEMORY_RATE_LIMITS || !c.MONGODB_URI || !c.REDIS_URL || !c.SESSION_SECRET || !c.SMTP_HOST || !c.FRONTEND_URL.startsWith('https://'))) throw new Error('Production requires MongoDB, Redis, a random 43+ character session secret, SMTP, HTTPS frontend and both development fallback flags disabled.');
+  if (c.NODE_ENV === 'production' && (c.DEVELOPMENT_DISABLE_QUOTAS || c.DEVELOPMENT_EPHEMERAL || c.DEVELOPMENT_MEMORY_RATE_LIMITS || !c.MONGODB_URI || !c.REDIS_URL || !c.SESSION_SECRET || !c.SMTP_HOST || !c.FRONTEND_URL.startsWith('https://'))) throw new Error('Production requires MongoDB, Redis, a random 43+ character session secret, SMTP, HTTPS frontend and all development flags disabled.');
   return { ...c, SESSION_SECRET: c.SESSION_SECRET ?? 'development-only-secret-never-use-this-value-in-production-000' };
 }
 export type Config = ReturnType<typeof parseConfig>;

@@ -4,6 +4,14 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 ## Push workflow
 
+## Task · Temporary unrestricted development usage — completed and verified, 28 October 2026
+
+- Applied the user's later instruction after pushing the catalog expansion. Added the explicit local `DEVELOPMENT_DISABLE_QUOTAS` switch and enabled it in the ignored workspace `.env`. Production startup rejects it. Normal-policy values and histories remain intact; turning it off restores quota enforcement without deleting over-limit builds.
+- Bypasses component/3D-session counts, active saved-build caps, daily/monthly creation, publication count, exports and business save-write quotas. UI copy across landing, builder, registration, garage, account and policy editor reflects development access. Guest drafts remain memory-only; accounts are still required for persistent saves. Authentication, CSRF, ownership, email verification for public builds, editor revisions/leases, compatibility, asset review and request-abuse limits remain active. Technical grants expire separately and can renew during an authorized development workspace.
+- Checks: 59 local tests passed with one live Redis integration skipped; the revised HTTP fixture's 35 API tests passed again. TypeScript, lint and both builds passed. All 16 normal-policy browser flows and both PWA tests passed. A separate isolated development-browser flow passed 26 guest changes, 3D access, registration and saving with no business quota lock. Tests verify production rejection, quota restoration, retained history, unauthorized access and ownership protection.
+- CI had reported a concurrent Supertest socket failure in the previous milestone. Test agents now use explicitly listening ephemeral HTTP servers with per-test cleanup, retaining the 32-request business-quota race. This fixes test-server lifetime rather than weakening the concurrency assertion. CI is inspected after this push; local checks do not substitute for that result.
+- Actual `npm run dev` startup/readback against `tracklab_dev` confirmed `developmentUnlimited: true`, connected mode and frontend readiness at localhost:5180. No database policy reset, credential exposure or deployment. The asset/data gaps listed in the expansion review remain unchanged.
+
 1. Implement one coherent phase or important task.
 2. Run the checks relevant to that change and document their actual results.
 3. Stage source and documentation, then run `npm run check:secrets`.

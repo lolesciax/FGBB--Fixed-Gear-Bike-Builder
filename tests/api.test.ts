@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import request, { type Agent } from 'supertest';
 import mongoose from 'mongoose';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
@@ -16,8 +16,9 @@ const origin = 'http://localhost:5173';
 const config = parseConfig({ NODE_ENV: 'test', FRONTEND_URL: origin });
 let repl: MongoMemoryReplSet, app: ReturnType<typeof createApp>;
 let letters: { email: string; kind: string; token: string }[];
+const testServers:ReturnType<typeof createServer>[]=[];
 type Client = { agent: Agent; csrf: string; userId?: string; guestCookie: string };
-async function guest(): Promise<Client> { const server = createServer(app); server.setMaxListeners(64); /* The quota race deliberately makes 32 simultaneous Supertest calls. */ const agent = request.agent(server); const s = await agent.get('/api/session').expect(200); const guestCookie = (s.headers['set-cookie'] as unknown as string[]).find(value => value.startsWith('tracklab-guest='))?.split(';')[0]; if (!guestCookie) throw new Error('Guest usage cookie was not issued.'); return { agent, csrf: s.body.csrf, guestCookie }; }
+async function guest(): Promise<Client> { const server = createServer((req,res)=>app(req,res)); await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve)); testServers.push(server); const agent = request.agent(server); const s = await agent.get('/api/session').expect(200); const guestCookie = (s.headers['set-cookie'] as unknown as string[]).find(value => value.startsWith('tracklab-guest='))?.split(';')[0]; if (!guestCookie) throw new Error('Guest usage cookie was not issued.'); return { agent, csrf: s.body.csrf, guestCookie }; }
 function post(c: Client, path: string, body: object = {}) { return c.agent.post(`/api${path}`).set('Origin', origin).set('X-CSRF-Token', c.csrf).send(body); }
 function patch(c: Client, path: string, body: object = {}, editorToken = '') { return c.agent.patch(`/api${path}`).set('Origin', origin).set('X-CSRF-Token', c.csrf).set('X-Editor-Token', editorToken).send(body); }
 function del(c: Client, path: string) { return c.agent.delete(`/api${path}`).set('Origin', origin).set('X-CSRF-Token', c.csrf); }
@@ -27,6 +28,7 @@ const build = { name: 'Daily rider', configuration: defaultConfiguration };
 beforeAll(async () => { repl = await MongoMemoryReplSet.create({ binary: { downloadDir: resolve('.local/mongodb') }, replSet: { count: 1, storageEngine: 'wiredTiger' } }); await mongoose.connect(repl.getUri('tracklab-test')); await initializeModels(); });
 beforeEach(async () => { for (const collection of Object.values(mongoose.connection.collections)) await collection.deleteMany({}); for (const p of seedCatalog) await ProductModel.create({ _id: p.id, data: p }); letters = []; app = createApp(config, new DevelopmentRateStore(), async (email, kind, token) => { letters.push({ email, kind, token }); }); });
 afterAll(async () => { await mongoose.disconnect(); await repl?.stop(); });
+afterEach(async()=>{await Promise.all(testServers.splice(0).map(server=>new Promise<void>(resolve=>server.close(()=>resolve()))));});
 describe('authentication and authorization', () => {
   it('protects and audits bounded policy changes while preserving existing builds',async()=>{
     const c=await member();await c.agent.get('/api/admin/policy').expect(403);
@@ -51,6 +53,31 @@ describe('authentication and authorization', () => {
     expect(picture.filename).toBe('Daily-rider.svg');
     for(let i=1;i<8;i++)await post(c,`/builds/${created._id}/export`).expect(200);
     await post(c,`/builds/${created._id}/export-image`).expect(409);
+  });
+  it('bypasses only business quotas in development and restores existing history when disabled',async()=>{
+    const send=async(email:string,kind:'verify'|'reset',token:string)=>{letters.push({email,kind,token});};
+    app=createApp({...config,DEVELOPMENT_DISABLE_QUOTAS:true},new DevelopmentRateStore(),send);
+    const g=await guest(),w=await workspace(g);
+    const initial=await post(g,'/workspace/change',{token:w.token,slot:'wheels',variantId:'studio-deep'}).expect(200);
+    const guestSubject=await Subject.findOne();
+    await Subject.updateOne({_id:guestSubject!._id},{$set:{changes:Array(24).fill(Date.now()),previews:Array(2).fill(Date.now())}});
+    const changed=await post(g,'/workspace/change',{token:initial.body.token,slot:'wheels',variantId:'studio-classic'}).expect(200);
+    const preview=await post(g,'/workspace/preview',{token:changed.body.token}).expect(200);expect(Date.parse(preview.body.expiresAt)-Date.now()).toBeGreaterThan(23*3600000);
+    expect((await g.agent.get('/api/session')).body).toMatchObject({developmentUnlimited:true,usage:{changes:25,previews:3}});
+    await post(g,'/builds',build).expect(401);
+    const c=await member();
+    await Build.create(Array.from({length:8},()=>({...build,owner:c.userId})));
+    await Subject.create({_id:`user:${c.userId}`,creates:Array(15).fill(Date.now()),exports:Array(8).fill(Date.now()),saves:Array(120).fill(Date.now())});
+    const ninth=(await post(c,'/builds',build).expect(201)).body;
+    await post(c,`/builds/${ninth._id}/export`).expect(200);
+    const lease=(await post(c,`/builds/${ninth._id}/lease`).expect(200)).body;
+    await patch(c,`/builds/${ninth._id}`,{...build,revision:1,visibility:'public'},lease.editorToken).expect(403);
+    await patch(c,`/builds/${ninth._id}`,{...build,revision:1},lease.editorToken).expect(200);
+    const other=await member('development-other@example.com');await other.agent.get(`/api/builds/${ninth._id}`).expect(404);
+    await g.agent.post('/api/workspace/change').set('Origin',origin).send({token:changed.body.token,slot:'wheels',variantId:'studio-deep'}).expect(403);
+    app=createApp(config,new DevelopmentRateStore(),send);
+    await post(g,'/workspace/change',{token:changed.body.token,slot:'wheels',variantId:'studio-deep'}).expect(409);
+    await post(c,'/builds',build).expect(409);expect(await Build.countDocuments({owner:c.userId})).toBe(9);
   });
   it('archives individual variants without removing saved selections or allowing new selection of retired variants',async()=>{
     const c=await member(),w=await workspace(c);

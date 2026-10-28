@@ -1,6 +1,6 @@
 import type { QuotaPolicy, Product, Configuration } from '@tracklab/domain';
 export type Account = { id: string; email: string; name: string; verified: boolean; role: string; theme: 'light' | 'dark' | 'system' };
-export type SessionInfo = { accountUsage:{active:number;published:number;createdToday:number;createdMonth:number;exportsToday:number}|null; policy: QuotaPolicy; user: Account | null; csrf: string; workspaceKey: string; mode: string; limits: { builds: number; publish: number; changes: number; previews: number }; usage: { changes: number; previews: number; changesResetAt: string | null; previewsResetAt: string | null } };
+export type SessionInfo = { developmentUnlimited:boolean; accountUsage:{active:number;published:number;createdToday:number;createdMonth:number;exportsToday:number}|null; policy: QuotaPolicy; user: Account | null; csrf: string; workspaceKey: string; mode: string; limits: { builds: number; publish: number; changes: number; previews: number }; usage: { changes: number; previews: number; changesResetAt: string | null; previewsResetAt: string | null } };
 export type SavedBuild = { _id: string; name: string; configuration: Configuration; catalogSnapshot?: Product[]; revision: number; visibility: 'private' | 'public'; publicId?: string; updatedAt: string };
 export class RequestError extends Error { constructor(public code: string, message: string, public details?: unknown, public retryAfterSeconds?: number) { super(message); } }
 let csrf = '';
