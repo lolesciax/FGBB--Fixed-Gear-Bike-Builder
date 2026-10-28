@@ -4,6 +4,8 @@ The original functional specification remains in force. The continuation brief c
 
 ## Authoritative source briefs
 
+- [Official colorways, sprites, decals and finishes](requirements/colorways.md) extends the geometry correction with model-specific, versioned appearances. The user authorized documented paint approximations and flagged missing graphics because licensed assets are unavailable. [Source/audit evidence](development/colorways.md); preserve one canonical configuration and existing saved builds.
+
 - [Targeted modeling correction and cockpit expansion](requirements/modeling-corrections.md) prioritizes connected fork/wheel/drivetrain/saddle/bar geometry and adds a flat handlebar to the existing Cockpit category. Preserve the frontend/backend layout and six-slot configuration; the complete independent-part overhaul remains postponed. [Audit and phase evidence](development/modeling-corrections.md).
 
 - [Original full implementation specification](requirements/original-implementation.md).

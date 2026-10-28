@@ -12,6 +12,11 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
 
+## Task · Colorway architecture and manufacturer source audit — completed, 28 October 2026
+
+- Archived the colorway brief and inspected existing single-color SVG/WebGL paint, frame assets, product schemas, admin review and saved snapshots. Verified manufacturer finish names/size payloads and privately inspected official paint references. [Colorway audit](colorways.md) records sources, exact scope, structural discrepancies and phase acceptance.
+- The user authorized paint approximations and missing-graphics disclosures. No protected graphics, photographs, decals or textures are licensed for distribution. Rendering/catalog implementation remains pending; no runtime/data/policy change in this milestone. Cinelli Rainbow is a dark frame with local graphics, not a random rainbow gradient. Dosnoventa DET Falcon L has a different listed seat tube from Jet Black L, so geometry cannot be blindly aliased. Unsupported manufacturer geometry remains draft.
+
 ## Task · Bicycle geometry and four cockpit profiles — completed and verified, 28 October 2026
 
 - Corrected rigid fork steering/crown/blades/dropouts, BSD/width/depth-driven wheel/tire sections, flange-based instanced spokes, paired cranks/pedals, tooth-derived ring/cog and closed chain, supported shaped saddle, and four continuous bar profiles. Shared metre-scale anchors and paths drive both viewers; reviewed manufacturer frame geometry and all six canonical slots remain intact. Regenerated 39 original illustrative frame/fork GLBs with versioned caches and a narrow untouched-registration migration.
