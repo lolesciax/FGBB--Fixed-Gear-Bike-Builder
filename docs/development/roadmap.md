@@ -12,6 +12,11 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
 
+## Task · Modeling correction audit — completed, 28 October 2026
+
+- Archived the targeted brief and inspected actual side/front/top/quarter renders on the isolated temporary-database server. Recorded disconnected fork roots, toroidal rims/tires, centre-origin spokes, incomplete drivetrain, spherical saddle, fixed-offset bars and conservative camera bounds in [the geometry audit](modeling-corrections.md), with baseline images.
+- Modeling implementation is pending; no geometry, source measurements, database records, quotas or component slots changed in this audit milestone. The dedicated flat-bar choice and targeted cockpit filter are authorized; the full modular overhaul remains postponed.
+
 ## Task · Frontend/backend folder cleanup — completed and verified locally, 28 October 2026
 
 - Moved the React application, public assets and Vite configuration into root `frontend/`; moved the Express API, authentication, database and catalog modules into root `backend/`. Removed the empty earlier application container. Shared domain code remains in `packages/domain/`, with shared scripts, tests, root package/lockfile and the private root `.env` retained.

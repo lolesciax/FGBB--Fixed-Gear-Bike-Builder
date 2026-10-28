@@ -4,6 +4,8 @@ The original functional specification remains in force. The continuation brief c
 
 ## Authoritative source briefs
 
+- [Targeted modeling correction and cockpit expansion](requirements/modeling-corrections.md) prioritizes connected fork/wheel/drivetrain/saddle/bar geometry and adds a flat handlebar to the existing Cockpit category. Preserve the frontend/backend layout and six-slot configuration; the complete independent-part overhaul remains postponed. [Audit and phase evidence](development/modeling-corrections.md).
+
 - [Original full implementation specification](requirements/original-implementation.md).
 - [Continuation: integrated UI/UX and distinct identity](requirements/continuation-ui-ux.md).
 - [Builder refinement: compact workspace, visualization and branded framesets](requirements/builder-visual-improvements.md). This supersedes the earlier permanently expanded summary and oversized heading composition.
