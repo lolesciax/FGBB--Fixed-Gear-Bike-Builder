@@ -9,6 +9,8 @@ import { parseConfig } from '../apps/api/src/config';
 import { DevelopmentRateStore, sign } from '../apps/api/src/security';
 import { Build, ProductModel, Subject, User, initializeModels, Session } from '../apps/api/src/models';
 import { seedCatalog, defaultConfiguration } from '../apps/api/src/catalog';
+import { importCatalog } from '../apps/api/src/catalog-import';
+import { Brand } from '../apps/api/src/models';
 const origin = 'http://localhost:5173';
 const config = parseConfig({ NODE_ENV: 'test', FRONTEND_URL: origin });
 let repl: MongoMemoryReplSet, app: ReturnType<typeof createApp>;
@@ -25,6 +27,31 @@ beforeAll(async () => { repl = await MongoMemoryReplSet.create({ binary: { downl
 beforeEach(async () => { for (const collection of Object.values(mongoose.connection.collections)) await collection.deleteMany({}); for (const p of seedCatalog) await ProductModel.create({ _id: p.id, data: p }); letters = []; app = createApp(config, new DevelopmentRateStore(), async (email, kind, token) => { letters.push({ email, kind, token }); }); });
 afterAll(async () => { await mongoose.disconnect(); await repl?.stop(); });
 describe('authentication and authorization', () => {
+  it('upgrades the old draft placeholder but retains an edited research draft', async()=>{
+    const placeholder={id:'cinelli-vigorelli',brand:'Cinelli',name:'Vigorelli frame-kit',slot:'frameset',status:'draft',illustrative:false,description:'Manufacturer reference record. Authentic model geometry and licensed product assets are not registered, so selection is unavailable.',variants:[{id:'cinelli-vigorelli-reference',label:'Reference only',color:'#808080',specs:{}}]};
+    await ProductModel.updateOne({_id:placeholder.id},{$set:{data:placeholder}});
+    await importCatalog();
+    expect((await ProductModel.findById(placeholder.id))?.data.variants).toHaveLength(5);
+    await ProductModel.updateOne({_id:placeholder.id},{$set:{data:{...placeholder,name:'Edited research draft'}}});
+    await importCatalog();
+    expect((await ProductModel.findById(placeholder.id))?.data.name).toBe('Edited research draft');
+  });
+  it('imports manufacturer records idempotently without overwriting reviewed catalog data', async () => {
+    await importCatalog(); await importCatalog();
+    expect(await Brand.countDocuments()).toBe(3);
+    expect(await ProductModel.countDocuments()).toBe(seedCatalog.length);
+    await ProductModel.updateOne({_id:'cinelli-vigorelli'},{$set:{'data.status':'archived','data.name':'Reviewed archived frame'}});
+    await importCatalog();
+    expect((await ProductModel.findById('cinelli-vigorelli'))?.data.name).toBe('Reviewed archived frame');
+    const c=await guest();const response=await c.agent.get('/api/catalog?brand=Dosnoventa').expect(200);
+    expect(response.body.items).toHaveLength(3);
+    expect(response.body.items.every((p:{visual:{fidelity:string}})=>p.visual.fidelity==='measurement-schematic')).toBe(true);
+    const w=await workspace(c);
+    const changed=await post(c,'/workspace/change',{token:w.token,slot:'frameset',variantId:'dosnoventa-02-la-m'}).expect(200);
+    await post(c,'/workspace/preview',{token:changed.body.token}).expect(200);
+    await ProductModel.updateOne({_id:'dosnoventa-02-la'},{$unset:{'data.visual':1}});
+    await post(c,'/workspace/preview',{token:changed.body.token}).expect(422);
+  });
   it('uses HttpOnly same-site cookies and requires CSRF plus an allowed Origin', async () => { const c = await guest(); const s = await request(app).get('/api/session'); expect(s.headers['set-cookie'][0]).toMatch(/HttpOnly/); expect(s.headers['set-cookie'][0]).toMatch(/SameSite=Lax/); await c.agent.post('/api/workspace').set('Origin', origin).send({}).expect(403); await c.agent.post('/api/workspace').set('Origin', 'https://attacker.example').set('X-CSRF-Token', c.csrf).send({}).expect(403); });
   it('rotates sessions, hides hashes and prevents role assignment', async () => { const c = await guest(); const prior = c.csrf; await post(c, '/auth/register', { name: 'Rider', email: 'rider@example.com', password: 'a-long-test-passphrase', role: 'admin' }).expect(422); const r = await post(c, '/auth/register', { name: 'Rider', email: 'rider@example.com', password: 'a-long-test-passphrase' }).expect(201); expect(r.body.user.role).toBe('user'); expect(r.body.user.passwordHash).toBeUndefined(); expect(r.body.csrf).not.toBe(prior); expect(await Session.countDocuments()).toBe(1); });
   it('protects account data and administrator writes', async () => { const c = await member(); await c.agent.get('/api/admin/catalog').expect(403); const g = await guest(); await post(g, '/builds', build).expect(401); await g.agent.get('/api/builds').expect(401); });

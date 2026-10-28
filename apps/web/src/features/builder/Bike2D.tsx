@@ -1,73 +1,311 @@
-import { useId } from 'react';
-import { variantById, type Configuration, type Product, type Slot } from '@tracklab/domain';
-type Props = { configuration: Configuration; catalog: Product[]; active?: Slot; onSelect?: (slot: Slot) => void; zoom?: number; compact?: boolean };
-export function Bike2D({ configuration, catalog, active, onSelect, zoom = 1, compact = false }: Props) {
-  const uid = useId().replace(/:/g, '');
-  const get = (s: Slot) => variantById(catalog, configuration[s])?.variant;
-  const color = get('frameset')?.color || '#303432';
-  const pursuit = get('frameset')?.specs.geometry === 'pursuit';
-  const deep = get('wheels')?.specs.rimDepth === 60;
-  const tan = get('tires')?.specs.sidewall === 'tan';
-  const riser = get('cockpit')?.specs.shape === 'riser';
-  const comfort = get('saddle')?.specs.shape === 'comfort';
-  const a = { rx: 205, ry: 380, fx: 700, fy: 380, bx: 395, by: 398, sx: 337, sy: pursuit ? 177 : 163, hx: 617, hy: pursuit ? 190 : 163, lx: 637, ly: 228 };
-  const interactive = (slot: Slot) => onSelect ? { role: 'button', tabIndex: 0, 'aria-label': `Select ${slot} on bicycle`, onClick: () => onSelect(slot), onKeyDown: (e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(slot); } }, className: `bike-part ${active === slot ? 'is-active' : ''}` } : {};
-  const tube = (x1: number, y1: number, x2: number, y2: number, width: number, fill = `url(#${uid}-paint)`) => <><line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#182c25" strokeWidth={width + 2} /><line x1={x1} y1={y1} x2={x2} y2={y2} stroke={fill} strokeWidth={width}/><line x1={x1 - 1} y1={y1 - 2} x2={x2 - 1} y2={y2 - 2} stroke="#ffffff" opacity=".13" strokeWidth="2"/></>;
-  return <svg className={`bike-svg ${compact ? 'compact' : ''}`} viewBox="0 35 900 520" role="img" aria-label="Illustrative fixed-gear bicycle, side profile. Not manufacturer geometry.">
-    <defs>
-      <linearGradient id={`${uid}-paint`} gradientUnits="userSpaceOnUse" x1="200" y1="130" x2="700" y2="430"><stop stopColor={color}/><stop offset=".38" stopColor={color}/><stop offset=".5" stopColor={color} stopOpacity=".86"/><stop offset="1" stopColor={color}/></linearGradient>
-      <linearGradient id={`${uid}-metal`} x1="0" y1="0" x2="0" y2="1"><stop stopColor="#777c77"/><stop offset=".35" stopColor="#353b36"/><stop offset="1" stopColor="#151b17"/></linearGradient>
-      <radialGradient id={`${uid}-shadow`}><stop stopColor="#16241c" stopOpacity=".17"/><stop offset="1" stopColor="#16241c" stopOpacity="0"/></radialGradient>
-    </defs>
-    <g transform={`translate(450 285) scale(${zoom}) translate(-450 -285)`}>
-      <ellipse cx="452" cy="520" rx="370" ry="18" fill={`url(#${uid}-shadow)`}/>
-      <g {...interactive('wheels')}>
-        {[a.rx, a.fx].map((x, wi) => <g key={x}>
-          <circle cx={x} cy="380" r="135" fill="none" stroke="#141b17" strokeWidth="15"/>
-          <circle cx={x} cy="380" r="136" fill="none" stroke={tan ? '#b69a72' : '#464b46'} strokeWidth={tan ? 5 : 2}/>
-          <circle cx={x} cy="380" r={deep ? 120 : 127} fill="none" stroke={`url(#${uid}-metal)`} strokeWidth={deep ? 25 : 9}/>
-          <circle cx={x} cy="380" r="129" fill="none" stroke="#939890" strokeWidth="1"/>
-          {Array.from({ length: compact ? 16 : 28 }, (_, i) => { const angle = (i * Math.PI * 2) / (compact ? 16 : 28); const radius = deep ? 106 : 122; return <line key={i} x1={x + Math.cos(angle + .7) * 7} y1={380 + Math.sin(angle + .7) * 7} x2={x + Math.cos(angle) * radius} y2={380 + Math.sin(angle) * radius} stroke={wi ? '#7f857e' : '#727b71'} strokeWidth=".85"/>; })}
-          <circle cx={x} cy="380" r="8" fill="#222d25" stroke="#969e93" strokeWidth="2"/>
-          {!compact && <text x={x} y="264" textAnchor="middle" fontSize="7" fill="#aeb5a9" letterSpacing="3">TRACKLAB STUDIO</text>}
-        </g>)}
-      </g>
-      <g {...interactive('tires')}><path d="M75 354 A135 135 0 0 1 335 354M570 354 A135 135 0 0 1 830 354" stroke="transparent" strokeWidth="22" fill="none"/></g>
-      <g strokeLinecap="round" strokeLinejoin="round" {...interactive('frameset')}>
-        {tube(a.rx, a.ry, a.sx, a.sy, 8)}{tube(a.rx, a.ry, a.bx, a.by, 11)}
-        {tube(a.sx, a.sy, a.hx, a.hy, 15)}{tube(a.sx, a.sy, a.bx, a.by, 18)}
-        {tube(a.bx, a.by, a.lx, a.ly, 23)}{tube(a.hx - 3, a.hy - 11, a.lx + 5, a.ly + 10, 24)}
-        {tube(a.lx, a.ly, a.fx, a.fy, 16)}
-        <circle cx={a.rx} cy={a.ry} r="7" fill="#2d3730" stroke="#7a8478" strokeWidth="2"/>
-        <circle cx={a.fx} cy={a.fy} r="6" fill="#333d34" stroke="#7a8478" strokeWidth="2"/>
-        {!compact && <text x="472" y="316" transform="rotate(-36 472 316)" fill="#e7eee2" opacity=".7" fontSize="11" fontWeight="700" letterSpacing="4">STUDIO</text>}
-      </g>
-      <g {...interactive('saddle')}>
-        <path d={`M${a.sx} ${a.sy} L315 100`} stroke={`url(#${uid}-metal)`} strokeWidth="13"/>
-        <path d="M292 86 Q337 104 366 86" fill="none" stroke="#747b70" strokeWidth="3"/>
-        <path d={comfort ? 'M272 72 Q305 66 345 72 L377 77 Q389 83 371 91 L307 94 Q279 92 272 72Z' : 'M271 75 Q300 76 320 80 Q345 76 374 79 Q388 80 382 87 L316 94 Q292 91 271 80Z'} fill={`url(#${uid}-metal)`} stroke="#1c211c" strokeWidth="2"/>
-        <path d="M279 77 Q315 87 375 82" fill="none" stroke="#8e958b" strokeWidth="1"/>
-        <rect x={a.sx - 9} y={a.sy - 4} width="19" height="6" rx="2" fill="#303d31" transform={`rotate(-17 ${a.sx} ${a.sy})`}/>
-      </g>
-      <g {...interactive('cockpit')} fill="none" strokeLinecap="round" strokeLinejoin="round">
-        <path d={`M${a.hx} ${a.hy - 7} L${a.hx - 10} 126 L665 121`} stroke="#1b231d" strokeWidth="14"/>
-        <path d={riser ? 'M664 121 L681 102 L718 102 M680 102 L651 98' : 'M663 121 Q710 121 720 146 Q733 174 709 190 L685 196'} stroke={`url(#${uid}-metal)`} strokeWidth="14"/>
-        <path d={riser ? 'M692 102 L721 102' : 'M675 123 Q710 125 718 148 Q725 174 707 184 L687 190'} stroke="#31372f" strokeWidth="10"/>
-        {!riser && Array.from({ length: 8 }, (_, i) => <path key={i} d={`M${697 + Math.sin(i / 3) * 20} ${128 + i * 8} l7 -3`} stroke="#555b51" strokeWidth="1.1"/>)}
-        <path d={`M${a.hx - 13} 128 l13 -3`} stroke="#626c5d" strokeWidth="3"/>
-      </g>
-      <g {...interactive('drivetrain')}>
-        <path d="M205 365 L395 353 A45 45 0 0 1 395 443 L205 395 A15 15 0 0 1 205 365" fill="none" stroke="#6b7265" strokeWidth="4"/>
-        <path d="M205 365 L395 353 A45 45 0 0 1 395 443 L205 395 A15 15 0 0 1 205 365" fill="none" stroke="#20281e" strokeWidth="2" strokeDasharray="3 3"/>
-        <circle cx="395" cy="398" r="45" fill="none" stroke="#242c24" strokeWidth="9"/>
-        <circle cx="395" cy="398" r="48" fill="none" stroke="#4b5547" strokeWidth="3" strokeDasharray="2 3"/>
-        {Array.from({ length: 5 }, (_, i) => <path key={i} d="M395 398 L391 356 L406 356Z" transform={`rotate(${i * 72} 395 398)`} fill="#2e382b"/>)}
-        <circle cx="395" cy="398" r="13" fill="#293126" stroke="#5a6652" strokeWidth="2"/>
-        <path d="M395 398 L471 412" stroke="#1c241c" strokeWidth="12" strokeLinecap="round"/>
-        <path d="M400 396 L470 409" stroke="#68715f" strokeWidth="2"/>
-        <rect x="461" y="407" width="29" height="9" rx="2" fill="#222a20" stroke="#69725f"/>
-        <circle cx="395" cy="398" r="5" fill="#11190f" stroke="#9aa58d" strokeWidth="2"/>
-      </g>
+import { useId, type KeyboardEvent } from "react";
+import {
+  assemblyGeometry,
+  variantById,
+  type Configuration,
+  type Product,
+  type Slot,
+} from "@tracklab/domain";
+type Props = {
+  configuration: Configuration;
+  catalog: Product[];
+  active?: Slot;
+  onSelect?: (slot: Slot) => void;
+  zoom?: number;
+  compact?: boolean;
+};
+export function Bike2D({
+  configuration,
+  catalog,
+  active,
+  onSelect,
+  zoom = 1,
+  compact = false,
+}: Props) {
+  const uid = useId().replace(/:/g, "");
+  const get = (slot: Slot) =>
+    variantById(catalog, configuration[slot])?.variant;
+  const frame = get("frameset"),
+    g = assemblyGeometry(frame?.specs);
+  const {
+    rear,
+    front,
+    bb,
+    seat,
+    head,
+    headBottom,
+    saddle,
+    bar,
+    radius,
+    bounds,
+  } = g;
+  const deep = get("wheels")?.specs.rimDepth === 60,
+    tan = get("tires")?.specs.sidewall === "tan";
+  const riser = get("cockpit")?.specs.shape === "riser",
+    comfort = get("saddle")?.specs.shape === "comfort";
+  const margin = compact ? 12 : 16;
+  const interactive = (slot: Slot) =>
+    onSelect
+      ? {
+          role: "button",
+          tabIndex: 0,
+          "aria-label": `Select ${slot} on bicycle`,
+          onClick: () => onSelect(slot),
+          onKeyDown: (e: KeyboardEvent) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onSelect(slot);
+            }
+          },
+          className: `bike-part ${active === slot ? "is-active" : ""}`,
+        }
+      : {};
+  const tube = (
+    a: { x: number; y: number },
+    b: { x: number; y: number },
+    width: number,
+    paint = `url(#${uid}-paint)`,
+  ) => (
+    <g>
+      <path
+        d={`M${a.x} ${a.y}L${b.x} ${b.y}`}
+        stroke="#21252b"
+        strokeWidth={width + 3}
+      />
+      <path
+        d={`M${a.x} ${a.y}L${b.x} ${b.y}`}
+        stroke={paint}
+        strokeWidth={width}
+      />
+      <path
+        d={`M${a.x} ${a.y - 2}L${b.x} ${b.y - 2}`}
+        stroke="#fff"
+        opacity=".22"
+        strokeWidth="2"
+      />
     </g>
-  </svg>;
+  );
+  return (
+    <svg
+      className={`bike-svg ${compact ? "compact" : ""}`}
+      viewBox={`${bounds.x - margin} ${bounds.y - margin} ${bounds.width + margin * 2} ${bounds.height + margin * 2}`}
+      preserveAspectRatio="xMidYMid meet"
+      role="img"
+      aria-label="Illustrative fixed-gear bicycle, side profile. Not manufacturer geometry."
+      data-frame-variant={configuration.frameset}
+    >
+      <defs>
+        <linearGradient id={`${uid}-paint`} x1="0" y1="0" x2=".2" y2="1">
+          <stop stopColor={frame?.color || "#535963"} />
+          <stop offset=".35" stopColor={frame?.color || "#535963"} />
+          <stop offset=".5" stopColor="#8d939a" />
+          <stop offset=".63" stopColor={frame?.color || "#535963"} />
+          <stop offset="1" stopColor="#272c33" />
+        </linearGradient>
+        <linearGradient id={`${uid}-metal`} x1="0" y1="0" x2="0" y2="1">
+          <stop stopColor="#868d98" />
+          <stop offset=".3" stopColor="#363c46" />
+          <stop offset="1" stopColor="#171b22" />
+        </linearGradient>
+      </defs>
+      <g
+        transform={`translate(${front.x / 2} ${bounds.y + bounds.height / 2}) scale(${zoom}) translate(${-front.x / 2} ${-(bounds.y + bounds.height / 2)})`}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <ellipse
+          cx={front.x / 2}
+          cy={radius + 3}
+          rx={front.x / 2 + radius - 30}
+          ry="9"
+          fill="#171c26"
+          opacity=".08"
+        />
+        <g {...interactive("wheels")}>
+          {[rear, front].map((axle, i) => (
+            <g key={i} transform={`translate(${axle.x} 0)`}>
+              <circle
+                r={radius - 10}
+                fill="none"
+                stroke="#1c2027"
+                strokeWidth="21"
+              />
+              <circle
+                r={radius - 8}
+                fill="none"
+                stroke={tan ? "#ae8d5b" : "#565d68"}
+                strokeWidth={tan ? 7 : 2}
+              />
+              <circle
+                r={deep ? radius - 49 : radius - 28}
+                fill="none"
+                stroke={`url(#${uid}-metal)`}
+                strokeWidth={deep ? 56 : 24}
+              />
+              <circle
+                r={radius - 18}
+                fill="none"
+                stroke="#9aa2ae"
+                strokeWidth="2"
+              />
+              {Array.from({ length: compact ? 20 : 32 }, (_, n) => {
+                const angle = (n * Math.PI * 2) / (compact ? 20 : 32);
+                return (
+                  <line
+                    key={n}
+                    x1={Math.cos(angle + 0.5) * 14}
+                    y1={Math.sin(angle + 0.5) * 14}
+                    x2={Math.cos(angle) * (radius - (deep ? 78 : 42))}
+                    y2={Math.sin(angle) * (radius - (deep ? 78 : 42))}
+                    stroke="#7e8794"
+                    strokeWidth="1.4"
+                  />
+                );
+              })}
+              <circle r="17" fill="#353c46" stroke="#b1b8c3" strokeWidth="3" />
+              <circle r="7" fill="#c8ccd2" stroke="#343a44" strokeWidth="2" />
+            </g>
+          ))}
+        </g>
+        <g {...interactive("tires")}>
+          <path
+            d={`M${rear.x - radius + 5} -45 A${radius} ${radius} 0 0 1 ${rear.x + radius - 5} -45 M${front.x - radius + 5} -45 A${radius} ${radius} 0 0 1 ${front.x + radius - 5} -45`}
+            fill="none"
+            stroke="transparent"
+            strokeWidth="25"
+          />
+        </g>
+        <g {...interactive("frameset")}>
+          {tube(rear, seat, 13)}
+          {tube(rear, bb, 18)}
+          {tube(seat, head, g.frameWidth)}
+          {tube(bb, seat, g.frameWidth + 2)}
+          {tube(bb, headBottom, g.frameWidth + 10)}
+          {tube(head, headBottom, g.frameWidth + 9)}
+          <path
+            d={`M${headBottom.x} ${headBottom.y} Q${headBottom.x + 38} ${headBottom.y + 110} ${front.x} 0`}
+            fill="none"
+            stroke="#20252d"
+            strokeWidth="25"
+          />
+          <path
+            d={`M${headBottom.x + 1} ${headBottom.y + 10} Q${headBottom.x + 40} ${headBottom.y + 110} ${front.x + 1} -8`}
+            fill="none"
+            stroke="#636c78"
+            strokeWidth="6"
+          />
+          <circle cx={rear.x} cy="0" r="8" fill="#abb3bf" />
+          <circle cx={front.x} cy="0" r="8" fill="#abb3bf" />
+        </g>
+        <g {...interactive("saddle")}>
+          {tube(seat, saddle, 22, `url(#${uid}-metal)`)}
+          <path
+            d={`M${saddle.x - 44} ${saddle.y - 3} Q${saddle.x} ${saddle.y + 15} ${saddle.x + 62} ${saddle.y - 4}`}
+            fill="none"
+            stroke="#848b94"
+            strokeWidth="5"
+          />
+          <path
+            d={`M${saddle.x - 83} ${saddle.y - 21} Q${saddle.x - 48} ${saddle.y - 30} ${saddle.x - 5} ${saddle.y - 20} L${saddle.x + 85} ${saddle.y - 18} Q${saddle.x + 98} ${saddle.y - 8} ${saddle.x + 58} ${saddle.y - 4} L${saddle.x - 38} ${saddle.y + (comfort ? 8 : 0)} Q${saddle.x - 72} ${saddle.y + 1} ${saddle.x - 83} ${saddle.y - 21}Z`}
+            fill={`url(#${uid}-metal)`}
+            stroke="#20252b"
+            strokeWidth="3"
+          />
+        </g>
+        <g {...interactive("cockpit")}>
+          {tube(
+            head,
+            { x: head.x - 7, y: head.y - 48 },
+            26,
+            `url(#${uid}-metal)`,
+          )}
+          {tube(
+            { x: head.x - 7, y: head.y - 48 },
+            bar,
+            25,
+            `url(#${uid}-metal)`,
+          )}
+          <path
+            d={
+              riser
+                ? `M${bar.x - 12} ${bar.y}L${bar.x + 40} ${bar.y - 28}L${bar.x + 108} ${bar.y - 28}`
+                : `M${bar.x - 10} ${bar.y} C${bar.x + 75} ${bar.y - 8} ${bar.x + 112} ${bar.y + 18} ${bar.x + 109} ${bar.y + 65} Q${bar.x + 111} ${bar.y + 114} ${bar.x + 50} ${bar.y + 121} L${bar.x + 20} ${bar.y + 118}`
+            }
+            fill="none"
+            stroke="#222831"
+            strokeWidth="24"
+          />
+          <path
+            d={
+              riser
+                ? `M${bar.x + 58} ${bar.y - 28}L${bar.x + 108} ${bar.y - 28}`
+                : `M${bar.x + 15} ${bar.y + 1} Q${bar.x + 101} ${bar.y - 3} ${bar.x + 102} ${bar.y + 61} Q${bar.x + 104} ${bar.y + 106} ${bar.x + 31} ${bar.y + 112}`
+            }
+            fill="none"
+            stroke="#57616e"
+            strokeWidth="4"
+          />
+        </g>
+        <g {...interactive("drivetrain")}>
+          <path
+            d={`M0 -24 L${bb.x} ${bb.y - 83} A83 83 0 0 1 ${bb.x} ${bb.y + 83} L0 24 A24 24 0 0 1 0 -24Z`}
+            fill="none"
+            stroke="#979b9d"
+            strokeWidth="7"
+          />
+          <path
+            d={`M0 -24 L${bb.x} ${bb.y - 83} A83 83 0 0 1 ${bb.x} ${bb.y + 83} L0 24 A24 24 0 0 1 0 -24Z`}
+            fill="none"
+            stroke="#30363f"
+            strokeWidth="3"
+            strokeDasharray="4 5"
+          />
+          <circle
+            cx={bb.x}
+            cy={bb.y}
+            r="80"
+            fill="#303741"
+            stroke="#9099a5"
+            strokeWidth="4"
+          />
+          {Array.from({ length: 5 }, (_, i) => (
+            <path
+              key={i}
+              d={`M${bb.x + 13} ${bb.y - 22} L${bb.x + 30} ${bb.y - 61} Q${bb.x + 49} ${bb.y - 56} ${bb.x + 58} ${bb.y - 37} L${bb.x + 29} ${bb.y - 11}Z`}
+              fill="#dde1e7"
+              transform={`rotate(${i * 72} ${bb.x} ${bb.y})`}
+            />
+          ))}
+          <circle
+            cx={bb.x}
+            cy={bb.y}
+            r="83"
+            fill="none"
+            stroke="#65707c"
+            strokeWidth="5"
+            strokeDasharray="2 7"
+          />
+          {tube(bb, { x: bb.x + 118, y: bb.y + 45 }, 22, `url(#${uid}-metal)`)}
+          <rect
+            x={bb.x + 93}
+            y={bb.y + 42}
+            width="63"
+            height="17"
+            rx="4"
+            fill="#303741"
+            stroke="#88929f"
+            strokeWidth="2"
+          />
+          <circle
+            cx={bb.x}
+            cy={bb.y}
+            r="13"
+            fill="#b9c1cc"
+            stroke="#363e49"
+            strokeWidth="5"
+          />
+        </g>
+      </g>
+    </svg>
+  );
 }

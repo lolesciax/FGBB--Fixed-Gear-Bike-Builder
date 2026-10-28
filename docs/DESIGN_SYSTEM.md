@@ -46,6 +46,8 @@ Preserve light/dark preferences. Check contrast, focus, reduced motion, long lab
 
 ## Primary implementation references
 
+- The [compact builder refinement](design/builder-compact-reference.png) supersedes the expanded summary/heading layout below. Use a compact toolbar, guest disclosure, 68px desktop summary, dominant neutral studio canvas and independently scrolling inspector. Product thumbnails must use actual independent geometry, not the generated branded images. Registration wording must match the actual flow: guests see Create account to save.
+
 - [Desktop graphite workspace](design/builder-graphite-desktop.png), generated with the built-in Image Gen tool as a full primary-screen reference.
 - [Light mobile workspace and parts sheet](design/builder-blue-mobile.png), generated as a fresh responsive-state reference in the same system.
 - Allowed primary copy: TrackLab; Builder; Parts catalog; My garage; Sign in; Bike Builder; One configuration. Every detail.; Build name; Untitled build; Save build; Illustrative assembly; Frameset; Wheels; Tires; Cockpit; Drivetrain; Seating; Choose parts; Done; Selected parts; Gear ratio; Compatibility; Needs verification. Product names, variants, specifications and usage values must come from actual state/API data.

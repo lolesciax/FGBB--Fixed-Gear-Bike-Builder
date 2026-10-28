@@ -1,11 +1,12 @@
 import mongoose from 'mongoose';
 import { parseConfig } from './config';
-import { ProductModel, initializeModels } from './models';
-import { seedCatalog } from './catalog';
+import { initializeModels } from './models';
+import { importCatalog } from './catalog-import';
 const config = parseConfig(process.env);
 if (!config.MONGODB_URI) throw new Error('MONGODB_URI required.');
+if (config.NODE_ENV !== 'production' && config.MONGODB_DB_NAME !== 'tracklab_dev') throw new Error('Local catalog imports require the explicit tracklab_dev database.');
 await mongoose.connect(config.MONGODB_URI, { ...(config.MONGODB_DB_NAME ? { dbName: config.MONGODB_DB_NAME } : {}) });
 await initializeModels();
-for (const p of seedCatalog) await ProductModel.updateOne({ _id: p.id }, { $setOnInsert: { data: p } }, { upsert: true });
+await importCatalog();
 await mongoose.disconnect();
 console.info('Catalog seeded without overwriting existing records.');

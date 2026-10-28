@@ -46,7 +46,7 @@ Email delivery is not configured yet. During development, verification and passw
 - `apps/web`: React, TypeScript, Vite, React Router, TanStack Query, Zustand, Tailwind, SVG and lazy-loaded React Three Fiber.
 - `apps/api`: Express, Mongoose, backend sessions, CSRF, compatibility validation, quotas, account management and garage APIs.
 - `packages/domain`: shared schemas, configuration types, compatibility rules and disclosures.
-- `apps/web/public/models`: independently authored schematic GLB parts and their asset registry.
+- `packages/domain/src/visual.ts`: shared measurement-based assembly anchors, bounds and procedural asset registry. Original schematic GLBs remain under `apps/web/public/models` as historical assets.
 - `tests`: domain, API, renderer, asset, configuration, pricing and browser checks.
 - `docs`: development instructions and design reference.
 
@@ -54,7 +54,7 @@ Email delivery is not configured yet. During development, verification and passw
 
 Implemented flows include the illustrative 2D/3D workspace, session authentication, guest allowances, compatibility checks, private garage CRUD, publishing limits, JSON export, and a basic administrative catalog editor. Accounts, saved builds, sessions and business quotas are connected to the dedicated Atlas development database.
 
-The selectable catalog currently contains original **demo** parts. Manufacturer publishing remains gated until product variants, specification provenance, geometry and asset permissions are reviewed. The Cinelli reference is an unpublished research draft. Demo geometry is never presented as authentic manufacturer geometry. Pricing remains disabled.
+The catalog includes source-reviewed **Cinelli Vigorelli** and **Dosnoventa 02 LA, 03 DET and 01 BCN** size variants, alongside clearly identified original demo components. Previews use independent measurement-based geometry and approximate colors; authentic manufacturer models and finish graphics are unavailable. Vigorelli Steel remains a research draft pending compatible seating and further geometry review. See [official sources and rendering limits](docs/development/frameset-sources.md). Pricing remains disabled.
 
 This is not a completed public release. Remaining work includes manufacturer catalog verification, expanded component categories and assets, richer administration, accessibility/responsive polish, production Redis configuration, SMTP delivery testing, PWA verification, and deployment validation. The Redis adapter's atomic behavior has been verified with two independent clients in GitHub CI. Hosting manifests are preparatory files only; **do not apply them while development and release review are pending**.
 

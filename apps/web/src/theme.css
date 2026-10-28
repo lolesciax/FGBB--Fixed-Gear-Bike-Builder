@@ -13,6 +13,9 @@
   --on-primary: #ffffff;
   --primary-soft: #e9eeff;
   --canvas: #f1f3f6;
+  --studio-canvas: #e8ebef;
+  --studio-ink: #171c26;
+  --studio-muted: #465160;
   --subtle: var(--elevated);
   --accent: var(--elevated);
   --success: #197042;

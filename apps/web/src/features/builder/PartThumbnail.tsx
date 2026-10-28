@@ -1,5 +1,5 @@
 import { Bike, Cog, SlidersHorizontal } from "lucide-react";
-import type { Product } from "@tracklab/domain";
+import { assemblyGeometry, type Product } from "@tracklab/domain";
 export function PartThumbnail({
   product,
   color,
@@ -7,26 +7,31 @@ export function PartThumbnail({
   product: Product;
   color?: string;
 }) {
-  if (product.slot === "frameset")
+  if (product.slot === "frameset") {
+    const g = assemblyGeometry(
+      product.variants.find((v) => v.color === color)?.specs ||
+        product.variants[0].specs,
+    );
+    const { rear, front, bb, seat, head, headBottom } = g;
     return (
-      <svg viewBox="0 0 180 120" aria-hidden="true">
+      <svg
+        viewBox={`-40 ${seat.y - 50} ${front.x + 90} ${-seat.y + 110}`}
+        aria-hidden="true"
+      >
         <g
           fill="none"
-          stroke={color || "#303432"}
-          strokeWidth="6"
+          stroke={color || "#535963"}
+          strokeWidth="23"
           strokeLinejoin="round"
           strokeLinecap="round"
         >
           <path
-            d={
-              product.id.includes("pursuit")
-                ? "M20 100 65 26 84 105Z M65 26 139 39 147 66 84 105 M139 39 166 105"
-                : "M20 100 65 22 84 105Z M65 22 139 22 147 55 84 105 M139 22 166 105"
-            }
+            d={`M${rear.x} 0L${seat.x} ${seat.y}L${bb.x} ${bb.y}Z M${seat.x} ${seat.y}L${head.x} ${head.y}L${headBottom.x} ${headBottom.y}L${bb.x} ${bb.y} M${headBottom.x} ${headBottom.y}L${front.x} 0`}
           />
         </g>
       </svg>
     );
+  }
   if (product.slot === "wheels" || product.slot === "tires")
     return (
       <svg viewBox="0 0 140 120" aria-hidden="true">

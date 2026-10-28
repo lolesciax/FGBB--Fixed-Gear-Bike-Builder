@@ -58,21 +58,37 @@ export function PartsInspector({
 }: Props) {
   const [query, setQuery] = useState(""),
     [brand, setBrand] = useState("");
+  const [showDemos, setShowDemos] = useState(true);
   const current = configuration
     ? variantById(products, configuration[slot])
     : null;
-  const available = products.filter(
-    (product) =>
-      product.status === "published" &&
-      product.slot === slot &&
-      (!brand || product.brand === brand) &&
-      `${product.brand} ${product.name}`
-        .toLowerCase()
-        .includes(query.toLowerCase()),
-  );
+  const available = products
+    .filter(
+      (product) =>
+        product.status === "published" &&
+        product.slot === slot &&
+        (showDemos || !product.illustrative) &&
+        (!brand || product.brand === brand) &&
+        `${product.brand} ${product.name}`
+          .toLowerCase()
+          .includes(query.toLowerCase()),
+    )
+    .sort((a, b) => Number(a.illustrative) - Number(b.illustrative));
   return (
     <>
       {notice}
+      {products.some(
+        (p) => p.slot === slot && !p.illustrative && p.status === "published",
+      ) && (
+        <label className="demo-toggle">
+          <input
+            type="checkbox"
+            checked={showDemos}
+            onChange={(event) => setShowDemos(event.target.checked)}
+          />
+          Include independent demo parts
+        </label>
+      )}
       {onCategory && (
         <label className="sheet-category-label">
           Component category
@@ -139,7 +155,7 @@ export function PartsInspector({
             </button>
           </div>
         ) : (
-          available.map((product) => {
+          available.map((product, index) => {
             const isSelected = product.variants.some(
               (variant) => variant.id === configuration?.[slot],
             );
@@ -150,9 +166,21 @@ export function PartsInspector({
                 ) || product.variants[0];
             return (
               <article
+                data-catalog-kind={
+                  product.illustrative ? "demo" : "manufacturer"
+                }
                 className={`product-option ${isSelected ? "selected" : ""}`}
                 key={product.id}
               >
+                {(index === 0 ||
+                  available[index - 1].illustrative !==
+                    product.illustrative) && (
+                  <p className="catalog-group-label">
+                    {product.illustrative
+                      ? "Independent demo parts"
+                      : "Source-reviewed products"}
+                  </p>
+                )}
                 <button
                   className="product-select"
                   aria-label={`Select ${product.name}`}
@@ -164,6 +192,7 @@ export function PartsInspector({
                     <PartThumbnail product={product} color={shown.color} />
                   </div>
                   <div className="product-identity">
+                    <span className="product-brand">{product.brand}</span>
                     <h3>{product.name}</h3>
                     <span className="demo-tag">
                       {product.illustrative
@@ -182,7 +211,7 @@ export function PartsInspector({
                     </span>
                   )}
                 </button>
-                {product.variants.length > 1 && (
+                {product.illustrative && product.variants.length > 1 && (
                   <div className="finish-controls">
                     <div className="finish-label">
                       <span>Finish</span>
@@ -210,8 +239,15 @@ export function PartsInspector({
                     </div>
                   </div>
                 )}
+                {!product.illustrative && (
+                  <p className="visual-disclosure">
+                    Schematic preview / approximate finish
+                  </p>
+                )}
                 <label className="variant-row">
-                  <span>Variant</span>
+                  <span>
+                    {product.illustrative ? "Variant" : "Size / finish"}
+                  </span>
                   <select
                     aria-label={`${product.name} variant`}
                     disabled={pending || locked}

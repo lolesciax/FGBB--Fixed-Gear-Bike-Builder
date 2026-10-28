@@ -1,8 +1,9 @@
+import { manufacturerCatalog } from './manufacturer-catalog';
 import type { Product, Configuration, Slot } from '@tracklab/domain';
 
 const colors = [{ name: 'Forest', hex: '#294f40' }, { name: 'Graphite', hex: '#303432' }, { name: 'Silver', hex: '#b7b9b5' }, { name: 'Chalk', hex: '#e9e8df' }, { name: 'Acid', hex: '#d9ed85' }];
 const demo = (id: string, name: string, slot: Slot, description: string, specs: Record<string, string | number | boolean>, finishes = false): Product => ({
-  id, name, slot, description, brand: 'TrackLab Studio', status: 'published', illustrative: true,
+  id, name, slot, description, brand: 'TrackLab Studio', status: 'published', illustrative: true, catalogKind: 'demo',
   acknowledgment: 'An independently created illustrative demo, not a product for sale. Dimensions are demonstration data, not verified manufacturer specifications.',
   variants: finishes ? colors.map(c => ({ id: `${id}-${c.name.toLowerCase()}`, label: c.name, color: c.hex, specs })) : [{ id, label: 'Standard', color: '#303432', specs }],
 });
@@ -19,6 +20,6 @@ export const seedCatalog: Product[] = [
   demo('studio-48', 'Fixed 48 / 17', 'drivetrain', 'An alternative illustrative chainring and sprocket combination.', { frontTeeth: 48, rearTeeth: 17, chainWidth: '1/8', chainline: 42, bottomBracket: 'BSA-68' }),
   demo('studio-race', 'Track saddle', 'saddle', 'A slim racing silhouette with a matching seatpost.', { seatpost: 27.2, shape: 'race' }),
   demo('studio-comfort', 'Everyday saddle', 'saddle', 'A broader, softer-looking silhouette with a matching seatpost.', { seatpost: 27.2, shape: 'comfort' }),
-  { id: 'cinelli-vigorelli', brand: 'Cinelli', name: 'Vigorelli frame-kit', slot: 'frameset', description: 'Manufacturer reference record. Authentic model geometry and licensed product assets are not registered, so selection is unavailable.', status: 'draft', illustrative: false, source: 'https://cinelli-milano.com/it/collections/vigorelli/products/vigorelli-track-alu-frame', verifiedAt: '2026-10-27T12:00:00.000Z', acknowledgment: 'Cinelli is a trademark of its respective owner. TrackLab is independent and is not officially affiliated with Cinelli.', variants: [{ id: 'cinelli-vigorelli-reference', label: 'Reference only · variant verification pending', color: '#808080', specs: {} }] },
+  ...manufacturerCatalog,
 ];
 export const defaultConfiguration: Configuration = { frameset: 'studio-track-graphite', wheels: 'studio-classic', tires: 'studio-tire25', cockpit: 'studio-drop', drivetrain: 'studio-46', saddle: 'studio-race' };

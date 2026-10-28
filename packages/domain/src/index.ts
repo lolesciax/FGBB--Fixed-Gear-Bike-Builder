@@ -1,4 +1,5 @@
 import { z } from 'zod';
+export { assemblyGeometry, assetRegistry } from './visual';
 
 export const slots = ['frameset', 'wheels', 'tires', 'cockpit', 'drivetrain', 'saddle'] as const;
 export const slotSchema = z.enum(slots);
@@ -14,6 +15,9 @@ export const productSchema = z.object({
   slot: slotSchema, description: z.string().max(1000), status: z.enum(['draft', 'published', 'archived']),
   illustrative: z.boolean(), source: z.url().refine(v => v.startsWith('https://')).optional(),
   verifiedAt: z.iso.datetime().optional(), acknowledgment: z.string().max(1000),
+  catalogKind: z.enum(['demo', 'manufacturer']).optional(),
+  visual: z.object({ assetId: z.literal('tracklab-parametric-v2'), fidelity: z.literal('measurement-schematic'), source: z.string().max(200), license: z.literal('CC0-1.0'), reviewedAt: z.iso.datetime() }).strict().optional(),
+  provenance: z.object({ reviewedAt: z.iso.datetime(), fields: z.array(z.string().max(100)).max(60), limitations: z.string().max(1000) }).strict().optional(),
   variants: z.array(z.object({
     id: z.string().regex(/^[a-z0-9-]{1,100}$/), label: z.string().max(100), color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
     specs: z.record(z.string(), z.union([z.string().max(200), z.number().finite(), z.boolean()])),

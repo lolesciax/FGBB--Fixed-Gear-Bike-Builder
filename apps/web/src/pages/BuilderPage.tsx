@@ -12,6 +12,7 @@ import {
   Info,
   List,
   Maximize,
+  Expand,
   Minus,
   Plus,
   Redo2,
@@ -228,7 +229,10 @@ export function BuilderPage() {
     );
     return () => clearTimeout(timer);
   }, [selectionLocked, session.usage.changesResetAt, refresh]);
-  const data = withHistoricalCatalog(catalog.data?.items || [], b.saved?.catalogSnapshot);
+  const data = withHistoricalCatalog(
+    catalog.data?.items || [],
+    b.saved?.catalogSnapshot,
+  );
   const result = b.configuration ? compatibility(b.configuration, data) : null;
   async function change(
     slot: Slot,
@@ -362,12 +366,66 @@ export function BuilderPage() {
     />
   );
   return (
-    <main className="builder-page">
+    <main className="builder-page compact-workshop">
       <div className="workspace-heading">
         <div>
           <h1>Bike Builder</h1>
-          <p>One configuration. Every detail.</p>
+          <p className="current-frame">
+            {b.configuration
+              ? `${variantById(data, b.configuration.frameset)?.product.brand} / ${variantById(data, b.configuration.frameset)?.product.name} / ${variantById(data, b.configuration.frameset)?.variant.label}`
+              : "Preparing your frame..."}
+          </p>
         </div>
+
+        <details className="quota-menu">
+          <summary>
+            {session.user ? (
+              "Your workshop"
+            ) : (
+              <>
+                <span>Guest / </span>
+                {Math.max(
+                  0,
+                  session.limits.changes - session.usage.changes,
+                )} of {session.limits.changes} component changes left
+              </>
+            )}
+          </summary>
+          <div className="quota-popover">
+            {session.user ? (
+              <>
+                <p>
+                  Up to five saved builds. Creation and update limits apply.
+                </p>
+                <button
+                  className="text-button"
+                  onClick={() => navigate("/garage")}
+                >
+                  Open my garage
+                </button>
+              </>
+            ) : (
+              <>
+                <p>
+                  Temporary build - refresh or closing may discard it. One 3D
+                  grant per rolling 24 hours.
+                </p>
+                <p>
+                  {session.usage.changesResetAt
+                    ? "Changes reset " +
+                      new Date(session.usage.changesResetAt).toLocaleString()
+                    : "The rolling reset starts with your first change."}
+                </p>
+                <button
+                  className="text-button"
+                  onClick={() => auth("register")}
+                >
+                  Create an account
+                </button>
+              </>
+            )}
+          </div>
+        </details>
         <div className="workspace-actions">
           <label className="build-name">
             <span className="build-name-label">Build name</span>
@@ -389,7 +447,11 @@ export function BuilderPage() {
             disabled={saving || b.pending || !b.configuration || !b.name.trim()}
           >
             <Save size={17} />
-            {saving ? "Saving…" : "Save build"}
+            {saving
+              ? "Saving…"
+              : session.user
+                ? "Save build"
+                : "Create account to save"}
           </button>
         </div>
       </div>
@@ -454,7 +516,23 @@ export function BuilderPage() {
                 3D
               </button>
             </div>
-            <span className="viewer-label">Illustrative assembly</span>
+            <span className="viewer-label">
+              {b.configuration &&
+              variantById(data, b.configuration.frameset)?.product.visual
+                ? "Measurement-based illustration / authentic assets unavailable"
+                : "Illustrative assembly"}
+            </span>
+            <button
+              className="icon-button bordered"
+              aria-label="Full-screen preview"
+              onClick={() => {
+                const node = previewRef.current;
+                if (document.fullscreenElement) void document.exitFullscreen();
+                else void node?.requestFullscreen?.();
+              }}
+            >
+              <Expand size={17} />
+            </button>
             <button
               className="icon-button bordered"
               aria-label="Fit bicycle to view"
@@ -516,7 +594,14 @@ export function BuilderPage() {
                     catalog={data}
                     zoom={b.zoom}
                     active={b.slot}
-                    onSelect={panning ? undefined : (slot) => b.set({ slot })}
+                    onSelect={
+                      panning
+                        ? undefined
+                        : (slot) => {
+                            b.set({ slot });
+                            if (compact) setSheetOpen(true);
+                          }
+                    }
                   />
                 </div>
               ) : (
@@ -528,7 +613,10 @@ export function BuilderPage() {
                   <Bike3D
                     configuration={b.configuration}
                     catalog={data}
-                    onSelect={(slot) => b.set({ slot })}
+                    onSelect={(slot) => {
+                      b.set({ slot });
+                      if (compact) setSheetOpen(true);
+                    }}
                     resetKey={resetKey}
                   />
                 </Suspense>
@@ -617,67 +705,29 @@ export function BuilderPage() {
             {inspectorContents}
           </aside>
         )}
-        <section className="build-summary" aria-label="Build specifications">
-          <div className="selected-parts">
-            <h3>
-              <List size={19} />
-              Selected parts
-            </h3>
-            <dl>
-              {slots.map((slot) => (
-                <div key={slot}>
-                  <dt>{categories[slot].label}</dt>
-                  <dd>
-                    {b.configuration
-                      ? variantById(data, b.configuration[slot])?.product
-                          .name || "Unavailable"
-                      : "—"}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-          <div className="ratio-summary">
-            <h3>
-              <Cog size={20} />
-              Gear ratio
-            </h3>
-            <strong>
-              {result?.ratio?.toFixed(2) || "—"} <span>: 1</span>
-            </strong>
-            <span className="mono small">
-              {result?.gearInches
-                ? `${result.gearInches.toFixed(1)} gear inches · illustrative`
-                : "Effective wheel diameter unknown"}
-            </span>
-            <p>
-              Known weight:{" "}
-              {result?.knownWeightG
-                ? `${(result.knownWeightG / 1000).toFixed(2)} kg`
-                : "not available"}
-              {result && !result.weightComplete ? " · incomplete" : ""}
-            </p>
-          </div>
-          <div className="compatibility-summary">
-            <h3>
-              <ShieldCheck size={20} />
-              Compatibility
-            </h3>
-            <button
-              className={`compatibility-status ${result?.state || "unverified"}`}
-              onClick={() => setInfo(true)}
-            >
-              <TriangleAlert size={18} />
-              {result ? stateLabel[result.state] : "Checking…"}
-            </button>
-            <p>
-              {result?.unresolved ?? "—"} unresolved checks. Review fitment
-              details before finalizing your build.
-            </p>
-            <button className="text-button small" onClick={() => setInfo(true)}>
-              Review checks <ArrowRight size={13} />
-            </button>
-          </div>
+        <section className="compact-summary" aria-label="Build summary">
+          <span>
+            <List size={17} />
+            Selected parts{" "}
+            <b>
+              {result?.selectedCount ?? 0}/{slots.length}
+            </b>
+          </span>
+          <span>
+            <Cog size={17} />
+            Gear ratio <b>{result?.ratio?.toFixed(2) || "?"}:1</b>
+          </span>
+          <span className={result?.state || "unverified"}>
+            <ShieldCheck size={17} />
+            {result ? stateLabel[result.state] : "Checking?"} (
+            {result?.unresolved ?? "?"})
+          </span>
+          <button className="text-button" onClick={() => setInfo(true)}>
+            View details
+          </button>
+          <button className="text-button" onClick={() => setInfo(true)}>
+            Review checks
+          </button>
         </section>
       </div>
       {compact && (
@@ -714,40 +764,6 @@ export function BuilderPage() {
           {actionError}
         </div>
       )}
-      <div className="guest-banner">
-        <UserIcon />
-        <div>
-          <b>{session.user ? "Your workshop" : "Guest workspace"}</b>
-          <span> · </span>
-          {session.user ? (
-            "Up to five saved builds. Keep making it your own."
-          ) : (
-            <>
-              {Math.max(0, session.limits.changes - session.usage.changes)} of{" "}
-              {session.limits.changes} component changes left / 24h.
-              <span className="guest-reminder">
-                {" "}
-                Temporary build — refresh or closing may discard it.
-              </span>
-            </>
-          )}
-          {!session.user && session.usage.changesResetAt && (
-            <span className="small">
-              {" "}
-              Resets {new Date(session.usage.changesResetAt).toLocaleString()}.
-            </span>
-          )}
-        </div>
-        <button
-          className="button primary"
-          onClick={() =>
-            session.user ? navigate("/garage") : auth("register")
-          }
-        >
-          {session.user ? "Open my garage" : "Create an account"}
-          <ArrowRight size={17} />
-        </button>
-      </div>
       {info && (
         <dialog
           className="dialog info-dialog"
@@ -760,6 +776,71 @@ export function BuilderPage() {
             This assembly uses illustrative demo parts. A green dimensional
             check is not proof of safe real-world assembly.
           </p>
+          <section className="build-summary" aria-label="Build specifications">
+            <div className="selected-parts">
+              <h3>
+                <List size={19} />
+                Selected parts
+              </h3>
+              <dl>
+                {slots.map((slot) => (
+                  <div key={slot}>
+                    <dt>{categories[slot].label}</dt>
+                    <dd>
+                      {b.configuration
+                        ? variantById(data, b.configuration[slot])?.product
+                            .name || "Unavailable"
+                        : "—"}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+            <div className="ratio-summary">
+              <h3>
+                <Cog size={20} />
+                Gear ratio
+              </h3>
+              <strong>
+                {result?.ratio?.toFixed(2) || "—"} <span>: 1</span>
+              </strong>
+              <span className="mono small">
+                {result?.gearInches
+                  ? `${result.gearInches.toFixed(1)} gear inches · illustrative`
+                  : "Effective wheel diameter unknown"}
+              </span>
+              <p>
+                Known weight:{" "}
+                {result?.knownWeightG
+                  ? `${(result.knownWeightG / 1000).toFixed(2)} kg`
+                  : "not available"}
+                {result && !result.weightComplete ? " · incomplete" : ""}
+              </p>
+            </div>
+            <div className="compatibility-summary">
+              <h3>
+                <ShieldCheck size={20} />
+                Compatibility
+              </h3>
+              <button
+                className={`compatibility-status ${result?.state || "unverified"}`}
+                onClick={() => setInfo(true)}
+              >
+                <TriangleAlert size={18} />
+                {result ? stateLabel[result.state] : "Checking…"}
+              </button>
+              <p>
+                {result?.unresolved ?? "—"} unresolved checks. Review fitment
+                details before finalizing your build.
+              </p>
+              <button
+                className="text-button small"
+                onClick={() => setInfo(true)}
+              >
+                Review checks <ArrowRight size={13} />
+              </button>
+            </div>
+          </section>
           <ul className="rule-list">
             {result?.rules.map((rule) => (
               <li key={rule.id}>
@@ -792,21 +873,5 @@ export function BuilderPage() {
         </dialog>
       )}
     </main>
-  );
-}
-function UserIcon() {
-  return (
-    <svg
-      width="21"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="6" r="3.3" />
-      <path d="M5 22v-4a7 7 0 0 1 14 0v4" />
-    </svg>
   );
 }

@@ -6,7 +6,7 @@ import argon2 from 'argon2';
 import mongoose from 'mongoose';
 import { z, ZodError } from 'zod';
 import { randomUUID } from 'node:crypto';
-import { configurationSchema, buildInput, productSchema, compatibility, validateConfiguration, variantById, slotSchema, slots, brandDisclaimer, technicalDisclaimer, type Configuration, type Product } from '@tracklab/domain';
+import { assetRegistry, configurationSchema, buildInput, productSchema, compatibility, validateConfiguration, variantById, slotSchema, slots, brandDisclaimer, technicalDisclaimer, type Configuration, type Product } from '@tracklab/domain';
 import type { Config } from './config';
 import { Audit, Build, ProductModel, RecoveryToken, Session, Subject, User } from './models';
 import { ApiError, hash, privateKey, randomToken, sign, unsign, type RateStore } from './security';
@@ -24,7 +24,7 @@ const guard = (req: Request) => { if (!req.identity.user) throw new ApiError(401
 const requireAdmin = (req: Request) => { const u = guard(req); if (u.role !== 'admin') throw new ApiError(403, 'FORBIDDEN', 'Administrator access is required.'); return u; };
 async function catalog(includeArchived = false): Promise<Product[]> { return (await ProductModel.find(includeArchived ? {} : { 'data.status': 'published' }).lean()).map(p => p.data as Product); }
 async function catalogSnapshot(configuration: Configuration) { const selected = new Set(Object.values(configuration)); return (await catalog(true)).filter(p => p.variants.some(v => selected.has(v.id))).map(p => ({ ...p, variants: p.variants.filter(v => selected.has(v.id)) })); }
-function initialConfiguration(products: Product[]): Configuration { return Object.fromEntries(slots.map(slot => { const original = variantById(products, defaultConfiguration[slot]); const id = original?.product.status === 'published' ? original.variant.id : products.find(p => p.slot === slot && p.status === 'published')?.variants[0].id; if (!id) throw new ApiError(503, 'CATALOG_INCOMPLETE', `No published ${slot} is available. Please try again later.`); return [slot, id]; })) as Configuration; }
+function initialConfiguration(products: Product[]): Configuration { return Object.fromEntries(slots.map(slot => { const original = variantById(products, defaultConfiguration[slot]); const id = original?.product.status === 'published' ? original.variant.id : (products.find(p => p.slot === slot && p.status === 'published' && p.illustrative) || products.find(p => p.slot === slot && p.status === 'published'))?.variants[0].id; if (!id) throw new ApiError(503, 'CATALOG_INCOMPLETE', `No published ${slot} is available. Please try again later.`); return [slot, id]; })) as Configuration; }
 async function validated(config: Configuration, includeArchived = false) { const products = await catalog(includeArchived); try { validateConfiguration(config, products, includeArchived); } catch (e) { throw new ApiError(422, 'VARIANT_UNAVAILABLE', (e as Error).message); } const result = compatibility(config, products); if (result.state === 'incompatible') throw new ApiError(422, 'INCOMPATIBLE_SELECTION', 'This selection conflicts with your current parts. Review the affected interfaces.', result); return result; }
 
 export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
@@ -187,7 +187,7 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
     await rate.consume(`preview:${req.identity.subject}`, 10, 60000);
     const { token } = z.object({ token: z.string().max(4096) }).parse(req.body); const configuration = readWorkspace(req, token);
     const products = await catalog();
-    if (!Object.values(configuration).every(id => variantById(products, id)?.product.illustrative)) throw new ApiError(422, 'ASSET_UNAVAILABLE', 'Authentic 3D assets are not registered for this assembly.');
+    if (!Object.values(configuration).every(id => { const product=variantById(products,id)?.product; return product?.illustrative || (product?.visual?.fidelity === 'measurement-schematic' && product.visual.assetId in assetRegistry && product.provenance?.reviewedAt); })) throw new ApiError(422, 'ASSET_UNAVAILABLE', 'A reviewed illustrative 3D representation is not registered for this assembly.');
     if (!req.identity.user) await withSubject(req.identity.subject, async subject => { charge(subject as unknown as Record<string, unknown>, 'previews', config.GUEST_PREVIEWS, DAY, 'GUEST_PREVIEW_LIMIT'); });
     res.json({ grant: sign({ subject: req.identity.subject, expires: Date.now() + HOUR }, config.SESSION_SECRET), expiresAt: new Date(Date.now() + HOUR).toISOString(), illustrative: true });
   });

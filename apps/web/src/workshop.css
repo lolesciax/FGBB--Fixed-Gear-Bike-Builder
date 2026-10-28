@@ -1,0 +1,484 @@
+/* Compact workshop: secondary information never takes height from the preview. */
+.compact-workshop {
+  padding: 12px 16px 16px;
+  max-width: none;
+}
+.compact-workshop .workspace-heading {
+  min-height: 64px;
+  padding: 0;
+  margin: 0 0 10px;
+  gap: 18px;
+  align-items: center;
+}
+.compact-workshop .workspace-heading h1 {
+  font-size: 22px;
+  letter-spacing: -0.04em;
+}
+.compact-workshop .workspace-heading p {
+  font-size: 12px;
+  margin: 4px 0 0;
+  max-width: 400px;
+}
+.compact-workshop .workspace-actions {
+  margin-left: auto;
+  gap: 10px;
+}
+.compact-workshop .build-name {
+  width: 210px;
+}
+.compact-workshop .build-name-label {
+  font-size: 12px;
+}
+.compact-workshop .build-name input {
+  height: 40px;
+}
+.compact-workshop .workbench {
+  height: max(520px, calc(100dvh - 190px));
+  grid-template-columns: 112px minmax(0, 1fr) 320px;
+  grid-template-rows: minmax(0, 1fr) 68px;
+  gap: 8px;
+}
+.compact-workshop .category-rail {
+  padding: 8px 0;
+}
+.compact-workshop .category-rail > button {
+  min-height: 52px;
+  gap: 8px;
+  padding: 12px 8px;
+  font-size: 12px;
+}
+.compact-workshop .category-rail > button svg {
+  width: 20px;
+  flex-shrink: 0;
+}
+.compact-workshop .viewer {
+  background: var(--studio-canvas);
+  background-image: none;
+  color: var(--studio-ink);
+}
+.compact-workshop .viewer:fullscreen {
+  width: 100vw;
+  height: 100dvh;
+  border: 0;
+  border-radius: 0;
+}
+.compact-workshop .canvas-area {
+  inset: 48px 18px 54px;
+  overflow: hidden;
+}
+.compact-workshop .bike-svg {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  position: static;
+  transform: none;
+}
+.compact-workshop .canvas-area > div {
+  width: 100%;
+  height: 100%;
+}
+.compact-workshop .viewer-top {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  top: 10px;
+  left: 12px;
+  right: 12px;
+}
+.compact-workshop .viewer-top .viewer-label {
+  margin-left: auto;
+  max-width: 270px;
+  text-align: right;
+  color: var(--studio-muted);
+  font-size: 12px;
+}
+.compact-workshop .viewer-top .segmented,
+.compact-workshop .viewer-top .icon-button {
+  background: var(--surface);
+  color: var(--ink);
+}
+.compact-workshop .viewer-top > .icon-button {
+  margin-left: 0;
+  flex-shrink: 0;
+}
+.compact-workshop .viewer-controls {
+  bottom: 10px;
+  max-width: calc(100% - 24px);
+  background: var(--surface);
+  color: var(--ink);
+}
+.compact-summary {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--surface);
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+.compact-summary > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.compact-summary .unverified {
+  color: var(--warning);
+}
+.compact-summary .incompatible {
+  color: var(--danger);
+}
+.compact-summary .compatible {
+  color: var(--success);
+}
+.compact-summary button {
+  font-size: 12px;
+  min-height: 36px;
+}
+.quota-menu {
+  position: relative;
+  max-width: 280px;
+  font-size: 12px;
+  margin-left: auto;
+}
+.quota-menu summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: block;
+  padding: 8px 0;
+  line-height: 1.5;
+}
+.quota-menu summary::after {
+  content: "⌄";
+  margin-left: 4px;
+}
+.quota-popover {
+  position: absolute;
+  z-index: 20;
+  top: 100%;
+  right: 0;
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  font-size: 14px;
+}
+.quota-popover p {
+  margin: 0 0 12px;
+}
+.compact-workshop .parts-inspector {
+  padding: 16px 12px;
+  overflow: auto;
+}
+.compact-workshop .inspector-heading h2 {
+  font-size: 22px;
+}
+.compact-workshop .parts-inspector > p.muted {
+  display: none;
+}
+.compact-workshop .product-option {
+  padding: 10px;
+  box-shadow: none;
+}
+.compact-workshop .product-select {
+  grid-template-columns: 72px minmax(0, 1fr);
+  min-height: 65px;
+  gap: 10px;
+}
+.compact-workshop .part-thumbnail {
+  height: 68px;
+  background: var(--studio-canvas);
+}
+.compact-workshop .part-thumbnail svg {
+  max-height: 60px;
+}
+.compact-workshop .product-identity {
+  gap: 3px;
+}
+.compact-workshop .render-support {
+  display: none;
+}
+.compact-workshop .finish-controls {
+  margin-top: 6px;
+}
+.compact-workshop .variant-row {
+  margin-top: 6px;
+}
+.compact-workshop .product-specs {
+  margin-top: 8px;
+  padding-top: 8px;
+}
+.product-brand {
+  font-size: 12px;
+  color: var(--muted);
+}
+.visual-disclosure {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 8px 0;
+}
+.catalog-group-label {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 4px 0;
+}
+.demo-toggle {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  margin: 8px 0;
+}
+.demo-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+}
+.info-dialog .build-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+  border: 0;
+  padding: 0;
+  margin: 18px 0;
+  grid-column: auto;
+  grid-row: auto;
+}
+.info-dialog .build-summary .compatibility-summary {
+  display: none;
+}
+.info-dialog .build-summary .selected-parts {
+  overflow: visible;
+}
+.info-dialog .build-summary dd {
+  white-space: normal;
+}
+body:has(.compact-workshop) .site-footer {
+  padding: 12px 16px;
+  font-size: 12px;
+}
+@media (max-width: 1280px) and (min-width: 1101px) {
+  .compact-workshop .workbench {
+    grid-template-columns: 100px minmax(0, 1fr) 290px;
+  }
+  .compact-summary {
+    gap: 5px;
+    padding: 8px;
+    font-size: 12px;
+  }
+  .compact-summary > span svg {
+    display: none;
+  }
+  .quota-menu {
+    max-width: 210px;
+  }
+  .compact-workshop .build-name {
+    width: 175px;
+  }
+}
+@media (max-width: 1100px) {
+  .compact-workshop .workbench {
+    grid-template-columns: 104px minmax(0, 1fr);
+    grid-template-rows: minmax(350px, 1fr) auto;
+    height: max(500px, calc(100dvh - 240px));
+  }
+  .compact-workshop .workspace-heading {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .compact-workshop .workspace-heading > div:first-child {
+    flex: 1;
+  }
+  .compact-workshop .quota-menu {
+    max-width: 260px;
+  }
+  .compact-workshop .workspace-actions {
+    margin-left: 0;
+  }
+  .compact-summary {
+    grid-column: 2;
+    min-height: 64px;
+  }
+}
+@media (max-width: 767px) {
+  .compact-workshop {
+    padding: 8px 10px 80px;
+  }
+  .compact-workshop .workspace-heading {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px;
+    margin-bottom: 8px;
+    min-height: 0;
+  }
+  .compact-workshop .workspace-heading h1 {
+    font-size: 20px;
+  }
+  .compact-workshop .workspace-heading p {
+    max-width: 100%;
+    font-size: 12px;
+  }
+  .compact-workshop .workspace-actions {
+    grid-column: 1/-1;
+    display: flex;
+    width: 100%;
+    margin: 0;
+  }
+  .compact-workshop .build-name {
+    width: auto;
+    flex: 1;
+    min-width: 0;
+  }
+  .compact-workshop .build-name-label {
+    display: none;
+  }
+  .compact-workshop .workspace-actions > .button {
+    padding: 10px;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .compact-workshop .quota-menu {
+    max-width: 145px;
+    font-size: 12px;
+    align-self: start;
+  }
+  .quota-menu summary {
+    gap: 0;
+  }
+  .quota-menu summary > span {
+    display: none;
+  }
+  .compact-workshop .workbench {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: clamp(275px, 86vw, 380px) auto auto;
+    height: auto;
+    min-height: 0;
+    gap: 6px;
+  }
+  .compact-workshop .viewer {
+    grid-column: 1;
+    grid-row: 1;
+    position: relative;
+    top: auto;
+    height: auto;
+    min-height: 0;
+  }
+  .compact-workshop .canvas-area {
+    inset: 48px 6px 55px;
+  }
+  .compact-workshop .viewer-top {
+    left: 7px;
+    right: 7px;
+    top: 7px;
+    gap: 5px;
+  }
+  .compact-workshop .viewer-top .viewer-label {
+    font-size: 12px;
+    max-width: 135px;
+    line-height: 1.2;
+  }
+  .compact-workshop .viewer-top .segmented button {
+    padding: 8px 10px;
+    min-width: 34px;
+  }
+  .compact-workshop .viewer-controls {
+    bottom: 6px;
+    padding: 3px;
+    gap: 0;
+    max-width: calc(100% - 12px);
+  }
+  .compact-workshop .viewer-controls button {
+    min-width: 32px;
+    min-height: 36px;
+  }
+  .compact-workshop .viewer-controls .control-divider {
+    margin: 0 3px;
+  }
+  .compact-workshop .category-rail {
+    grid-row: 2;
+    grid-column: 1;
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 2px 0;
+    min-height: 60px;
+    gap: 0;
+  }
+  .compact-workshop .category-rail > button {
+    flex-direction: column;
+    min-width: 60px;
+    min-height: 56px;
+    padding: 6px 4px;
+    gap: 4px;
+    border-left: 0;
+    border-bottom: 2px solid transparent;
+  }
+  .compact-workshop .category-rail > button.active {
+    border-bottom-color: var(--primary);
+  }
+  .compact-workshop .category-rail .help-button {
+    display: none;
+  }
+  .compact-summary {
+    grid-column: 1;
+    grid-row: 3;
+    min-height: 72px;
+    padding: 8px;
+    gap: 6px;
+  }
+  .compact-summary > span {
+    font-size: 12px;
+  }
+  .compact-summary > span svg {
+    display: none;
+  }
+  .compact-summary > span:nth-child(3) {
+    flex-basis: 100%;
+  }
+  .compact-summary button {
+    min-height: 32px;
+  }
+  .info-dialog .build-summary {
+    grid-template-columns: 1fr;
+  }
+  .compact-workshop .mobile-parts-bar {
+    min-height: 64px;
+  }
+  body:has(.compact-workshop) .site-footer {
+    display: none;
+  }
+}
+@media (max-width: 360px) {
+  .compact-workshop .viewer-label {
+    display: none !important;
+  }
+  .compact-workshop .viewer-controls .control-label {
+    display: none;
+  }
+  .compact-workshop .quota-menu {
+    max-width: 125px;
+  }
+  .compact-workshop .workspace-heading h1 {
+    font-size: 18px;
+  }
+}
+@media (max-height: 500px) and (min-width: 768px) {
+  .compact-workshop .workbench {
+    height: 430px;
+    min-height: 430px;
+  }
+}

@@ -6,6 +6,7 @@ The original functional specification remains in force. The continuation brief c
 
 - [Original full implementation specification](requirements/original-implementation.md).
 - [Continuation: integrated UI/UX and distinct identity](requirements/continuation-ui-ux.md).
+- [Builder refinement: compact workspace, visualization and branded framesets](requirements/builder-visual-improvements.md). This supersedes the earlier permanently expanded summary and oversized heading composition.
 - Current phase plan, evidence and status: [development roadmap](development/roadmap.md). This remains the canonical plan/status document; do not create competing status files.
 - Design requirements and implementation tokens: [design system](DESIGN_SYSTEM.md).
 - Unfinished work and verification gaps: [known issues](KNOWN_ISSUES.md).

@@ -1,0 +1,40 @@
+import { productSchema } from "@tracklab/domain";
+import { ProductModel, Brand } from "./models";
+import { seedCatalog } from "./catalog";
+import { seedBrands } from "./manufacturer-catalog";
+
+export async function importCatalog() {
+  for (const brand of seedBrands) {
+    const { id, ...data } = brand;
+    await Brand.updateOne(
+      { _id: id },
+      { $setOnInsert: data },
+      { upsert: true },
+    );
+  }
+  for (const product of seedCatalog) {
+    const data = productSchema.parse(product);
+    await ProductModel.updateOne(
+      { _id: data.id },
+      { $setOnInsert: { data } },
+      { upsert: true },
+    );
+    // Upgrade only the exact untouched seed placeholder. Preserve reviewed/admin/archived data.
+    if (data.id === "cinelli-vigorelli")
+      await ProductModel.updateOne(
+        {
+          _id: data.id,
+          "data.brand": "Cinelli",
+          "data.name": "Vigorelli frame-kit",
+          "data.description":
+            "Manufacturer reference record. Authentic model geometry and licensed product assets are not registered, so selection is unavailable.",
+          "data.status": "draft",
+          "data.variants": { $size: 1 },
+          "data.variants.0.id": "cinelli-vigorelli-reference",
+          "data.variants.0.specs": {},
+          "data.variants.0.color": "#808080",
+        },
+        { $set: { data } },
+      );
+  }
+}

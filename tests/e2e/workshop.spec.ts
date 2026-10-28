@@ -29,7 +29,7 @@ test('3D authorization loads a real canvas and both views retain the finish', as
 test('register, save, edit existing build, then duplicate and delete in the garage', async ({ page }) => {
   await page.goto('/builder'); await page.getByRole('button', { name: 'Studio Track Acid finish' }).click();
   await page.getByRole('textbox', { name: 'Build name', exact: true }).fill('Morning ride');
-  await page.getByRole('button', { name: 'Save build', exact: true }).click(); const dialog = page.getByRole('dialog');
+  await page.getByRole('button', { name: 'Create account to save', exact: true }).click(); const dialog = page.getByRole('dialog');
   await dialog.getByLabel('Your name').fill('Browser Rider'); await dialog.getByLabel('Email address').fill(`browser-${Date.now()}@example.com`); await dialog.getByLabel('Password', { exact: true }).fill('my-browser-test-passphrase'); await dialog.getByRole('button', { name: 'Create your account', exact: true }).click();
   await expect(dialog).not.toBeVisible(); await expect(page.getByRole('button', { name: 'Studio Track Acid finish' })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('textbox', { name: 'Build name', exact: true })).toHaveValue('Morning ride'); await page.getByRole('button', { name: 'Save build', exact: true }).click(); await expect(page).toHaveURL(/\/builder\/[a-f0-9]{24}/);

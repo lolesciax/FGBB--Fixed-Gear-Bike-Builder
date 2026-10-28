@@ -3,8 +3,8 @@ import { createClient, type RedisClientType } from 'redis';
 import { parseConfig } from './config';
 import { createApp } from './app';
 import { DevelopmentRateStore, RedisRateStore, type RateStore } from './security';
-import { initializeModels, ProductModel } from './models';
-import { seedCatalog } from './catalog';
+import { initializeModels } from './models';
+import { importCatalog } from './catalog-import';
 import { mailer } from './mail';
 
 const config = parseConfig(process.env);
@@ -19,7 +19,7 @@ if (!mongoUri && config.NODE_ENV !== 'production' && config.DEVELOPMENT_EPHEMERA
 if (!mongoUri) throw new Error('MONGODB_URI is required. For an isolated local preview only, set DEVELOPMENT_EPHEMERAL=true.');
 await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 10000, maxPoolSize: 20, ...(config.MONGODB_DB_NAME ? { dbName: config.MONGODB_DB_NAME } : {}) });
 await initializeModels();
-for (const p of seedCatalog) await ProductModel.updateOne({ _id: p.id }, { $setOnInsert: { data: p } }, { upsert: true });
+await importCatalog();
 let rate: RateStore;
 let stopRedis: (() => Promise<void>) | undefined;
 if (config.REDIS_URL) {

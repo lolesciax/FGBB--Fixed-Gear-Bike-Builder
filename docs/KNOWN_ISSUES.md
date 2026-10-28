@@ -13,8 +13,8 @@ This is a development application, not a completed public release. This list dis
 
 ## Catalog and external dependencies
 
-- Public selectable products are original demo records. The manufacturer reference remains in draft. Verified manufacturer variants, per-field provenance, brand/source/media review and permitted authentic assets are unfinished.
-- Real manufacturer geometry and asset rights must not be inferred from a disclaimer. Licensed/authorized assets or independently justified representations are required before publishing supported models.
+- Source-reviewed Cinelli Vigorelli and Dosnoventa LA/DET/BCN size variants are now selectable through MongoDB/API records. Previews use independent measurement-based geometry, not authentic manufacturer models. See [sources and exact limitations](development/frameset-sources.md). Vigorelli Steel remains draft pending geometry and compatible seating support.
+- Authentic manufacturer assets/paint graphics remain unavailable. The active independent procedural asset has reviewed provenance and explicit schematic status. Additional interfaces, source-specific tube profiles and real components beyond framesets still need work. Production catalog curation is incomplete; development demos are retained and labeled.
 - Pricing has no approved provider and remains disabled. This is optional and does not block the builder.
 - SMTP delivery and live production infrastructure are not configured. Development account links are written to ignored local mail files.
 - Development short-term request counters are explicitly in process memory. MongoDB business quotas persist; the Redis adapter's two-client atomic behavior is verified in CI, but a production Redis service is not provisioned.
