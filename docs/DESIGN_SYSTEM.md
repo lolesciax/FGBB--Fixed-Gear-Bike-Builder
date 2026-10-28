@@ -46,6 +46,8 @@ Preserve light/dark preferences. Check contrast, focus, reduced motion, long lab
 
 ## Primary implementation references
 
+- The [cinematic studio audit](development/cinematic-audit.md) and six `cinematic-*-reference.png` images extend this system. Motion tokens are 140/220/300ms; camera journeys use a 650ms eased spherical path. Reduced motion removes reveals, paint interpolation, camera travel and turntable. Studio Light/Dark are independent of the application theme. Quality Auto conservatively selects Performance on mobile, data-saving or constrained devices and can step down during sustained slow active frames; explicit overrides remain available. No FPS guarantee is inferred from this heuristic.
+
 - The [studio landing concept](design/home-studio-reference.png) guides the bicycle-led hero, paired actions and compact frame shelf. Compare the actual [previous landing](design/home-before-upgrade.png), [implemented desktop](design/home-after-upgrade.png) and [mobile](design/home-after-mobile.png). Use the live SVG with honest fidelity disclosure; concept imagery is not a manufacturer asset. Account benefits must read the current server policy.
 
 - The [compact builder refinement](design/builder-compact-reference.png) supersedes the expanded summary/heading layout below. Use a compact toolbar, guest disclosure, 68px desktop summary, dominant neutral studio canvas and independently scrolling inspector. Product thumbnails must use actual independent geometry, not the generated branded images. Registration wording must match the actual flow: guests see Create account to save.

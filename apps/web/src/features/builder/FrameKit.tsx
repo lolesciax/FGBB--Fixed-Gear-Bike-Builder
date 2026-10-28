@@ -2,30 +2,37 @@ import { useEffect, useMemo } from "react";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import type { Variant } from "@tracklab/domain";
+import { useKitPaint } from "./MaterialMotion";
 export function FrameKit({
   variant,
   bb,
+  reducedMotion = false,
 }: {
   variant: Variant;
   bb: { x: number; y: number };
+  reducedMotion?: boolean;
 }) {
   const asset = variant.asset3D!;
   const gltf = useGLTF(asset.url);
   const scene = useMemo(() => {
     const clone = gltf.scene.clone(true);
     clone.traverse((node) => {
-      if (node instanceof THREE.Mesh && node.name.startsWith("paint")) {
-        node.material = (node.material as THREE.MeshStandardMaterial).clone();
-        node.material.color.set(variant.color);
-      }
+      if (node instanceof THREE.Mesh)
+        node.material = Array.isArray(node.material)
+          ? node.material.map((material) => material.clone())
+          : node.material.clone();
     });
     return clone;
-  }, [gltf.scene, variant.color]);
+  }, [gltf.scene]);
+  useKitPaint(scene, variant.color, reducedMotion);
   useEffect(
     () => () => {
       scene.traverse((node) => {
-        if (node instanceof THREE.Mesh && node.name.startsWith("paint"))
-          (node.material as THREE.MeshStandardMaterial).dispose();
+        if (node instanceof THREE.Mesh)
+          for (const material of Array.isArray(node.material)
+            ? node.material
+            : [node.material])
+            material.dispose();
       });
     },
     [scene],

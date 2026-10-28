@@ -1,0 +1,281 @@
+:root {
+  --motion-fast: 140ms;
+  --motion-standard: 220ms;
+  --motion-panel: 300ms;
+  --motion-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --panel-radius: 10px;
+  --shadow-soft: 0 8px 24px #1118270a;
+  --shadow-float: 0 8px 26px #11182718;
+}
+.button,
+.icon-button,
+.text-button,
+.category-rail > button,
+.catalog-card,
+.product-option,
+.garage-card,
+.site-header a {
+  transition:
+    color var(--motion-fast) ease,
+    background-color var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-standard) ease,
+    transform var(--motion-fast) var(--motion-ease);
+}
+.button:active:not(:disabled),
+.icon-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.button:focus-visible,
+.icon-button:focus-visible,
+summary:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 4px;
+}
+.catalog-card:hover,
+.garage-card:hover {
+  box-shadow: var(--shadow-soft);
+  border-color: var(--muted);
+}
+.dialog[open],
+.parts-sheet[open] {
+  animation: panel-enter var(--motion-panel) var(--motion-ease);
+}
+.parts-sheet[open] {
+  animation-name: studio-reveal;
+}
+.dialog::backdrop,
+.parts-sheet::backdrop {
+  animation: backdrop-enter var(--motion-standard) ease;
+}
+.toast {
+  animation: notice-enter var(--motion-standard) var(--motion-ease);
+}
+@keyframes panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes backdrop-enter {
+  from {
+    background-color: transparent;
+  }
+  to {
+    background-color: #080b1266;
+  }
+}
+@keyframes notice-enter {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes studio-reveal {
+  from {
+    opacity: 0.45;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.bike3d-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  animation: studio-reveal var(--motion-panel) ease;
+}
+.bike3d-wrapper canvas {
+  touch-action: none;
+  outline: none;
+}
+.studio-loading-plan,
+.studio-fallback {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+.studio-loading-plan {
+  z-index: 1;
+  background: var(--studio-canvas);
+  pointer-events: none;
+}
+.studio-loading-plan .bike-svg,
+.studio-fallback .bike-svg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.studio-fallback-message {
+  position: absolute;
+  left: 50%;
+  bottom: 8%;
+  transform: translateX(-50%);
+  width: min(420px, 90%);
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--panel-radius);
+  color: var(--ink);
+  box-shadow: var(--shadow-float);
+  text-align: center;
+}
+.model-loading {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 12px;
+  transform: translateX(-50%);
+  max-width: 90%;
+  padding: 8px 12px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 12px;
+  box-shadow: var(--shadow-soft);
+}
+.studio-quality-status {
+  position: absolute;
+  bottom: 8px;
+  right: 12px;
+  color: var(--studio-muted);
+  font-size: 11px;
+  pointer-events: none;
+  text-transform: capitalize;
+}
+.viewer[data-studio="dark"] {
+  --studio-canvas: #151a22;
+  --studio-ink: #f5f6fa;
+  --studio-muted: #b1bdcf;
+  background: var(--studio-canvas);
+}
+.viewer[data-studio="light"] {
+  --studio-canvas: #e8ebef;
+  --studio-ink: #171c26;
+  --studio-muted: #465160;
+  background: var(--studio-canvas);
+}
+.compact-workshop .viewer[data-studio] .canvas-area {
+  inset: 52px 0 80px;
+}
+.compact-workshop .viewer-controls.studio-controls {
+  gap: 10px;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-float);
+  width: max-content;
+}
+.studio-controls label {
+  margin: 0;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+.studio-controls select {
+  height: 30px;
+  padding: 2px 24px 2px 6px;
+  width: 128px;
+  font-size: 12px;
+  border-radius: 6px;
+  min-width: 0;
+}
+.studio-controls .camera-preset select {
+  width: 152px;
+}
+.studio-controls .turntable-control {
+  font-size: 12px;
+  height: 42px;
+  white-space: nowrap;
+  padding: 8px 10px;
+}
+.studio-controls .turntable-control[aria-pressed="true"] {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.studio-controls .control-divider {
+  display: none;
+}
+.history-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.studio-controls .reset-button {
+  font-size: 12px;
+  white-space: nowrap;
+}
+@media (max-width: 700px) {
+  .compact-workshop .viewer-controls.studio-controls {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: calc(100% - 20px);
+    max-width: 420px;
+    gap: 4px;
+    padding: 7px;
+    bottom: 8px;
+  }
+  .studio-controls label {
+    width: 100%;
+  }
+  .studio-controls select,
+  .studio-controls .camera-preset select {
+    width: 100%;
+    height: 44px;
+    font-size: 12px;
+  }
+  .compact-workshop .studio-controls .icon-button {
+    width: 100%;
+    height: 44px;
+    min-height: 44px;
+  }
+  .studio-controls .turntable-control {
+    grid-column: auto;
+    height: 44px;
+    padding: 2px 4px;
+  }
+  .studio-controls .reset-button {
+    height: 44px;
+  }
+  .studio-controls .reset-button span {
+    display: inline !important;
+  }
+  .compact-workshop .viewer[data-studio] .canvas-area {
+    inset: 48px 0 133px;
+  }
+  .studio-quality-status {
+    bottom: 4px;
+    font-size: 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-standard: 0ms;
+    --motion-panel: 0ms;
+  }
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation: none !important;
+    transition-duration: 0ms !important;
+  }
+}

@@ -1,3 +1,4 @@
+import { cameraPresets } from "../features/builder/studio-settings";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
@@ -39,7 +40,7 @@ import { useBuilder } from "../features/builder/store";
 import { Bike2D } from "../features/builder/Bike2D";
 import { PartsInspector } from "../features/builder/PartsInspector";
 import { PartsSheet } from "../features/builder/PartsSheet";
-import { FrameChangeReview } from '../features/builder/FrameChangeReview';
+import { FrameChangeReview } from "../features/builder/FrameChangeReview";
 import { useMediaQuery } from "../components/useMediaQuery";
 const Bike3D = lazy(() => import("../features/builder/Bike3D"));
 const categories = {
@@ -84,10 +85,19 @@ export function BuilderPage() {
     navigate = useNavigate(),
     client = useQueryClient();
   const catalog = useQuery({ queryKey: ["catalog"], queryFn: loadCatalog });
-  const [frameReview,setFrameReview]=useState<Configuration|null>(null);
+  const [frameReview, setFrameReview] = useState<Configuration | null>(null);
   const userId = session.user?.id;
   const workspaceKey = session.workspaceKey;
   const compact = useMediaQuery("(max-width: 1100px)");
+  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  useEffect(() => {
+    const stop = () => {
+      if (document.hidden) useBuilder.getState().set({ turntable: false });
+    };
+    if (reducedMotion) useBuilder.getState().set({ turntable: false });
+    document.addEventListener("visibilitychange", stop);
+    return () => document.removeEventListener("visibilitychange", stop);
+  }, [reducedMotion]);
   const [sheetOpen, setSheetOpen] = useState(false);
   const previewRef = useRef<HTMLElement>(null);
   const b = useBuilder(),
@@ -100,7 +110,7 @@ export function BuilderPage() {
   const [reconnect, setReconnect] = useState(0),
     [saving, setSaving] = useState(false);
   const [autoSave, setAutoSave] = useState(false);
-  const [saveFailed,setSaveFailed]=useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
   const [showIntro, setShowIntro] = useState(
     () => sessionStorage.getItem("tracklab-frame-intro") !== "dismissed",
   );
@@ -112,7 +122,9 @@ export function BuilderPage() {
       startY: number;
     } | null>(null);
   const selectionLocked =
-    !session.developmentUnlimited && !session.user && session.usage.changes >= session.limits.changes;
+    !session.developmentUnlimited &&
+    !session.user &&
+    session.usage.changes >= session.limits.changes;
   useEffect(() => {
     if (b.mode !== "3d" || !b.previewGrant) return;
     const stop = () => {
@@ -123,10 +135,24 @@ export function BuilderPage() {
         "Your 3D session ended. Start another available session to continue.",
       );
     };
-    const end=()=>{
-      if(!session.developmentUnlimited){stop();return;}
-      const current=useBuilder.getState();
-      void api<{grant:string;expiresAt:string}>('/workspace/preview',{method:'POST',body:{token:current.token}}).then(next=>{if(useBuilder.getState().ownerKey===current.ownerKey)current.set({previewGrant:next.grant,previewExpiresAt:Date.parse(next.expiresAt)});}).catch(stop);
+    const end = () => {
+      if (!session.developmentUnlimited) {
+        stop();
+        return;
+      }
+      const current = useBuilder.getState();
+      void api<{ grant: string; expiresAt: string }>("/workspace/preview", {
+        method: "POST",
+        body: { token: current.token },
+      })
+        .then((next) => {
+          if (useBuilder.getState().ownerKey === current.ownerKey)
+            current.set({
+              previewGrant: next.grant,
+              previewExpiresAt: Date.parse(next.expiresAt),
+            });
+        })
+        .catch(stop);
     };
     const expiry = setTimeout(
       end,
@@ -142,7 +168,12 @@ export function BuilderPage() {
       clearTimeout(expiry);
       clearInterval(validation);
     };
-  }, [b.mode, b.previewGrant, b.previewExpiresAt,session.developmentUnlimited]);
+  }, [
+    b.mode,
+    b.previewGrant,
+    b.previewExpiresAt,
+    session.developmentUnlimited,
+  ]);
   const hasEditorLease = Boolean(b.editorToken);
   useEffect(() => {
     if (!compact) setSheetOpen(false);
@@ -285,18 +316,38 @@ export function BuilderPage() {
     )
       return;
     if (selectionLocked) return;
-    if(slot==='frameset'&&!direction&&!replacements){const proposed={...current.configuration,frameset:variantId};if(compatibility(proposed,data).state==='incompatible'){setFrameReview(proposed);return;}}
+    if (slot === "frameset" && !direction && !replacements) {
+      const proposed = { ...current.configuration, frameset: variantId };
+      if (compatibility(proposed, data).state === "incompatible") {
+        setFrameReview(proposed);
+        return;
+      }
+    }
     current.set({ pending: true });
     setActionError("");
     try {
       const next = await api<{ configuration: Configuration; token: string }>(
         "/workspace/change",
-        { method: "POST", body: { token: current.token, slot, variantId, ...(replacements?{replacements}:{}) } },
+        {
+          method: "POST",
+          body: {
+            token: current.token,
+            slot,
+            variantId,
+            ...(replacements ? { replacements } : {}),
+          },
+        },
       );
       current.accept(
         next.configuration,
         next.token,
-        { slot, before: current.configuration[slot], after: variantId, beforeConfiguration:current.configuration,afterConfiguration:next.configuration },
+        {
+          slot,
+          before: current.configuration[slot],
+          after: variantId,
+          beforeConfiguration: current.configuration,
+          afterConfiguration: next.configuration,
+        },
         direction,
       );
       setFrameReview(null);
@@ -310,7 +361,7 @@ export function BuilderPage() {
   }
   async function setMode(mode: "2d" | "3d") {
     if (mode === "2d") {
-      b.set({ mode });
+      b.set({ mode, turntable: false });
       return;
     }
     if (b.pending) return;
@@ -361,7 +412,8 @@ export function BuilderPage() {
       return;
     }
     if (!b.configuration || saving) return;
-    setSaveFailed(false);setSaving(true);
+    setSaveFailed(false);
+    setSaving(true);
     setActionError("");
     try {
       const saved = await api<SavedBuild>(
@@ -384,7 +436,8 @@ export function BuilderPage() {
       notify("Build saved to your garage.");
       if (!id) navigate(`/builder/${saved._id}`, { replace: true });
     } catch (error) {
-      setAutoSave(false);setSaveFailed(true);
+      setAutoSave(false);
+      setSaveFailed(true);
       setActionError(errorMessage(error));
     } finally {
       setSaving(false);
@@ -472,7 +525,9 @@ export function BuilderPage() {
 
         <details className="quota-menu">
           <summary>
-            {session.developmentUnlimited ? "Development access" : session.user ? (
+            {session.developmentUnlimited ? (
+              "Development access"
+            ) : session.user ? (
               "Your workshop"
             ) : (
               <>
@@ -486,7 +541,12 @@ export function BuilderPage() {
             )}
           </summary>
           <div className="quota-popover">
-            {session.developmentUnlimited ? <p>Development usage quotas are disabled. Guest builds stay in memory; sign in to save permanently.</p> : session.user ? (
+            {session.developmentUnlimited ? (
+              <p>
+                Development usage quotas are disabled. Guest builds stay in
+                memory; sign in to save permanently.
+              </p>
+            ) : session.user ? (
               <>
                 <p>
                   Up to {session.policy.builds} saved builds. Creation and
@@ -556,7 +616,9 @@ export function BuilderPage() {
             {saving
               ? "Saving…"
               : session.user
-                ? saveFailed ? 'Retry save' : "Save build"
+                ? saveFailed
+                  ? "Retry save"
+                  : "Save build"
                 : "Create account to save"}
           </button>
         </div>
@@ -584,7 +646,7 @@ export function BuilderPage() {
                 key={slot}
                 className={b.slot === slot ? "active" : ""}
                 onClick={() => {
-                  b.set({ slot });
+                  b.set({ slot, turntable: false });
                   if (compact) setSheetOpen(true);
                 }}
                 aria-pressed={b.slot === slot}
@@ -601,6 +663,7 @@ export function BuilderPage() {
         </aside>
         <section
           ref={previewRef}
+          data-studio={b.mode === "3d" ? b.studio : undefined}
           className="viewer"
           aria-label="Bicycle preview"
         >
@@ -713,16 +776,26 @@ export function BuilderPage() {
               ) : (
                 <Suspense
                   fallback={
-                    <div className="viewer-fallback">Loading the studio…</div>
+                    <div className="studio-loading-plan">
+                      <Bike2D configuration={b.configuration} catalog={data} />
+                      <span className="model-loading" role="status">
+                        Loading the studio…
+                      </span>
+                    </div>
                   }
                 >
                   <Bike3D
                     configuration={b.configuration}
                     catalog={data}
                     onSelect={(slot) => {
-                      b.set({ slot });
+                      b.set({ slot, turntable: false });
                       if (compact) setSheetOpen(true);
                     }}
+                    studio={b.studio}
+                    graphicsQuality={b.graphicsQuality}
+                    turntable={b.turntable}
+                    activeSlot={b.slot}
+                    onInteract={() => b.set({ turntable: false })}
                     cameraView={b.cameraView}
                     resetKey={resetKey}
                   />
@@ -735,52 +808,109 @@ export function BuilderPage() {
               </div>
             )}
           </div>
-          <div className="viewer-controls">
+          <div
+            className={`viewer-controls ${b.mode === "3d" ? "studio-controls" : ""}`}
+          >
             {b.mode === "3d" && (
               <label className="camera-preset">
-                <span className="sr-only">Camera view</span>
+                <span>Camera</span>
                 <select
                   aria-label="Camera view"
                   value={b.cameraView}
                   onChange={(e) =>
-                    b.set({ cameraView: e.target.value as typeof b.cameraView })
+                    b.set({
+                      cameraView: e.target.value as typeof b.cameraView,
+                      turntable: false,
+                    })
                   }
                 >
-                  <option value="side">Side</option>
-                  <option value="front">Front</option>
-                  <option value="rear">Rear</option>
-                  <option value="three-quarter">Three-quarter</option>
+                  {cameraPresets.map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
                 </select>
               </label>
             )}
-            <button
-              className="icon-button"
-              aria-label="Undo last selection"
-              title="Undo (uses a component change for guests)"
-              disabled={!b.past.length || b.pending || selectionLocked}
-              onClick={() => {
-                const h = b.past.at(-1)!;
-                void change(h.slot, h.before, "undo", h.beforeConfiguration);
-              }}
-            >
-              <Undo2 size={16} />
-            </button>
-            <button
-              className="icon-button"
-              aria-label="Redo selection"
-              disabled={!b.future.length || b.pending || selectionLocked}
-              onClick={() => {
-                const h = b.future.at(-1)!;
-                void change(h.slot, h.after, "redo", h.afterConfiguration);
-              }}
-            >
-              <Redo2 size={16} />
-            </button>
+            {b.mode === "3d" && (
+              <>
+                <label className="studio-setting">
+                  <span>Environment</span>
+                  <select
+                    aria-label="Studio environment"
+                    value={b.studio}
+                    onChange={(event) =>
+                      b.set({ studio: event.target.value as typeof b.studio })
+                    }
+                  >
+                    <option value="light">Studio Light</option>
+                    <option value="dark">Studio Dark</option>
+                  </select>
+                </label>
+                <label className="studio-setting">
+                  <span>Graphics</span>
+                  <select
+                    aria-label="Graphics quality"
+                    value={b.graphicsQuality}
+                    onChange={(event) =>
+                      b.set({
+                        graphicsQuality: event.target
+                          .value as typeof b.graphicsQuality,
+                      })
+                    }
+                  >
+                    <option value="auto">Auto</option>
+                    <option value="performance">Performance</option>
+                    <option value="balanced">Balanced</option>
+                    <option value="quality">Quality</option>
+                  </select>
+                </label>
+                <button
+                  className="button turntable-control"
+                  aria-label="Toggle turntable"
+                  aria-pressed={b.turntable}
+                  disabled={reducedMotion}
+                  title={
+                    reducedMotion
+                      ? "Turntable is disabled by your reduced-motion preference"
+                      : "Turntable pauses when you interact"
+                  }
+                  onClick={() => b.set({ turntable: !b.turntable })}
+                >
+                  {b.turntable ? "Pause turntable" : "Turntable"}
+                </button>
+              </>
+            )}
+            <div className="history-controls">
+              <button
+                className="icon-button"
+                aria-label="Undo last selection"
+                title="Undo (uses a component change for guests)"
+                disabled={!b.past.length || b.pending || selectionLocked}
+                onClick={() => {
+                  const h = b.past.at(-1)!;
+                  void change(h.slot, h.before, "undo", h.beforeConfiguration);
+                }}
+              >
+                <Undo2 size={16} />
+              </button>
+              <button
+                className="icon-button"
+                aria-label="Redo selection"
+                disabled={!b.future.length || b.pending || selectionLocked}
+                onClick={() => {
+                  const h = b.future.at(-1)!;
+                  void change(h.slot, h.after, "redo", h.afterConfiguration);
+                }}
+              >
+                <Redo2 size={16} />
+              </button>
+            </div>
             <span className="control-divider" />
             <button
               className="reset-button"
               onClick={() => {
-                b.set({ zoom: 1 });
+                b.set({ zoom: 1, turntable: false });
                 setPan({ x: 0, y: 0 });
                 setResetKey((k) => k + 1);
               }}
@@ -861,7 +991,9 @@ export function BuilderPage() {
             <span>
               {session.user
                 ? "Your workshop"
-                : session.developmentUnlimited ? "Development access" : `${Math.max(0, session.limits.changes - session.usage.changes)} changes remaining`}
+                : session.developmentUnlimited
+                  ? "Development access"
+                  : `${Math.max(0, session.limits.changes - session.usage.changes)} changes remaining`}
             </span>
           </div>
           <button
@@ -983,14 +1115,21 @@ export function BuilderPage() {
           </ul>
           <h3>Guest workspace</h3>
           <p className="small muted">
-            {session.developmentUnlimited ? <>Development usage quotas are disabled. Your guest draft stays in memory. Sign in to save builds.</> : <>
-            {session.policy.guestChanges} accepted component changes and{" "}
-            {session.policy.guestPreviews} 3D sessions of up to{" "}
-            {session.policy.guestPreviewMinutes} minutes per rolling 24 hours.
-            Undo and redo are component changes. Browsing and rejected
-            incompatible selections use no component allowance. Your guest build
-            stays only in memory.
-            </>}
+            {session.developmentUnlimited ? (
+              <>
+                Development usage quotas are disabled. Your guest draft stays in
+                memory. Sign in to save builds.
+              </>
+            ) : (
+              <>
+                {session.policy.guestChanges} accepted component changes and{" "}
+                {session.policy.guestPreviews} 3D sessions of up to{" "}
+                {session.policy.guestPreviewMinutes} minutes per rolling 24
+                hours. Undo and redo are component changes. Browsing and
+                rejected incompatible selections use no component allowance.
+                Your guest build stays only in memory.
+              </>
+            )}
           </p>
           <button
             className="button primary full"
@@ -1000,7 +1139,24 @@ export function BuilderPage() {
           </button>
         </dialog>
       )}
-      {frameReview&&b.configuration&&<FrameChangeReview guest={!session.user&&!session.developmentUnlimited} current={b.configuration} proposed={frameReview} catalog={data} pending={b.pending} onClose={()=>setFrameReview(null)} onApply={configuration=>void change('frameset',configuration.frameset,undefined,configuration)}/>}
+      {frameReview && b.configuration && (
+        <FrameChangeReview
+          guest={!session.user && !session.developmentUnlimited}
+          current={b.configuration}
+          proposed={frameReview}
+          catalog={data}
+          pending={b.pending}
+          onClose={() => setFrameReview(null)}
+          onApply={(configuration) =>
+            void change(
+              "frameset",
+              configuration.frameset,
+              undefined,
+              configuration,
+            )
+          }
+        />
+      )}
     </main>
   );
 }
