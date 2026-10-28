@@ -8,6 +8,7 @@ The original functional specification remains in force. The continuation brief c
 - [Continuation: integrated UI/UX and distinct identity](requirements/continuation-ui-ux.md).
 - [Builder refinement: compact workspace, visualization and branded framesets](requirements/builder-visual-improvements.md). This supersedes the earlier permanently expanded summary and oversized heading composition.
 - [Brand-specific visualization and revised user experience](requirements/brand-authentic-upgrade.md) supersedes older numeric quotas. Implementation detail: [access policy](development/access-policy.md) and [3D production](development/3d-production.md).
+- [Fixed-gear brand expansion and repository organization](requirements/brand-expansion.md) adds dynamic manufacturer/model maintenance and separate catalog/rendering support statuses. Quotas remain unchanged. Source review: [brand research](brands/source-review.md). Existing `apps/api`, `apps/web` and shared packages remain the canonical layout; no duplicate frontend/backend trees are required.
 - Current phase plan, evidence and status: [development roadmap](development/roadmap.md). This remains the canonical plan/status document; do not create competing status files.
 - Design requirements and implementation tokens: [design system](DESIGN_SYSTEM.md).
 - Unfinished work and verification gaps: [known issues](KNOWN_ISSUES.md).

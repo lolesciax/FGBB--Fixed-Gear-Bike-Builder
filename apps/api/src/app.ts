@@ -1,7 +1,8 @@
 import { loadAccessPolicy } from './access-policy';
+import { registryRoutes } from './modules/catalog/registry-routes';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { Bike2D } from '../../web/src/features/builder/Bike2D';
+import { Bike2D } from '@tracklab/domain/svg';
 import express, { type Request, type Response, type NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -168,6 +169,7 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
     await mongoose.connection.transaction(async session => { await Build.deleteMany({ owner: user.id }, { session }); await Session.deleteMany({ userId: user.id }, { session }); await RecoveryToken.deleteMany({ userId: user.id }, { session }); await Subject.deleteOne({ _id: `user:${user.id}` }, { session }); await User.deleteOne({ _id: user.id }, { session }); await Audit.deleteMany({ actor: user.id }, { session }); });
     res.clearCookie(cookieName, cookieOptions); res.json({ message: 'Your account and personal build data have been deleted.' });
   });
+  app.use('/api', registryRoutes(requireAdmin));
   app.get('/api/catalog', async (req, res) => {
     await rate.consume(`catalog:${req.identity.subject}`, req.identity.user ? config.CATALOG_USER_RPM : config.CATALOG_GUEST_RPM, 60000);
     const query = z.object({ slot: slotSchema.optional(), q: z.string().max(80).optional(), brand: z.string().max(80).optional(), page: z.coerce.number().int().min(1).max(100).default(1), limit: z.coerce.number().int().min(1).max(30).default(30) }).parse(req.query);

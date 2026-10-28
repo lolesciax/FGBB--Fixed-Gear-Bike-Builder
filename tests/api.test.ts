@@ -10,7 +10,7 @@ import { DevelopmentRateStore, sign } from '../apps/api/src/security';
 import { Build, ProductModel, Subject, User, initializeModels, Session, Audit } from '../apps/api/src/models';
 import { seedCatalog, defaultConfiguration } from '../apps/api/src/catalog';
 import { importCatalog } from '../apps/api/src/catalog-import';
-import { Brand } from '../apps/api/src/models';
+import { Brand, ModelRecordModel } from '../apps/api/src/models';
 const origin = 'http://localhost:5173';
 const config = parseConfig({ NODE_ENV: 'test', FRONTEND_URL: origin });
 let repl: MongoMemoryReplSet, app: ReturnType<typeof createApp>;
@@ -51,6 +51,32 @@ describe('authentication and authorization', () => {
     for(let i=1;i<8;i++)await post(c,`/builds/${created._id}/export`).expect(200);
     await post(c,`/builds/${created._id}/export-image`).expect(409);
   });
+  it('keeps model research distinct from selectable products and preserves edited registry records', async()=>{
+    await importCatalog(); const c=await guest();
+    const brands=(await c.agent.get('/api/brands').expect(200)).body.items;
+    expect(brands.map((b:{name:string})=>b.name)).toEqual(expect.arrayContaining(['Tsunami','Skream','Engine11','Leader','Wabi Cycles','Surly']));
+    const models=(await c.agent.get('/api/models').expect(200)).body.items;
+    const snm200=models.find((m:{id:string})=>m.id==='tsunami-snm200');
+    expect(snm200).toMatchObject({published:false,renderingFidelity:'unavailable',specificationStatus:'unverified',support:['Research Pending']});
+    await ModelRecordModel.updateOne({_id:'tsunami-snm200'},{$set:{'data.notes':'Administrator review retained'}});
+    await importCatalog(); expect((await ModelRecordModel.findById('tsunami-snm200'))?.data.notes).toBe('Administrator review retained');
+    const w=await workspace(c); await post(c,'/workspace/change',{token:w.token,slot:'frameset',variantId:'tsunami-snm200'}).expect(422);
+  });
+  it('authorizes and audits dynamic brand/model maintenance without implying rendering support',async()=>{
+    const c=await member();
+    const brand={id:'review-brand',name:'Review Brand',description:'Research fixture',source:'https://example.com/',reviewedAt:new Date().toISOString(),categories:['frameset']};
+    const put=(path:string,body:object)=>c.agent.put(`/api${path}`).set('Origin',origin).set('X-CSRF-Token',c.csrf).send(body);
+    await put('/admin/brands/review-brand',brand).expect(403);
+    await User.updateOne({_id:c.userId},{$set:{role:'admin'}});
+    await put('/admin/brands/review-brand',brand).expect(200);
+    const model={id:'research-frame',brandId:'review-brand',name:'Research frame',source:'https://example.com/frame',checkedAt:new Date().toISOString(),specificationStatus:'unverified',notes:'No dimensions or assets reviewed.'};
+    await put('/admin/models/research-frame',{...model,brandId:'missing-brand'}).expect(422);
+    await put('/admin/models/research-frame',{...model,productId:'studio-track'}).expect(422);
+    await put('/admin/models/research-frame',model).expect(200);
+    expect(await Audit.countDocuments({actor:c.userId,action:{$in:['brand.update','model.update']}})).toBe(2);
+    const directory=(await c.agent.get('/api/models').expect(200)).body.items;
+    expect(directory.find((m:{id:string})=>m.id===model.id).support).toEqual(['Research Pending']);
+  });
   it('upgrades the old draft placeholder but retains an edited research draft', async()=>{
     const placeholder={id:'cinelli-vigorelli',brand:'Cinelli',name:'Vigorelli frame-kit',slot:'frameset',status:'draft',illustrative:false,description:'Manufacturer reference record. Authentic model geometry and licensed product assets are not registered, so selection is unavailable.',variants:[{id:'cinelli-vigorelli-reference',label:'Reference only',color:'#808080',specs:{}}]};
     await ProductModel.updateOne({_id:placeholder.id},{$set:{data:placeholder}});
@@ -62,7 +88,7 @@ describe('authentication and authorization', () => {
   });
   it('imports manufacturer records idempotently without overwriting reviewed catalog data', async () => {
     await importCatalog(); await importCatalog();
-    expect(await Brand.countDocuments()).toBe(3);
+    expect(await Brand.countDocuments()).toBe(11);
     expect(await ProductModel.countDocuments()).toBe(seedCatalog.length);
     await ProductModel.updateOne({_id:'cinelli-vigorelli'},{$set:{'data.status':'archived','data.name':'Reviewed archived frame'}});
     await importCatalog();

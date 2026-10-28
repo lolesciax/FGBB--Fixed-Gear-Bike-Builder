@@ -1,10 +1,11 @@
 import { productSchema } from "@tracklab/domain";
-import { ProductModel, Brand } from "./models";
+import { ProductModel, Brand, ModelRecordModel } from "./models";
+import { expansionBrands, researchModels } from './modules/catalog/research-records';
 import { seedCatalog } from "./catalog";
 import { seedBrands } from "./manufacturer-catalog";
 
 export async function importCatalog() {
-  for (const brand of seedBrands) {
+  for (const brand of [...seedBrands, ...expansionBrands]) {
     const { id, ...data } = brand;
     await Brand.updateOne(
       { _id: id },
@@ -12,6 +13,7 @@ export async function importCatalog() {
       { upsert: true },
     );
   }
+  for (const record of researchModels) await ModelRecordModel.updateOne({_id:record.id},{$setOnInsert:{data:record}},{upsert:true});
   for (const product of seedCatalog) {
     const data = productSchema.parse(product);
     await ProductModel.updateOne(

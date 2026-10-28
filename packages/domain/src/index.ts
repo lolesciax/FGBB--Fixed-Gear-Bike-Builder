@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import frameAssets from './frame-assets.json';
+export { brandSchema, modelRecordSchema, type CatalogBrand, type ModelRecord } from './catalog-registry';
 export const frameAssetSchema=z.object({variantId:z.string(),url:z.string().regex(/^\/models\/frames\/[a-z0-9-]+\.glb$/),fidelity:z.literal('illustrative'),license:z.literal('CC0-1.0'),source:z.string(),scale:z.literal(1),rotation:z.tuple([z.number(),z.number(),z.number()]),origin:z.literal('bottom-bracket'),units:z.literal('metres'),revision:z.literal('frame-kit-v1')}).strict();
 export const registeredFrameAssets=z.array(frameAssetSchema).parse(frameAssets);
 export { quotaPolicySchema, defaultQuotaPolicy, type QuotaPolicy } from './policy';
@@ -21,6 +22,8 @@ export const productSchema = z.object({
   illustrative: z.boolean(), source: z.url().refine(v => v.startsWith('https://')).optional(),
   verifiedAt: z.iso.datetime().optional(), acknowledgment: z.string().max(1000),
   catalogKind: z.enum(['demo', 'manufacturer']).optional(),
+  brandId: z.string().regex(/^[a-z0-9-]{1,100}$/).optional(),
+  revision: z.string().max(100).optional(), year: z.number().int().min(1900).max(2100).optional(),
   visual: z.object({ assetId: z.literal('tracklab-parametric-v2'), fidelity: z.literal('measurement-schematic'), source: z.string().max(200), license: z.literal('CC0-1.0'), reviewedAt: z.iso.datetime() }).strict().optional(),
   provenance: z.object({ reviewedAt: z.iso.datetime(), fields: z.array(z.string().max(100)).max(60), limitations: z.string().max(1000) }).strict().optional(),
   variants: z.array(z.object({

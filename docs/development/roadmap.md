@@ -46,6 +46,14 @@ This implements the feasible application work in the [brand-authentic upgrade br
 
 ## Verified baseline
 
+## Task · Expansion registry and shared rendering boundary — completed and verified, 28 October 2026
+
+- Archived the new expansion brief and reviewed the ten manufacturers' official sites. Added eight manufacturer records and 31 model research records alongside the existing brands. Research entries store source/check time, exact revision where established, specification status and remaining dependencies. They are separate from selectable product variants; a directory entry does not establish 2D/3D support. Source conflicts and inaccessible charts are recorded in [the review](../brands/source-review.md).
+- Added Mongo-backed public brand/model discovery and admin-only validated/audited maintenance. Model links must reference the same manufacturer's frameset. Existing brand names used by products cannot be renamed silently. Idempotent imports preserve edited registry records, product variants and builds.
+- Removed the API-to-frontend SVG dependency. The browser-safe renderer now lives behind `@tracklab/domain/svg`; existing frontend imports re-export it and server image exports use the same shared code. Kept the established `apps`/`packages` layout, scripts and deployment configuration instead of creating duplicate directory trees.
+- Checks: all 30 isolated API tests, TypeScript, both production builds and lint passed. Browser checks for the upcoming selection UI are pending. Atlas import is deferred until the complete expansion milestone is verified. No quota changes or deployment.
+- Next dependencies: publish only reviewed, renderable variants; surface support status in the catalog; enable atomic compatible frame/seating changes; verify actual 2D/3D selection, old builds and responsive behavior. Models lacking sufficient geometry stay unavailable rather than receiving generic dimensions.
+
 On 27 October 2026: Atlas connectivity and transactions passed. A temporary account, saved build, session and creation quota survived a complete API/database reconnection; the fixture was removed afterward. TypeScript and lint passed. The local baseline Vitest run passed 34 tests and skipped the live Redis test because no test Redis server was configured. The initial GitHub CI run passed all 35 tests, including the two-client atomic Redis quota race, and all four browser workflows: [baseline CI evidence](https://github.com/lolesciax/FGBB--Fixed-Gear-Bike-Builder/actions/runs/40503274845).
 
 ## Task · Browser-test isolation
