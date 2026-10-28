@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { parseConfig } from '../apps/api/src/config';
+import { parseConfig } from '../backend/src/config';
 import { assertPortAvailable, waitForApi } from './dev-startup';
 
 const config = parseConfig(process.env);
@@ -55,10 +55,10 @@ try {
     throw new Error(`FRONTEND_URL must use Vite's port ${webPort}. Correct the local .env before starting.`);
   await Promise.all([assertPortAvailable(config.PORT), assertPortAvailable(webPort)]);
   console.info('Starting the API. Waiting for the database and catalog before opening the frontend...');
-  launch('../node_modules/tsx/dist/cli.mjs', ['watch', 'apps/api/src/server.ts']);
+  launch('../node_modules/tsx/dist/cli.mjs', ['watch', 'backend/src/server.ts']);
   await waitForApi(apiUrl, startup.signal);
   if (!stopping) {
-    launch('../node_modules/vite/bin/vite.js', ['--config', 'apps/web/vite.config.ts', '--host', frontend.hostname, '--clearScreen', 'false']);
+    launch('../node_modules/vite/bin/vite.js', ['--config', 'frontend/vite.config.ts', '--host', frontend.hostname, '--clearScreen', 'false']);
     console.info(`API ready. TrackLab: ${new URL(config.FRONTEND_URL).origin}`);
     console.info('Keep this terminal open while using TrackLab. Ctrl+C stops both servers.');
   }

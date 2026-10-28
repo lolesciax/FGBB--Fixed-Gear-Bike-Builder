@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { makeTestEnvironment } from '../scripts/test-environment';
-import { parseConfig } from '../apps/api/src/config';
+import { parseConfig } from '../backend/src/config';
 it('replaces inherited external service credentials before any browser-test child process starts', () => {
   const inherited = { MONGODB_URI: 'mongodb+srv://atlas.example.test/other-app', MONGODB_DB_NAME: 'other-app', REDIS_URL: 'redis://shared.example.test', SMTP_HOST: 'smtp.example.test', SMTP_PASS: 'private-test-fixture', SESSION_SECRET: 'inherited-secret', VITE_API_URL: 'https://api.example.test', DOTENV_CONFIG_PATH: '.env' };
   const env = makeTestEnvironment(inherited);

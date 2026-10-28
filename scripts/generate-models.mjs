@@ -6,7 +6,7 @@ globalThis.FileReader = class {
   readAsArrayBuffer(blob) { blob.arrayBuffer().then(value => { this.result = value; this.onloadend?.(); }); }
   readAsDataURL(blob) { blob.arrayBuffer().then(value => { this.result = `data:application/octet-stream;base64,${Buffer.from(value).toString('base64')}`; this.onloadend?.(); }); }
 };
-const out = new URL('../apps/web/public/models/', import.meta.url);
+const out = new URL('../frontend/public/models/', import.meta.url);
 await mkdir(out, { recursive: true });
 const metal = new THREE.MeshStandardMaterial({ color: '#303831', metalness: .65, roughness: .4 });
 const paint = new THREE.MeshStandardMaterial({ color: '#294f40', metalness: .45, roughness: .34 });

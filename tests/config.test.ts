@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { parseConfig } from '../apps/api/src/config';
+import { parseConfig } from '../backend/src/config';
 it('fails closed for missing production services and ephemeral production mode', () => { expect(() => parseConfig({ NODE_ENV: 'production' })).toThrow(); expect(() => parseConfig({ NODE_ENV: 'production', DEVELOPMENT_EPHEMERAL: 'true' })).toThrow(); expect(() => parseConfig({ BUILD_LIMIT: '999' })).toThrow(); expect(() => parseConfig({ PRICING_ENABLED: 'true' })).toThrow(); });
 it('accepts Render-generated 256-bit base64 secrets when real production services are configured', () => { const c = parseConfig({ NODE_ENV: 'production', MONGODB_URI: 'mongodb://example.test/db', REDIS_URL: 'redis://example.test', SESSION_SECRET: 'A'.repeat(43) + '=', FRONTEND_URL: 'https://tracklab.example', SMTP_HOST: 'smtp.example.test' }); expect(c.NODE_ENV).toBe('production'); });
 it('allows a durable development database without enabling ephemeral storage', () => { const c = parseConfig({ MONGODB_URI: 'mongodb://127.0.0.1:27017/tracklab?replicaSet=rs0', DEVELOPMENT_MEMORY_RATE_LIMITS: 'true' }); expect(c.DEVELOPMENT_EPHEMERAL).toBe(false); expect(c.DEVELOPMENT_MEMORY_RATE_LIMITS).toBe(true); });

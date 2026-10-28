@@ -1,5 +1,5 @@
 Add-Type -AssemblyName System.Drawing
-$iconDirectory = Join-Path $PSScriptRoot '..\apps\web\public\icons'
+$iconDirectory = Join-Path $PSScriptRoot '..\frontend\public\icons'
 New-Item -ItemType Directory -Force -Path $iconDirectory | Out-Null
 foreach ($size in @(192, 512)) {
   $bitmap = New-Object System.Drawing.Bitmap($size, $size)

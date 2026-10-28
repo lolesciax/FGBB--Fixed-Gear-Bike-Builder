@@ -11,7 +11,7 @@ npx vitest run tests/frame-kits.test.ts
 
 The exporter reads `manufacturer-catalog.ts`, uses the shared `assemblyGeometry` function, creates original tubes/stays/forks, and writes:
 
-- `apps/web/public/models/frames/<variant-id>.glb`: self-contained metre-scale glTF 2.0 binary, loaded only when a corresponding 3D view needs it.
+- `frontend/public/models/frames/<variant-id>.glb`: self-contained metre-scale glTF 2.0 binary, loaded only when a corresponding 3D view needs it.
 - `<variant-id>.model.json`: source URL, input measurements, anchor positions, bounds and fidelity/license notes.
 - `packages/domain/src/frame-assets.json`: validated catalog registration metadata.
 

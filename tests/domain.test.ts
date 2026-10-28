@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { withHistoricalCatalog,assemblyGeometry, compatibility, validateConfiguration, productSchema } from '@tracklab/domain';
-import { defaultConfiguration, seedCatalog } from '../apps/api/src/catalog';
+import { defaultConfiguration, seedCatalog } from '../backend/src/catalog';
 describe('compatibility engine', () => {
   it('merges a saved retired variant into an existing product without exposing it for new selections',()=>{
     const snapshot=structuredClone(seedCatalog.find(p=>p.id==='studio-track')!);

@@ -4,11 +4,11 @@ import {
   fitAssembly,
   shortestAngle,
   easeCamera,
-} from "../apps/web/src/features/builder/studio-math";
+} from "../frontend/src/features/builder/studio-math";
 import {
   autoQuality,
   cameraPresets,
-} from "../apps/web/src/features/builder/studio-settings";
+} from "../frontend/src/features/builder/studio-settings";
 
 describe("studio camera fitting", () => {
   it("keeps transformed assembly bounds inside every preset on portrait and landscape canvases", () => {

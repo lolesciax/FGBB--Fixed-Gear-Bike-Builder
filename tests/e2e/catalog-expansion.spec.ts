@@ -179,7 +179,7 @@ test("an isolated admin can maintain manufacturers and review permitted uploads 
   await page.getByLabel("Catalog product ID").fill("skream-magnum");
   await page
     .getByLabel("Asset file")
-    .setInputFiles("apps/web/public/models/frames/skream-magnum-m.glb");
+    .setInputFiles("frontend/public/models/frames/skream-magnum-m.glb");
   await page
     .getByLabel("License or permission")
     .fill("Original TrackLab CC0 geometry");

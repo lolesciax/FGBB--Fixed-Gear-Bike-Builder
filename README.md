@@ -45,12 +45,23 @@ Email delivery is not configured yet. During development, verification and passw
 
 ## Structure
 
-- `apps/web`: React, TypeScript, Vite, React Router, TanStack Query, Zustand, Tailwind, SVG and lazy-loaded React Three Fiber.
-- `apps/api`: Express, Mongoose, backend sessions, CSRF, compatibility validation, quotas, account management and garage APIs.
+- `frontend`: React, TypeScript, Vite, React Router, TanStack Query, Zustand, Tailwind, SVG and lazy-loaded React Three Fiber.
+- `backend`: Express, Mongoose, backend sessions, CSRF, compatibility validation, quotas, account management and garage APIs.
 - `packages/domain`: shared schemas, configuration types, compatibility rules and disclosures.
-- `packages/domain/src/visual.ts`: shared measurement-based assembly anchors, bounds and procedural asset registry. Original schematic GLBs remain under `apps/web/public/models` as historical assets.
+- `packages/domain/src/visual.ts`: shared measurement-based assembly anchors, bounds and procedural asset registry. Original schematic GLBs remain under `frontend/public/models` as historical assets.
 - `tests`: domain, API, renderer, asset, configuration, pricing and browser checks.
 - `docs`: development instructions and design reference.
+
+```text
+frontend/          React app, viewer, UI, public assets and Vite configuration
+backend/           Express API, catalog, authentication and database modules
+packages/domain/   Shared schemas, geometry, compatibility and SVG renderer
+scripts/           Shared startup, test, asset and maintenance tooling
+tests/             Shared unit/API, renderer and browser regression suites
+docs/              Requirements, design references and development evidence
+```
+
+Run npm commands from the repository root. The root `package.json`, lockfile and ignored `.env` serve both applications; `npm run dev` starts the API and frontend together. `npm run dev:web` / `npm run dev:api` and `npm run build:web` / `npm run build:api` remain available for either side. Generated output belongs in `frontend/dist/` and `backend/dist/` and stays ignored by Git.
 
 ## Current development status
 

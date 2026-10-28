@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Bike2D } from "@tracklab/domain/svg";
-import { seedCatalog, defaultConfiguration } from "../apps/api/src/catalog";
+import { seedCatalog, defaultConfiguration } from "../backend/src/catalog";
 for (const configuration of [
   defaultConfiguration,
   {

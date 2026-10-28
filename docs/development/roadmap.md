@@ -12,6 +12,13 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
 
+## Task · Frontend/backend folder cleanup — completed and verified locally, 28 October 2026
+
+- Moved the React application, public assets and Vite configuration into root `frontend/`; moved the Express API, authentication, database and catalog modules into root `backend/`. Removed the empty earlier application container. Shared domain code remains in `packages/domain/`, with shared scripts, tests, root package/lockfile and the private root `.env` retained.
+- Updated npm entrypoints/build outputs, TypeScript and lint scopes, development/test launchers, asset generators, browser-upload fixtures, unit/API imports, Vercel's preparatory output path and current structure documentation. Browser URLs, source assets, API behavior and local database settings are unchanged. Root `npm run dev` still starts both applications.
+- Verification: TypeScript, lint, 62 unit/API/asset tests, frontend/backend builds, all 21 normal-policy browser scenarios, the separate development-access scenario and both production-preview PWA checks passed. One live Redis test is skipped locally and is exercised by GitHub CI. The restarted normal local app returned HTTP 200 at localhost:5180 and retained `developmentUnlimited: true`. Browser regressions used the isolated temporary database rather than Atlas. The frontend's emitted CSS and main/WebGL JS bundle hashes remained unchanged after relocation. Task-owned obsolete scratch scripts were removed; local environment/runtime data and shared tooling remain intact.
+- Render's preparatory manifest validated against its published schema. The optional Vercel schema check failed while validating the provider's schema itself: its declared draft-04 schema includes incompatible numeric `exclusiveMinimum` definitions. The validator script is unchanged; no validation was weakened to hide the failure. The changed output directory is checked by the actual local build. No deployment or provisioning.
+
 ## Task · Temporary unrestricted development usage — completed and verified, 28 October 2026
 
 - Applied the user's later instruction after pushing the catalog expansion. Added the explicit local `DEVELOPMENT_DISABLE_QUOTAS` switch and enabled it in the ignored workspace `.env`. Production startup rejects it. Normal-policy values and histories remain intact; turning it off restores quota enforcement without deleting over-limit builds.

@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
 import { mkdir, writeFile } from "node:fs/promises";
 import { assemblyGeometry, frameAssetSchema } from "@tracklab/domain";
-import { manufacturerCatalog } from "../apps/api/src/manufacturer-catalog";
+import { manufacturerCatalog } from "../backend/src/manufacturer-catalog";
 
 Object.defineProperty(globalThis, "FileReader", {
   value: class {
@@ -23,7 +23,7 @@ Object.defineProperty(globalThis, "FileReader", {
     }
   },
 });
-const out = new URL("../apps/web/public/models/frames/", import.meta.url);
+const out = new URL("../frontend/public/models/frames/", import.meta.url);
 await mkdir(out, { recursive: true });
 const manifest = [];
 for (const product of manufacturerCatalog.filter(

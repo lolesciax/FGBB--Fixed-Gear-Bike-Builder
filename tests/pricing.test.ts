@@ -1,3 +1,3 @@
 import { expect, it } from 'vitest';
-import { visibleOffer, type VerifiedOffer } from '../apps/api/src/pricing';
+import { visibleOffer, type VerifiedOffer } from '../backend/src/pricing';
 it('hides unapproved, disabled, stale and mismatched offers', () => { const offer: VerifiedOffer = { variantId: 'a', providerId: 'approved', manufacturerPartNumber: 'part-1', retailer: 'Test fixture', amount: 1, currency: 'USD', sourceUrl: 'https://example.com/fixture', retrievedAt: new Date().toISOString(), verifiedAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 60000).toISOString(), match: 'exact' }; expect(visibleOffer(offer, 'a')).toBeNull(); expect(visibleOffer(offer, 'a', true, [])).toBeNull(); expect(visibleOffer(offer, 'b', true, ['approved'])).toBeNull(); expect(visibleOffer({ ...offer, expiresAt: '2020-01-01T00:00:00Z' }, 'a', true, ['approved'])).toBeNull(); expect(visibleOffer(offer, 'a', true, ['approved'])).toEqual(offer); });

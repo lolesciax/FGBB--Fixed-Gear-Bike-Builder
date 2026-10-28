@@ -11,8 +11,8 @@ if (
   throw new Error(
     "Admin browser fixtures require the isolated ephemeral test environment.",
   );
-await import("../apps/api/src/server");
-const { User } = await import("../apps/api/src/models");
+await import("../backend/src/server");
+const { User } = await import("../backend/src/models");
 const { default: argon2 } = await import("argon2");
 const email = "admin-browser@example.test",
   password = randomBytes(32).toString("base64url");

@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createClient, type RedisClientType } from 'redis';
-import { RedisRateStore, randomToken } from '../apps/api/src/security';
+import { RedisRateStore, randomToken } from '../backend/src/security';
 const url = process.env.TEST_REDIS_URL;
 describe.skipIf(!url)('live Redis distributed limiter', () => {
   let a: RedisClientType, b: RedisClientType;

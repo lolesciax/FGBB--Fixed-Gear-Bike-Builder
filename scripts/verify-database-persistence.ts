@@ -1,10 +1,10 @@
 import mongoose from 'mongoose';
 import { randomUUID, randomBytes } from 'node:crypto';
 import type { Server } from 'node:http';
-import { createApp } from '../apps/api/src/app';
-import { parseConfig } from '../apps/api/src/config';
-import { DevelopmentRateStore } from '../apps/api/src/security';
-import { Audit, Build, RecoveryToken, Session, Subject, User } from '../apps/api/src/models';
+import { createApp } from '../backend/src/app';
+import { parseConfig } from '../backend/src/config';
+import { DevelopmentRateStore } from '../backend/src/security';
+import { Audit, Build, RecoveryToken, Session, Subject, User } from '../backend/src/models';
 
 // Deliberately targets only the explicitly configured TrackLab development DB.
 const config = parseConfig(process.env);

@@ -5,9 +5,9 @@ import {
   visualizationInfo,
   productSchema,
 } from "@tracklab/domain";
-import { seedCatalog, defaultConfiguration } from "../apps/api/src/catalog";
-import { researchModels } from "../apps/api/src/modules/catalog/research-records";
-import { expandedFramesets } from "../apps/api/src/modules/catalog/expanded-framesets";
+import { seedCatalog, defaultConfiguration } from "../backend/src/catalog";
+import { researchModels } from "../backend/src/modules/catalog/research-records";
+import { expandedFramesets } from "../backend/src/modules/catalog/expanded-framesets";
 it("uses distinct sourced Magnum and Ranger anchors and preserves uncertain interfaces", () => {
   const mag = expandedFramesets.find((p) => p.id === "skream-magnum")!,
     ranger = expandedFramesets.find((p) => p.id === "skream-ranger")!;
