@@ -11,7 +11,7 @@ const labels: Record<keyof QuotaPolicy, string> = {
   createDaily: "Creations / day",
   createMonthly: "Creations / 30 days",
   publish: "Published builds",
-  exports: "Build-information exports / day",
+  exports: "Combined image / information exports per day",
   saveHourly: "Save writes / hour",
 };
 export function PolicyEditor() {
