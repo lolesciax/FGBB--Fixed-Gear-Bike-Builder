@@ -43,10 +43,10 @@ test('registered mixed wheel finishes retain separate factory regions across vie
  const session=await(await page.request.get('/api/session')).json(),headers={Origin:'http://127.0.0.1:5190','X-CSRF-Token':session.csrf};
  const catalog=await(await page.request.get('/api/admin/catalog')).json(),product:Product=catalog.items.find((r:{data:Product})=>r.data.id==='studio-classic').data,original=structuredClone(product);
  const paint={color:'#80664d',finish:'satin' as const,roughness:.4,metalness:.5,clearcoat:.1,clearcoatRoughness:.4};
- product.variants[0].componentFinishes=[{zone:'wheelset',options:['brand','polished','pure-black'],brand:{...paint,name:'Isolated finish fixture',source:'https://example.com/finish-fixture',regions:{rim:{...paint,color:'#202731'},spokes:{...paint,color:'#b9c2cd',metalness:.85}}}}];
- expect((await page.request.put('/api/admin/catalog/'+product.id,{headers,data:product})).ok()).toBe(true);
+ product.variants.push({...structuredClone(product.variants[0]),id:'studio-mixed-finish-fixture',label:'Isolated mixed finish',componentFinishes:[{zone:'wheelset',options:['brand','polished','pure-black'],brand:{...paint,name:'Isolated finish fixture',source:'https://example.com/finish-fixture',regions:{rim:{...paint,color:'#202731'},spokes:{...paint,color:'#b9c2cd',metalness:.85}}}}]});
+ const update=await page.request.put('/api/admin/catalog/'+product.id,{headers,data:product});expect(update.status(),await update.text()).toBe(200);
  try{
-  await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/builder');await page.getByRole('button',{name:'Wheels',exact:true}).click();
+  await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/builder');await page.getByRole('button',{name:'Wheels',exact:true}).click();await page.getByLabel('Classic spokes variant',{exact:true}).selectOption('studio-mixed-finish-fixture');
   await expect(page.locator('linearGradient[id$="-wheel-rim"] stop').nth(3)).toHaveAttribute('stop-color','#202731');
   await expect(page.locator('linearGradient[id$="-wheel-spokes"] stop').nth(3)).toHaveAttribute('stop-color','#b9c2cd');
   await page.getByRole('button',{name:'3D',exact:true}).click();await expect(page.locator('.bike3d-wrapper')).toHaveAttribute('data-loading','false');

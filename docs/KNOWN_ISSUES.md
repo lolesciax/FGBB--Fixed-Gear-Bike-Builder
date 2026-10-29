@@ -4,6 +4,8 @@ This is a development application, not a completed public release. This list dis
 
 ## Visual and responsive gaps
 
+- The v3 structural milestone passes the current local regression gates; [evidence](development/modeling-refinement.md). The new [advanced geometry continuation](development/advanced-geometry.md) still requires source-associated tube/post/fork/dropout profiles and 20/24, 32/32, 36/36 demo variants within each retained rim design. Existing round main tubes are approximate and must not be described as exact proprietary morphology.
+
 - Graphite/blue tokens, shared controls, the adaptive builder and studio landing page are implemented. The landing and builder have browser viewport checks; garage/account/admin need broader page-specific visual and accessibility review.
 - The builder passed 320/375/430/768/1024/1280/1440/1920px checks in both themes, plus 844x390 landscape. Other routes still need the complete matrix. Semantic text/button token pairs pass AA contrast; this is not a complete accessibility audit.
 - Mobile uses a native modal parts sheet; tablets use a drawer. Escape, explicit close, focus restoration, internal scrolling and viewport bounds are browser-tested. Physical phone keyboard, assistive technology and device coverage remain.
@@ -23,7 +25,7 @@ This is a development application, not a completed public release. This list dis
 
 ## Verification and release
 
-- Latest pre-continuation CI passed 38 unit/API tests, six browser workflows, two production-preview PWA checks, lint, TypeScript and both builds. This does not verify the new design requirements.
+- Latest v3 local verification: 100 unit/API tests passing with one live Redis skip, 31 normal browser workflows, one development workflow and two production-preview PWA workflows, lint, TypeScript and both builds. CI verifies Redis; the latest saved-build fixture correction is tracked separately. These gates do not establish manufacturer-exact assets or completion of the new morphology continuation.
 - PWA online/offline navigation and API cache exclusion are verified. Device installation coverage and update notification UX remain incomplete.
 - The 3D bundle is deferred from initial loading, but still generates a large-chunk build warning. More performance/device coverage is required.
 - No production deployment has been made. The user explicitly deferred deployment; source pushes do not change that instruction.

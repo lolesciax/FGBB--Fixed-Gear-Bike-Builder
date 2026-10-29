@@ -12,6 +12,12 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
 
+## Task · V3 geometry acceptance and isolated fixture repair — verified locally, 29 October 2026
+
+- Completed the earlier structural/finish continuation with 100 passing tests (one local live-Redis skip), all 31 normal browser workflows, one development workflow and two PWA workflows; TypeScript/lint/builds pass. Captured 29 views without page errors and inspected structural details, full-bike angles, multiple source sizes and mobile controls. [Curated evidence and budgets](modeling-refinement.md).
+- CI caught the mixed-finish fixture attempting to alter a variant referenced by another test's saved build. The fixture now appends a separate temporary variant; saved-build immutability stays enforced. CI is inspected again after this follow-up push.
+- The new advanced continuation separately targets source-associated tube/post/fork/dropout profiles and three spoke options within each rim design. These remaining morphology gaps are explicit; no authentic-model or completed-release claim is made. No deployment.
+
 ## Task · SVG projection, wheel thumbnails and camera verification — verified locally, 29 October 2026
 
 - Shared centripetal stay/rail/bar curves, preserved common saddle/crank outlines and actual counts/finishes, corrected far-crank layering and made wheel thumbnails variant-specific. Both viewers report the v3 component geometry revision.
