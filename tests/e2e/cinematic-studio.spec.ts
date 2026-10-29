@@ -3,7 +3,9 @@ import { test, expect } from "@playwright/test";
 test("studio settings, camera motion, turntable pause and canonical configuration", async ({
   page,
 }) => {
-  test.setTimeout(90000);
+  // Eight animated presets plus orbit, mode and mobile checks on software WebGL.
+  // Keep individual expectations strict while allowing the complete scenario to finish.
+  test.setTimeout(180000);
   await page.goto("/builder");
   await page.getByRole("button", { name: "3D", exact: true }).click();
   const scene = page.locator(".bike3d-wrapper");
