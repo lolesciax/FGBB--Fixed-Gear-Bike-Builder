@@ -1,8 +1,10 @@
-import {FrameFinish2D} from '@tracklab/domain/svg';
+import { FrameFinish2D } from "@tracklab/domain/svg";
 import { Cog, SlidersHorizontal } from "lucide-react";
 import {
   assemblyGeometry,
   handlebarPoints,
+  wheelDimensions,
+  spokeEndpoints,
   type Product,
 } from "@tracklab/domain";
 export function PartThumbnail({
@@ -28,11 +30,51 @@ export function PartThumbnail({
         viewBox={`-40 ${seat.y - 50} ${front.x + 90} ${-seat.y + 110}`}
         aria-hidden="true"
       >
-        <FrameFinish2D product={product} variant={variant||product.variants.find(v=>v.color===color)||product.variants[0]}/>
+        <FrameFinish2D
+          product={product}
+          variant={
+            variant ||
+            product.variants.find((v) => v.color === color) ||
+            product.variants[0]
+          }
+        />
       </svg>
     );
   }
-  if (product.slot === "wheels" || product.slot === "tires")
+  if (product.slot === "wheels") {
+    const w = wheelDimensions(variant?.specs || product.variants[0].specs);
+    return (
+      <svg viewBox="0 0 140 120" aria-hidden="true">
+        {[true, false].map((rear) => (
+          <g
+            key={String(rear)}
+            transform={`translate(${rear ? 48 : 90} 60) scale(.12)`}
+            data-thumbnail-wheel={rear ? "rear" : "front"}
+          >
+            <circle
+              r={((w.rimInner + w.rimOuter) / 2) * 1000}
+              fill="none"
+              stroke="#697482"
+              strokeWidth={w.rimDepth * 1000}
+            />
+            {spokeEndpoints(w, rear).map((s, i) => (
+              <line
+                key={i}
+                x1={s.hub[0] * 1000}
+                y1={-s.hub[1] * 1000}
+                x2={s.rim[0] * 1000}
+                y2={-s.rim[1] * 1000}
+                stroke="#7c8796"
+                strokeWidth="6"
+              />
+            ))}
+            <circle r={rear ? 28 : 22} fill="#657181" />
+          </g>
+        ))}
+      </svg>
+    );
+  }
+  if (product.slot === "tires")
     return (
       <svg viewBox="0 0 140 120" aria-hidden="true">
         <circle
@@ -43,18 +85,6 @@ export function PartThumbnail({
           stroke="#37414f"
           strokeWidth={product.id.includes("deep") ? 14 : 6}
         />
-        {product.slot === "wheels" &&
-          Array.from({ length: 16 }, (_, i) => (
-            <line
-              key={i}
-              x1="70"
-              y1="60"
-              x2={70 + Math.cos((i * Math.PI) / 8) * 44}
-              y2={60 + Math.sin((i * Math.PI) / 8) * 44}
-              stroke="#7c8796"
-              strokeWidth="1"
-            />
-          ))}
         {product.id.includes("tire28") && (
           <circle
             cx="70"

@@ -5,6 +5,7 @@ import {appearanceSchema,componentFinishSchema,appearanceIssues} from './finishe
 import {wheelBuild} from './wheels';
 import {saddleRailFit} from './seating';
 export * from './seating';
+export * from './paths';
 export * from './wheels';
 export * from './finishes';
 export {steeringStack,dropoutOutline,type DropoutStyle} from './steering';

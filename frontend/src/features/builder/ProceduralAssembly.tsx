@@ -154,7 +154,7 @@ export function ProceduralAssembly({
         ref={group}
         name="bicycle_assembly"
         userData={{
-          geometryRevision: "components-v2",
+          geometryRevision: "components-v3",
           cockpit: g.cockpit.type,
         }}
       >

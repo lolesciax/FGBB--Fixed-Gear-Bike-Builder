@@ -12,6 +12,11 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
 
+## Task · SVG projection, wheel thumbnails and camera verification — verified locally, 29 October 2026
+
+- Shared centripetal stay/rail/bar curves, preserved common saddle/crank outlines and actual counts/finishes, corrected far-crank layering and made wheel thumbnails variant-specific. Both viewers report the v3 component geometry revision.
+- Full local suite: 100 passing tests, one live Redis skip, including 42 isolated API tests. Four browser workflows pass for actual vertex/instance framing at four source sizes/all presets, zoom/reset, required widths/themes, contrast and wheelsets. The existing camera fitter passed and remains intact. CI's stale catalog seating assertion was updated to the required unverified result. [Evidence and final acceptance work](modeling-refinement.md). No deployment.
+
 ## Task · Cockpit hardware and factory finish regions — verified locally, 29 October 2026
 
 - Aligned faceplate/fasteners with the stem angle and verified all four bars, independent stem/bar paints and separate rubber. Added optional source-backed rim/spoke/hub factory paints under the existing wheelset selection. Shared SVG gradients and owned 3D materials retain mixed factory colors while coordinated presets recolor all three regions.

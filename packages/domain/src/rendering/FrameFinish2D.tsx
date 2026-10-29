@@ -9,6 +9,7 @@ import {
 } from "../colorways";
 import type { Product, Variant } from "../index";
 import { dropoutOutline, type DropoutStyle } from "../steering";
+import {chainstayPoints,catmullRomSegments} from '../paths';
 export function FrameFinish2D({
   product,
   variant,
@@ -83,8 +84,8 @@ export function FrameFinish2D({
       [-0.011, 0.005],
     ].map(([x, y]) => [g.crown[0] + x, g.crown[1] + y, 0]),
   );
-  const rearTop = [g.rear[0] + 0.012, g.rear[1] + 0.01, 0],
-    rearBottom = [g.rear[0] + 0.012, g.rear[1] - 0.01, 0];
+  const rearTop = [g.rear[0] + 0.012, g.rear[1] + 0.01, 0];
+  const stayPath=catmullRomSegments(chainstayPoints(g,1)).map(([a,b,c,d],i)=>`${i?'':`M${p(a).x} ${p(a).y}`}C${p(b).x} ${p(b).y} ${p(c).x} ${p(c).y} ${p(d).x} ${p(d).y}`).join(' ');
   const paths: {
     zone: PaintZone;
     d: string;
@@ -92,7 +93,7 @@ export function FrameFinish2D({
     filled?: boolean;
   }[] = [
     { zone: "seatstay", d: segment(rearTop, g.seat), width: 14 },
-    { zone: "chainstay", d: segment(rearBottom, g.bb), width: 16 },
+    { zone: "chainstay", d: stayPath, width: 16 },
     {
       zone: "top",
       d: segment(g.seat, g.topJunction),
@@ -117,7 +118,7 @@ export function FrameFinish2D({
       filled: true,
     },
     { zone: "crown", d: crownShape, width: 0, filled: true },
-    { zone: "bb", d: `M${p(g.bb).x - 0.5} ${p(g.bb).y}h1`, width: 34 },
+    { zone: "bb", d: `M${p(g.bb).x - 0.5} ${p(g.bb).y}h1`, width: 46 },
   ];
   const paint = (zone: PaintZone) =>
     !c && (zone === "fork" || zone === "crown")

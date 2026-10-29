@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import {chainstayPoints} from '@tracklab/domain';
 import {
   forkBladePoints,
   dropoutOutline,
@@ -154,8 +155,7 @@ export function createFrame(g: BicycleGeometry, color: string) {
   for (const side of [-1, 1]) {
     const rear: Position = [g.rear[0], g.rear[1], side * g.rearHalf],
       seat: Position = [g.seat[0], g.seat[1], side * 0.012],
-      upperEnd: Position = [rear[0] + 0.012, rear[1] + 0.01, rear[2]],
-      lowerEnd: Position = [rear[0] + 0.012, rear[1] - 0.01, rear[2]];
+      upperEnd: Position = [rear[0] + 0.012, rear[1] + 0.01, rear[2]];
     cylinder(
       group,
       `paint_seatstay_${side}`,
@@ -167,12 +167,7 @@ export function createFrame(g: BicycleGeometry, color: string) {
     tube(
       group,
       `paint_chainstay_${side}`,
-      [
-        [g.bb[0], g.bb[1], side * 0.024],
-        [g.bb[0] - 0.12, g.bb[1] + 0.01, side * 0.026],
-        [g.rear[0] + 0.12, g.rear[1] - 0.012, side * g.rearHalf],
-        lowerEnd,
-      ],
+      chainstayPoints(g,side),
       0.008,
       paint.clone(),
       24,

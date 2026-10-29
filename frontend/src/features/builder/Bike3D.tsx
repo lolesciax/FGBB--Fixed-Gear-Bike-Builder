@@ -132,7 +132,7 @@ export default function Bike3D(props: Props) {
           variantById(props.catalog, displayed.cockpit)?.variant.specs.shape ||
           "unknown"
         }
-        data-geometry-revision="components-v2"
+        data-geometry-revision="components-v3"
         data-studio={studio}
         data-quality={quality}
         data-camera-moving={moving}

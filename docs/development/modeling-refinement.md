@@ -17,9 +17,9 @@ Actual code gaps: `wheelDimensions` exposes one spoke count for both wheels; `sp
 | 5 Seating | Complete | Shared shell/cover contour, supported rail anchors, split round/oval clamp grooves; distinct fit checks and unknown => unverified |
 | 6 Cockpit | Complete | Four bar profiles/materials verified; faceplate and fasteners now share the stem angle |
 | 7 Materials | Complete | Independent rim/spoke/hub materials, coordinated presets and source-backed mixed factory regions verified |
-| 8 SVG synchronization | Pending | Geometry/count/finish agreement, coherent silhouettes/layering and all visible interfaces |
-| 9 Camera | Pending | Actual rendered projection bounds at all presets/aspects, reset and sensible zoom limits |
-| 10 UX | In progress | Wheel count/lacing/rim/drilling labels added; final responsive review pending |
+| 8 SVG synchronization | Complete | Shared centripetal stays/rails/bars, saddle/arm outlines, actual wheel counts/materials and corrected far-crank layering |
+| 9 Camera | Complete | Real vertices/instances checked across four source sizes, eight presets, phone/tablet/landscape, zoom and reset |
+| 10 UX | Complete | Visible wheel-build labels, coordinated finish guidance and existing accessible controls verified across the responsive matrix |
 | 11 Verification | Pending | Domain/API/geometry/persistence checks, isolated browser suites, builds, live views and CI |
 | 12 Documentation | In progress | Per-stage checks, assumptions, missing brand assets and remaining external dependencies |
 
@@ -64,3 +64,11 @@ Preserved all four continuous, symmetric bar profiles, tapered center clamps, wr
 Optional source-backed `brand.regions` specifies rim, spoke and hub paints within an exact wheelset variant; the existing wheelset selection and six appearance zones remain canonical. SVG gradients and owned 3D materials read the same regions. Polished/Pure Black still override all regions together; original/factory appearance preserves a registered mix. Other component zones reject wheel-specific regions. No manufacturer component graphics or unsupported real products were added. Current demos retain their original appearance plus controlled presets; real component manufacturers remain a catalog/rights dependency.
 
 Verification: TypeScript/lint and 13 focused finish/assembly tests pass. Five isolated browser workflows pass, including an administrator-registered temporary mixed-finish fixture exercised through the actual API, both viewers, coordinated overrides and restoration without geometry changes. The fixture is restored in `finally` and never enters Atlas. All four cockpit profiles, mobile finish editing and save/export behavior also pass. Materials remain per-model owned and disposed, with no texture/decal downloads for these color-only regions.
+
+## Stages 8–10 — projected geometry, camera and restrained UX
+
+Factored exact open centripetal spline controls into the shared domain, without adding Three to the initial SVG bundle. Projected stays, rails and bars now use the mesh curve convention. Shared crank/saddle outlines, actual per-wheel counts and region paints remain synchronized. The far crank/pedal sits behind the frame/wheels; outer axle hardware stays above the dropout plates. Wheel thumbnails use each variant's real front/rear count, lacing and rim depth. Viewer metadata identifies `components-v3`.
+
+The existing complete-vertex camera fitter passed the new live projection test and was retained. It tests Dosnoventa LA S/L and Cinelli Vigorelli XS/XL at all eight presets, then phone/tablet/landscape aspects, depth bounds, visible control clearance, zoom limits and reset. Every actual mesh vertex and instance is projected, not just a box or metadata declaration. No lighting or camera offset was used to conceal structural geometry.
+
+Verification: full local suite passes 100 tests with one live Redis check skipped; this includes the 42-test isolated API suite. Source-curve equivalence and SVG layering checks pass. Four isolated browser workflows pass for real projected bounds, the complete responsive width/theme matrix, AA semantic contrast and wheelsets. A stale earlier catalog assertion still expected abstracted rail compatibility; CI identified it and it now expects the new required unverified state. Final build, comprehensive browsers and curated visual evidence are tracked in stage 11.

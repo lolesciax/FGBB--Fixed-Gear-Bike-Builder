@@ -6,6 +6,7 @@ import {
   spokeEndpoints,
   crankArmOutline,
   saddleSilhouette,saddleRailPoints,saddleSurfacePoint,
+  catmullRomSegments,
   variantById,
   slots,
   finishZones,
@@ -37,6 +38,7 @@ const add = (a: Position, b: Position): Position =>
 const line = (points: Point[], close = false) =>
   points.map((p, i) => (i ? "L" : "M") + p.x + " " + p.y).join(" ") +
   (close ? "Z" : "");
+const spline=(points:Position[])=>catmullRomSegments(points).map(([a,b,c,d],i)=>`${i?'':`M${project(a).x} ${project(a).y}`}C${project(b).x} ${project(b).y} ${project(c).x} ${project(c).y} ${project(d).x} ${project(d).y}`).join(' ');
 function smooth(points: Point[]) {
   const p = points.filter(
     (v, i) =>
@@ -127,9 +129,10 @@ export function Bike2D({
             .padStart(2, "0"),
         )
         .join("");
-  const barPoints = handlebarPoints(get("cockpit")?.specs)
+  const barWorld = handlebarPoints(get("cockpit")?.specs)
     .slice(Math.floor(handlebarPoints(get("cockpit")?.specs).length / 2))
-    .map((p) => project(add(m.barClamp, p)));
+    .map((p) => add(m.barClamp,p));
+  const barPoints=barWorld.map(project);
   const bounds = {
     x: -radius - 8,
     y: Math.min(g.bounds.y, saddle.y - 65, ...barPoints.map((p) => p.y - 18)),
@@ -264,7 +267,7 @@ export function Bike2D({
       data-frame-variant={configuration.frameset}
       data-cockpit-variant={configuration.cockpit}
       data-cockpit-shape={m.cockpit.type}
-      data-geometry-revision="components-v2"
+      data-geometry-revision="components-v3"
       data-steering-profile={stack.profile}
       data-stem-style={stack.quill ? "quill" : "ahead"}
     >
@@ -326,6 +329,10 @@ export function Bike2D({
           fill="#171c26"
           opacity=".08"
         />
+        <g data-layer="far-drivetrain" aria-hidden="true" pointerEvents="none">
+          <path d={armPath(d.crankAngle+Math.PI)} fill={finish('crankArms')} stroke="#343d48" strokeWidth="1"/>
+          <rect x={project(d.pedals[1]).x-45} y={project(d.pedals[1]).y-6} width="90" height="12" rx="4" fill="#404a58"/>
+        </g>
         <g {...interactive("wheels")} data-finish-zone="wheelset">
           {[rear, front].map((axle, i) => (
             <g key={i} data-wheel={i===0?'rear':'front'} data-spoke-count={i===0?m.wheel.rearBuild.count:m.wheel.frontBuild.count} data-lacing={i===0?m.wheel.rearBuild.lacing:m.wheel.frontBuild.lacing} transform={"translate(" + axle.x + " 0)"}>
@@ -429,7 +436,7 @@ export function Bike2D({
         <g {...interactive("saddle")} data-seating-profile="shared-contour">
           <g data-finish-zone="seatpost">{tube(seat,saddle,m.saddle.postDiameter*1000,finish('seatpost'))}</g>
           <path d={line([{x:saddle.x-22,y:saddle.y+4},{x:saddle.x+22,y:saddle.y+4},{x:saddle.x+18,y:saddle.y-13},{x:saddle.x-18,y:saddle.y-13}],true)} fill={finish('seatpost')} stroke="#424b59" strokeWidth=".8"/>
-          <path data-saddle-rails d={smooth(saddleRailPoints(m.saddle,1).map(p=>project(add(m.saddlePost,p))))} fill="none" stroke="#87919e" strokeWidth={m.saddle.railHeight*1000}/>
+          <path data-saddle-rails d={spline(saddleRailPoints(m.saddle,1).map(p=>add(m.saddlePost,p)))} fill="none" stroke="#87919e" strokeWidth={m.saddle.railHeight*1000}/>
           <g data-saddle-clamp fill={finish('seatpost')} stroke="#424b59" strokeWidth=".7">
             <rect x={saddle.x-16} y={saddle.y-12} width="32" height="7" rx="2"/>
             <rect x={saddle.x-16} y={saddle.y-19} width="32" height="7" rx="2"/>
@@ -518,31 +525,20 @@ export function Bike2D({
             />
           </g>
           <path
-            d={smooth(barPoints)}
+            d={spline(barWorld)}
             fill="none"
             stroke={componentPaints.handlebar ? finish("handlebar") : "#242c37"}
             strokeWidth={m.cockpit.tubeDiameter * 1000}
             data-finish-zone="handlebar"
           />
           <path
-            d={smooth(
-              barPoints.slice(Math.max(0, Math.floor(barPoints.length * 0.55))),
-            )}
+            d={spline(barWorld.slice(Math.max(0,Math.floor(barWorld.length*.55))))}
             fill="none"
             stroke="#202630"
             strokeWidth={m.cockpit.tubeDiameter * 1000 + 2.8}
           />
         </g>
         <g {...interactive("drivetrain")}>
-          <path d={armPath(d.crankAngle+Math.PI)} fill={finish('crankArms')} stroke="#343d48" strokeWidth="1"/>
-          <rect
-            x={project(d.pedals[1]).x - 43}
-            y={project(d.pedals[1]).y - 6}
-            width="86"
-            height="12"
-            rx="4"
-            fill="#404a58"
-          />
           <path d={chain} fill="none" stroke="#88929e" strokeWidth="6.4" />
           <path
             d={chain}
