@@ -60,6 +60,8 @@ The [modeling refinement brief](requirements/modeling-refinement.md) prioritizes
 
 ## Verification and milestone acceptance
 
+The [advanced geometry continuation](requirements/advanced-geometry.md) adds source-associated tube/seatpost/fork/dropout morphology and three registered demo spoke options (20F/24R, 32F/32R, 36F/36R) within each retained rim design. Keep precise proprietary shapes unclaimed, model generations distinct and incomplete manufacturer records draft. [Audit and acceptance](development/advanced-geometry.md) extend the current work; the complete individual-component purchasing overhaul remains postponed.
+
 Each phase must have an explicit status: completed and verified; implemented but not fully verified; partially implemented; not started; or blocked. File existence alone is not completion evidence.
 
 For each coherent task: inspect, implement, run relevant static/unit/API/browser/build checks, fix regressions, update the roadmap/known issues, scan staged source for credentials, commit, push and inspect CI. Preserve existing verified behavior.

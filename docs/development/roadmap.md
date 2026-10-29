@@ -12,6 +12,11 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
 
+## Task · Advanced morphology and rim-independent spoke audit — completed, 29 October 2026
+
+- Archived the new brief and compared actual v3 surfaces/fixtures with official Cinelli, Skream, Leader, 8bar, Tsunami and Dosnoventa references. [The audit](advanced-geometry.md) separates documented qualitative construction from unknown proprietary sections and identifies generation/finish-specific measurement conflicts.
+- Plan: source-associated rendering profiles shared by SVG/3D, distinct aero posts/collars, source-associated fork/plate surfaces and registered 20/24, 32/32, 36/36 demo variants within each retained rim design. Old IDs/specifications and saved builds remain intact. Draft manufacturer publication and graphic rights are not inferred from a surface profile. Implementation is pending in this audit milestone. No deployment.
+
 ## Task · V3 geometry acceptance and isolated fixture repair — verified locally, 29 October 2026
 
 - Completed the earlier structural/finish continuation with 100 passing tests (one local live-Redis skip), all 31 normal browser workflows, one development workflow and two PWA workflows; TypeScript/lint/builds pass. Captured 29 views without page errors and inspected structural details, full-bike angles, multiple source sizes and mobile controls. [Curated evidence and budgets](modeling-refinement.md).
