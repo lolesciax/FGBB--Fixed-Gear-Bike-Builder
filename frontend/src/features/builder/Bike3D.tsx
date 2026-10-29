@@ -13,6 +13,7 @@ import * as THREE from "three";
 import {
   variantById,
   selectedColorway,
+  renderMorphologyId,
   type Configuration,
   type Product,
   type Slot,
@@ -132,7 +133,8 @@ export default function Bike3D(props: Props) {
           variantById(props.catalog, displayed.cockpit)?.variant.specs.shape ||
           "unknown"
         }
-        data-geometry-revision="components-v3"
+        data-geometry-revision="components-v4"
+        data-frame-morphology={(()=>{const r=variantById(props.catalog,displayed.frameset);return r&&renderMorphologyId(r.product,r.variant)||'illustrative-round';})()}
         data-studio={studio}
         data-quality={quality}
         data-camera-moving={moving}

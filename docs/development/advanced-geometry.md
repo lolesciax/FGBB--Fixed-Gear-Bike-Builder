@@ -27,11 +27,19 @@ No screenshots accompanied the attachment. Existing local renderer captures and 
 | Stage | Status | Required evidence |
 | --- | --- | --- |
 | 1 Audit/source review | Complete | Existing code, captures, source descriptions and generation boundaries compared |
-| 2 Seating and frame morphology | Pending | Data-driven circle/oval/blade/variable sections, differentiated dedicated post/collar, supported shell/rail assembly, SVG and 3D agreement |
-| 3 Fork and rear ends | Pending | Source-associated blade/crown profiles and documented insert styles; no invented adjusters or mount standards |
+| 2 Seating and frame morphology | Verified locally | Shared variable-section profiles, separate aero post/collar, actual listed round-post diameter retained, opaque single saddle assembly |
+| 3 Fork and rear ends | Verified locally | Source-associated blade/crown profiles, continuous root connection, double-sided 8bar inserts, matched SVG outlines |
 | 4 Wheel configurations | Pending | Three registered demo counts within each retained rim design, actual drilling/lacing, finish/history/save/export persistence |
 | 5 Deep rims and appearance | Pending | Open center at all depths, correct face/normal behavior, separated rubber/material regions |
 | 6 Camera and visibility | Pending | Actual assembly vertices/instances and saddle visibility across sizes and presets; inspection views separate from full-bike presets |
 | 7 Final verification | Pending | Unit/API/geometry/browser/build, 16 requested views and multiple constructions |
 
 All section widths, blade contours, weld transitions and generic hardware not given as engineering dimensions remain authored illustrative approximations. Only reviewed qualitative construction differences are represented. Draft manufacturers stay unavailable for new builds until their independent publication checks pass.
+
+## Morphology milestone
+
+Four selectable source families now use registered illustrative construction profiles: Cinelli Vigorelli aluminum, Skream Magnum, Skream Ranger and 8bar KRZBERG V8. Variable tube sections and shared silhouettes preserve the original size anchors. Cinelli has a distinct blade seat tube, wheel relief, dedicated aero post and matching collar. Round posts retain the listed diameter through renderer normalization; this fixes a real 31.6-to-27.2 mm rendering error. Saddle exposure is an authored preview setting, not a rider-fit recommendation. The existing supported shell, rails and clamp remain one assembly.
+
+Carbon blade roots meet a continuous curved crown; both rendered sides reuse mirrored geometry. The 8bar rear plates show stainless inserts on both faces. Magnum/Ranger retain integrated track ends: unpainted reference areas alone do not establish removable construction. Leader and standard Tsunami profiles remain research definitions behind draft catalog records. Their publication dependencies, unknown mount standards and protected graphics remain unresolved.
+
+Verification: TypeScript and lint pass; 15 focused geometry/asset tests and 42 isolated API tests pass. The browser checks cover construction agreement, single opaque saddle/post/collar, seating identity through wheel changes, actual listed post diameter, source colorways, save/reopen/export and permitted-graphic isolation. Twenty private local captures cover the four families in 2D, 3D and close inspection. All 39 v4 kits retain anchors, contain no external images and remain below 300,000 bytes (largest 281,320). Previous eight finish/camera workflows also passed with the new geometry. Final spoke options and the complete acceptance matrix are still pending.

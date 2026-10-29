@@ -5,6 +5,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import {
   assemblyGeometry,
   componentGeometry,
+  renderFrameSpecs,
+  frameMorphology,
   frameAssetSchema,
 } from "@tracklab/domain";
 import { createFrame } from "../frontend/src/features/builder/modeling/frame";
@@ -43,7 +45,7 @@ for (const product of manufacturerCatalog.filter(
     const v = (p: { x: number; y: number }, z = 0) =>
       new THREE.Vector3((p.x - g.bb.x) / 1000, (g.bb.y - p.y) / 1000, z);
     const model = createFrame(
-      componentGeometry({ frameset: variant.specs }),
+      componentGeometry({ frameset: renderFrameSpecs(variant.specs,product.visual?.morphologyId) }),
       variant.color,
     );
     model.position.set(-g.bb.x / 1000, g.bb.y / 1000, 0);
@@ -68,6 +70,7 @@ for (const product of manufacturerCatalog.filter(
       license: "CC0-1.0",
       units: "metres",
       origin: "bottom-bracket",
+      ...(product.visual?.morphologyId?{morphologyId:product.visual.morphologyId,surfaceSource:frameMorphology(product.visual.morphologyId)?.source}:{}),
       assumptions:
         "Tube profiles, widths and fork shapes are approximations; no manufacturer graphics.",
     };
@@ -84,6 +87,7 @@ for (const product of manufacturerCatalog.filter(
           variantId: variant.id,
           source: product.source,
           geometry: variant.specs,
+          ...(product.visual?.morphologyId?{morphology:{id:product.visual.morphologyId,source:frameMorphology(product.visual.morphologyId)?.source,dimensions:'Authored illustrative sections; no proprietary section measurements claimed.'}}:{}),
           anchors: Object.fromEntries(
             group.children
               .filter((c) => c.name.startsWith("anchor"))
@@ -108,7 +112,8 @@ for (const product of manufacturerCatalog.filter(
         rotation: [0, 0, 0],
         origin: "bottom-bracket",
         units: "metres",
-        revision: "frame-kit-v3",
+        revision: "frame-kit-v4",
+        ...(product.visual?.morphologyId?{morphologyId:product.visual.morphologyId}:{}),
       }),
     );
     disposeModel(group);

@@ -30,6 +30,11 @@
     "wheelbase": 1062,
     "effectiveTopTube": 595
   },
+  "morphology": {
+    "id": "skream-ranger-v1",
+    "source": "https://skreambikes.com/products/ranger-forest-frameset",
+    "dimensions": "Authored illustrative sections; no proprietary section measurements claimed."
+  },
   "anchors": {
     "anchor_rear": [
       -0.42116030202287585,
@@ -70,7 +75,7 @@
     ],
     "max": [
       0.6553396975598917,
-      0.6048134681768903,
+      0.6043682126064847,
       0.06964822858572006
     ]
   },

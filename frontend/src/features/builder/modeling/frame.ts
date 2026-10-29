@@ -1,7 +1,13 @@
 import * as THREE from "three";
-import {chainstayPoints} from '@tracklab/domain';
+import { frameTubeGeometry, seatCollarGeometry } from "./sections";
+import { chainstayPoints } from "@tracklab/domain";
 import {
   forkBladePoints,
+  forkSection,
+  forkCrownDefinition,
+  forkCrownSample,
+  forkCrownSection,
+  rearDropoutOutline,
   dropoutOutline,
   type DropoutStyle,
   type BicycleGeometry,
@@ -67,39 +73,56 @@ export function createFork(g: BicycleGeometry) {
     metal,
   );
   const roots = [-1, 1].map((side) => forkBladePoints(g, side)[0]),
-    crownPath = new THREE.CubicBezierCurve3(
+    legacyCrown = new THREE.CubicBezierCurve3(
       vector(roots[0]),
       new THREE.Vector3(g.crown[0], g.crown[1] + 0.006, -0.012),
       new THREE.Vector3(g.crown[0], g.crown[1] + 0.006, 0.012),
       vector(roots[1]),
     );
+  const def = forkCrownDefinition(g);
+  class CrownCurve extends THREE.Curve<THREE.Vector3> {
+    constructor(){super();}
+    getPoint(t: number, target = new THREE.Vector3()) {
+      return target.fromArray(forkCrownSample(def, t));
+    }
+  }
+  const crownPath = def.modern ? new CrownCurve() : legacyCrown;
   mesh(
     group,
     "fork_crown",
-    sweptSection(crownPath, 24, 16, (t) => [
-      0.011,
-      0.008 - Math.sin(t * Math.PI) * 0.003,
-    ]),
+    sweptSection(
+      crownPath,
+      24,
+      16,
+      (t) =>
+        forkCrownSection(
+          def,
+          def.modern ? crownPath.getUtoTmapping(t, 0) : t,
+        ),
+      false,
+      def.modern ? { normal: new THREE.Vector3(1, 0, 0) } : {},
+    ),
     surface.clone(),
   );
   const dropoutGeometry = dropout(g.frontDropoutStyle, g.frontDropoutDiameter);
-  for (const side of [-1, 1]) {
-    const [start, control1, control2, end] = forkBladePoints(g, side).map(
-      vector,
-    );
+  let bladeGeometry: THREE.BufferGeometry | undefined;
+  for (const side of [1, -1]) {
+    const [start, control1, control2, end] = forkBladePoints(g, 1).map(vector);
     const path = new THREE.CubicBezierCurve3(start, control1, control2, end);
-    mesh(
+    const blade = mesh(
       group,
       `fork_blade_${side}`,
-      sweptSection(
+      (bladeGeometry ||= sweptSection(
         path,
         28,
-        12,
-        (t) => [0.009 * (1 - t) + 0.0045 * t, 0.016 * (1 - t) + 0.007 * t],
+        def.modern ? 16 : 12,
+        (t) => forkSection(g, t),
         true,
-      ),
+        { caps: "end" },
+      )),
       surface,
     );
+    if (side === -1) blade.scale.z = -1;
     mesh(group, `fork_dropout_${side}`, dropoutGeometry, metal, [
       g.front[0],
       g.front[1],
@@ -128,11 +151,19 @@ export function createFrame(g: BicycleGeometry, color: string) {
     metal = material("#6c7583", 0.7, 0.33),
     radius = g.frame.frameWidth / 2000;
   for (const [name, a, b, r] of [
-    ["top", g.seat, g.topJunction, radius],
+    ["top", g.seatJunction, g.topJunction, radius],
     ["down", g.bb, g.downJunction, radius + 0.004],
     ["seat", g.bb, g.seat, radius],
   ] as const)
-    cylinder(group, `paint_${name}`, a, b, r, paint.clone());
+    if (g.morphology) {
+      const part = mesh(
+        group,
+        `paint_${name}`,
+        frameTubeGeometry(g, name),
+        paint.clone(),
+      );
+      part.userData.sectionProfile = g.morphology.tubes[name].kind;
+    } else cylinder(group, `paint_${name}`, a, b, r, paint.clone());
   const headLength = vector(g.head).distanceTo(vector(g.lower)),
     upper = g.steering.headUpperRadius,
     lower = g.steering.headLowerRadius;
@@ -152,9 +183,29 @@ export function createFrame(g: BicycleGeometry, color: string) {
     ],
     paint.clone(),
   );
+  const inserted = g.morphology && g.morphology.rearPlate !== "integrated",
+    rearGeometry = inserted
+      ? extrude(
+          new THREE.Shape(
+            rearDropoutOutline(g).map((p) => new THREE.Vector2(...p)),
+          ),
+          0.005,
+          0.0005,
+        )
+      : dropout(g.rearDropoutStyle, g.rearDropoutDiameter);
+  const insertGeometry = inserted
+      ? extrude(
+          new THREE.Shape(
+            rearDropoutOutline(g, true).map((p) => new THREE.Vector2(...p)),
+          ),
+          0.0012,
+          0.0002,
+        )
+      : undefined,
+    steel = inserted ? material("#b1bac5", 0.85, 0.3) : undefined;
   for (const side of [-1, 1]) {
     const rear: Position = [g.rear[0], g.rear[1], side * g.rearHalf],
-      seat: Position = [g.seat[0], g.seat[1], side * 0.012],
+      seat: Position = [g.stayJunction[0], g.stayJunction[1], side * 0.012],
       upperEnd: Position = [rear[0] + 0.012, rear[1] + 0.01, rear[2]];
     cylinder(
       group,
@@ -167,32 +218,40 @@ export function createFrame(g: BicycleGeometry, color: string) {
     tube(
       group,
       `paint_chainstay_${side}`,
-      chainstayPoints(g,side),
+      chainstayPoints(g, side),
       0.008,
       paint.clone(),
       24,
       10,
     );
-    mesh(
-      group,
-      `rear_dropout_${side}`,
-      dropout(g.rearDropoutStyle, g.rearDropoutDiameter),
-      metal,
-      rear,
-    );
+    mesh(group, `rear_dropout_${side}`, rearGeometry, metal, rear);
+    if (g.morphology && g.morphology.rearPlate !== "integrated") {
+      for (const face of g.morphology.rearPlate === "double-sided-inserts"
+        ? [-1, 1]
+        : [1])
+        mesh(group, `rear_insert_${side}_${face}`, insertGeometry!, steel!, [
+          rear[0],
+          rear[1],
+          rear[2] + side * face * 0.0034,
+        ]);
+    }
   }
   axle(group, "paint_bottom_bracket", g.bb, 0.023, 0.068, paint);
-  const clamp = mesh(
-    group,
-    "seat_collar",
-    new THREE.TorusGeometry(radius + 0.001, 0.0025, 8, 24),
-    metal,
-    g.seat,
-  );
-  clamp.quaternion.setFromUnitVectors(
-    new THREE.Vector3(0, 0, 1),
-    vector(g.seatAxis),
-  );
+  if (g.morphology)
+    mesh(group, "seat_collar", seatCollarGeometry(g), metal, g.seat);
+  else {
+    const clamp = mesh(
+      group,
+      "seat_collar",
+      new THREE.TorusGeometry(radius + 0.001, 0.0025, 8, 24),
+      metal,
+      g.seat,
+    );
+    clamp.quaternion.setFromUnitVectors(
+      new THREE.Vector3(0, 0, 1),
+      vector(g.seatAxis),
+    );
+  }
   group.add(createFork(g));
   return group;
 }

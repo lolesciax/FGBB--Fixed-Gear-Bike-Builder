@@ -26,6 +26,11 @@
     "wheelbase": 963,
     "effectiveTopTube": 535
   },
+  "morphology": {
+    "id": "skream-magnum-v1",
+    "source": "https://skreambikes.com/products/magnum_dune",
+    "dimensions": "Authored illustrative sections; no proprietary section measurements claimed."
+  },
   "anchors": {
     "anchor_rear": [
       -0.38884444190447165,
@@ -66,7 +71,7 @@
     ],
     "max": [
       0.5886555576782958,
-      0.533767496073226,
+      0.5300247522976108,
       0.06985004246234894
     ]
   },

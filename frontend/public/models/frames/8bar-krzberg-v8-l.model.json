@@ -26,6 +26,11 @@
     "wheelbase": 1003,
     "effectiveTopTube": 570
   },
+  "morphology": {
+    "id": "8bar-krzberg-v8-v1",
+    "source": "https://8bar-bikes.com/8bar_krzberg_v8/",
+    "dimensions": "Authored illustrative sections; no proprietary section measurements claimed."
+  },
   "anchors": {
     "anchor_rear": [
       -0.39182266396930127,
@@ -60,7 +65,7 @@
   },
   "bounds": {
     "min": [
-      -0.40632266355206875,
+      -0.41432266486337094,
       -0.023000000044703487,
       -0.06984154880046844
     ],

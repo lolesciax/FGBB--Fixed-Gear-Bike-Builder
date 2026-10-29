@@ -215,11 +215,11 @@ export function stopsFor(
 export function finishAnchors(specs: Variant["specs"]) {
   const g = componentGeometry({ frameset: specs });
   return {
-    top: [g.seat, g.topJunction],
+    top: [g.seatJunction, g.topJunction],
     down: [g.bb, g.downJunction],
     seat: [g.bb, g.seat],
     head: [g.lower, g.head],
-    seatstay: [g.rear, g.seat],
+    seatstay: [g.rear, g.stayJunction],
     chainstay: [g.rear, g.bb],
     fork: [g.front, g.crown],
     crown: [g.crown, [g.crown[0], g.crown[1] + 0.02, 0]],
@@ -238,7 +238,7 @@ export const graphicUrl = (g: GraphicLayer) =>
   g.raster
     ? `/api/colorway-assets/${g.raster.reviewId}/${g.raster.sha256}`
     : undefined;
-export function renderFrameSpecs(specs: Variant["specs"]) {
+export function renderFrameSpecs(specs: Variant["specs"],morphologyId?:string) {
   const keys = [
     "geometry",
     "material",
@@ -258,9 +258,10 @@ export function renderFrameSpecs(specs: Variant["specs"]) {
     "rearSpacing",
     "frontAxleDiameter",
     "rearAxleDiameter",
+    "seatpost","seatpostInterface","wheelBsd","tireClearance","morphologyId",
     "steerer","headset","upperSteererDiameter","lowerSteererDiameter","frontDropoutType","rearDropoutType",
   ];
-  return Object.fromEntries(
+  return {...Object.fromEntries(
     keys.filter((k) => specs[k] !== undefined).map((k) => [k, specs[k]]),
-  );
+  ),...(morphologyId?{morphologyId}:{})};
 }

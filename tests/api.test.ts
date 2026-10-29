@@ -99,7 +99,9 @@ describe('authentication and authorization', () => {
     const query=new URLSearchParams({productId:'skream-magnum',filename:'frame.glb',license:'Original CC0 geometry',evidence:'https://example.com/permission',permission:'confirmed'});
     const upload=(bytes:Buffer)=>c.agent.post('/api/admin/asset-reviews?'+query).set('Origin',origin).set('X-CSRF-Token',c.csrf).set('Content-Type','model/gltf-binary').send(bytes);
     const data=await readFile(resolve('frontend/public/models/frames/skream-magnum-m.glb'));
-    await upload(data).expect(403);await User.updateOne({_id:c.userId},{$set:{role:'admin'}});
+    // Authorization runs before the body reader; a small binary probe avoids a
+    // transport reset while an early 403 races a large client's socket write.
+    await upload(data.subarray(0,20)).expect(403);await User.updateOne({_id:c.userId},{$set:{role:'admin'}});
     await upload(Buffer.from('not a model file')).expect(422);
     const external=Buffer.from(JSON.stringify({asset:{version:'2.0'},buffers:[{uri:'https://example.com/external.bin'}]}));
     const invalid=Buffer.alloc(20+external.length);invalid.write('glTF');invalid.writeUInt32LE(2,4);invalid.writeUInt32LE(invalid.length,8);invalid.writeUInt32LE(external.length,12);invalid.writeUInt32LE(0x4e4f534a,16);external.copy(invalid,20);
@@ -331,21 +333,22 @@ describe('API boundaries', () => {
   });
   it("upgrades only the original illustrative asset registration without overwriting edited technical data", async () => {
     const product = seedCatalog.find(
-        (p) => p.variants[0].asset3D?.revision === "frame-kit-v3",
+        (p) => p.variants[0].asset3D?.revision === "frame-kit-v4",
       )!,
       variant = product.variants[0];
     await ProductModel.updateOne(
       { _id: product.id },
-      { $set: { "data.variants.0.asset3D.revision": "frame-kit-v1" } },
+      { $set: { "data.variants.0.asset3D.revision": "frame-kit-v1" },$unset:{'data.variants.0.asset3D.morphologyId':1} },
     );
     await importCatalog();
     let stored = await ProductModel.findById(product.id).lean();
-    expect(stored!.data.variants[0].asset3D.revision).toBe("frame-kit-v3");
+    expect(stored!.data.variants[0].asset3D.revision).toBe("frame-kit-v4");
     expect(stored!.data.variants[0].specs).toEqual(variant.specs);
-    await ProductModel.updateOne({_id:product.id},{$set:{'data.variants.0.asset3D.revision':'frame-kit-v2','data.variants.0.asset3D.rotation':[.1,0,0]}});
+    await ProductModel.updateOne({_id:product.id},{$set:{'data.variants.0.asset3D.revision':'frame-kit-v2','data.variants.0.asset3D.rotation':[.1,0,0]},$unset:{'data.variants.0.asset3D.morphologyId':1}});
     await importCatalog();stored=await ProductModel.findById(product.id).lean();expect(stored!.data.variants[0].asset3D.revision).toBe('frame-kit-v2');
-    await ProductModel.updateOne({_id:product.id},{$set:{'data.variants.0.asset3D':{...variant.asset3D,revision:'frame-kit-v2'}}});
-    await importCatalog();stored=await ProductModel.findById(product.id).lean();expect(stored!.data.variants[0].asset3D.revision).toBe('frame-kit-v3');
+    const legacy={...variant.asset3D,revision:'frame-kit-v2'};delete legacy.morphologyId;
+    await ProductModel.updateOne({_id:product.id},{$set:{'data.variants.0.asset3D':legacy}});
+    await importCatalog();stored=await ProductModel.findById(product.id).lean();expect(stored!.data.variants[0].asset3D.revision).toBe('frame-kit-v4');
     await ProductModel.updateOne(
       { _id: product.id },
       {

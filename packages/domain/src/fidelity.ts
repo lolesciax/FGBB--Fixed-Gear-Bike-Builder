@@ -1,4 +1,5 @@
 import type { Product, Variant } from "./index";
+import {frameMorphology,renderMorphologyId} from './morphology';
 const anchors = [
   "seatTube",
   "headTube",
@@ -16,6 +17,7 @@ export function visualizationInfo(product: Product, variant: Variant) {
   const supported =
     product.illustrative ||
     product.visual?.assetId === "tracklab-parametric-v2";
+  const morphology=frameMorphology(renderMorphologyId(product,variant));
   return {
     specifications: product.provenance
       ? "Source-reviewed specifications"
@@ -28,6 +30,7 @@ export function visualizationInfo(product: Product, variant: Variant) {
     missing,
     mode2D: supported,
     mode3D: supported,
+    construction:morphology?.description,
     limitations:
       "Tube widths, fork profiles, components and finish graphics remain approximate. No officially licensed model is included.",
   };

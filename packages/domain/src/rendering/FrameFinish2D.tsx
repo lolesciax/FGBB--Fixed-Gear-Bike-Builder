@@ -1,6 +1,15 @@
 import React, { useId } from "react";
 import { componentGeometry, forkBladePoints } from "../components";
 import {
+  tubeSilhouette,
+  sectionDimensions,
+  tubeSection,
+  forkSection,
+  rearDropoutOutline,
+  renderMorphologyId,
+  type TubeRegion,
+} from "../morphology";
+import {
   finishAnchors,
   stopsFor,
   selectedColorway,
@@ -9,7 +18,8 @@ import {
 } from "../colorways";
 import type { Product, Variant } from "../index";
 import { dropoutOutline, type DropoutStyle } from "../steering";
-import {chainstayPoints,catmullRomSegments} from '../paths';
+import { chainstayPoints, catmullRomSegments } from "../paths";
+import { forkCrownSilhouette } from "../forks";
 export function FrameFinish2D({
   product,
   variant,
@@ -22,9 +32,21 @@ export function FrameFinish2D({
   rasterData?: Record<string, string>;
 }) {
   const uid = useId().replace(/:/g, ""),
-    g = componentGeometry({ frameset: variant.specs }),
+    g = componentGeometry({
+      frameset: {
+        ...variant.specs,
+        ...(renderMorphologyId(product, variant)
+          ? { morphologyId: renderMorphologyId(product, variant) }
+          : {}),
+      },
+    }),
     c = selectedColorway(product, variant),
-    anchors = finishAnchors(variant.specs);
+    anchors = finishAnchors({
+      ...variant.specs,
+      ...(renderMorphologyId(product, variant)
+        ? { morphologyId: renderMorphologyId(product, variant) }
+        : {}),
+    });
   const p = (v: number[]) => ({ x: v[0] * 1000, y: -v[1] * 1000 });
   const segment = (a: number[], b: number[]) =>
     `M${p(a).x} ${p(a).y}L${p(b).x} ${p(b).y}`;
@@ -69,41 +91,62 @@ export function FrameFinish2D({
             6 * u * t * (c[1] - b[1]) +
             3 * t * t * (d[1] - c[1]),
           length = Math.hypot(dx, dy),
-          r = (0.016 * u + 0.007 * t) * sign;
+          r = forkSection(g, t)[1] * sign;
         return [x - (dy / length) * r, y + (dx / length) * r, 0];
       }),
     );
   const forkShape = polygon([...bladeEdges[0], ...bladeEdges[1].reverse()]);
-  const crownShape = polygon(
-    [
-      [-0.011, -0.014],
-      [0.011, -0.014],
-      [0.011, 0.005],
-      [0.007, 0.01],
-      [-0.007, 0.01],
-      [-0.011, 0.005],
-    ].map(([x, y]) => [g.crown[0] + x, g.crown[1] + y, 0]),
-  );
+  const crownShape =
+    g.morphology?.fork.kind === "carbon-blade"
+      ? polygon(forkCrownSilhouette(g))
+      : polygon(
+          [
+            [-0.011, -0.014],
+            [0.011, -0.014],
+            [0.011, 0.005],
+            [0.007, 0.01],
+            [-0.007, 0.01],
+            [-0.011, 0.005],
+          ].map(([x, y]) => [g.crown[0] + x, g.crown[1] + y, 0]),
+        );
   const rearTop = [g.rear[0] + 0.012, g.rear[1] + 0.01, 0];
-  const stayPath=catmullRomSegments(chainstayPoints(g,1)).map(([a,b,c,d],i)=>`${i?'':`M${p(a).x} ${p(a).y}`}C${p(b).x} ${p(b).y} ${p(c).x} ${p(c).y} ${p(d).x} ${p(d).y}`).join(' ');
+  const stayPath = catmullRomSegments(chainstayPoints(g, 1))
+    .map(
+      ([a, b, c, d], i) =>
+        `${i ? "" : `M${p(a).x} ${p(a).y}`}C${p(b).x} ${p(b).y} ${p(c).x} ${p(c).y} ${p(d).x} ${p(d).y}`,
+    )
+    .join(" ");
   const paths: {
     zone: PaintZone;
     d: string;
     width: number;
     filled?: boolean;
   }[] = [
-    { zone: "seatstay", d: segment(rearTop, g.seat), width: 14 },
+    { zone: "seatstay", d: segment(rearTop, g.stayJunction), width: 14 },
     { zone: "chainstay", d: stayPath, width: 16 },
     {
       zone: "top",
-      d: segment(g.seat, g.topJunction),
-      width: g.frame.frameWidth,
+      d: g.morphology
+        ? polygon(tubeSilhouette(g, "top"))
+        : segment(g.seatJunction, g.topJunction),
+      width: g.morphology ? 0 : g.frame.frameWidth,
+      filled: !!g.morphology,
     },
-    { zone: "seat", d: segment(g.bb, g.seat), width: g.frame.frameWidth },
+    {
+      zone: "seat",
+      d: g.morphology
+        ? polygon(tubeSilhouette(g, "seat"))
+        : segment(g.bb, g.seat),
+      width: g.morphology ? 0 : g.frame.frameWidth,
+      filled: !!g.morphology,
+    },
     {
       zone: "down",
-      d: segment(g.bb, g.downJunction),
-      width: g.frame.frameWidth + 8,
+      d: g.morphology
+        ? polygon(tubeSilhouette(g, "down"))
+        : segment(g.bb, g.downJunction),
+      width: g.morphology ? 0 : g.frame.frameWidth + 8,
+      filled: !!g.morphology,
     },
     {
       zone: "head",
@@ -131,6 +174,36 @@ export function FrameFinish2D({
       data-finish-fidelity={c?.fidelity || "approximate"}
     >
       <defs>
+        {g.morphology &&
+          (["top", "down", "seat"] as const).map((zone) => {
+            const a = p(anchors[zone][0]),
+              b = p(anchors[zone][1]),
+              length = Math.hypot(b.x - a.x, b.y - a.y),
+              nx = -(b.y - a.y) / length,
+              ny = (b.x - a.x) / length,
+              w =
+                Math.max(...tubeSection(g, zone).stations.map((s) => s.depth)) /
+                2,
+              x = (a.x + b.x) / 2,
+              y = (a.y + b.y) / 2;
+            return (
+              <linearGradient
+                key={zone}
+                id={`${uid}-surface-${zone}`}
+                gradientUnits="userSpaceOnUse"
+                x1={x + nx * w}
+                y1={y + ny * w}
+                x2={x - nx * w}
+                y2={y - ny * w}
+              >
+                <stop stopColor="black" stopOpacity=".3" />
+                <stop offset=".3" stopColor="white" stopOpacity=".18" />
+                <stop offset=".5" stopColor="white" stopOpacity=".04" />
+                <stop offset=".75" stopColor="black" stopOpacity=".05" />
+                <stop offset="1" stopColor="black" stopOpacity=".38" />
+              </linearGradient>
+            );
+          })}
         {paths.map(({ zone, d, width, filled }) => (
           <React.Fragment key={zone}>
             <linearGradient
@@ -201,6 +274,19 @@ export function FrameFinish2D({
           />
         ))}
       </g>
+      {g.morphology && (
+        <g data-layer="surface-shading">
+          {paths
+            .filter((p) => ["top", "down", "seat"].includes(p.zone))
+            .map((path) => (
+              <path
+                key={path.zone}
+                d={path.d}
+                fill={`url(#${uid}-surface-${path.zone as TubeRegion})`}
+              />
+            ))}
+        </g>
+      )}
       <path
         d={segment(
           g.lower,
@@ -209,15 +295,40 @@ export function FrameFinish2D({
         stroke={metal}
         strokeWidth={g.steering.headLowerRadius * 2000 + 2}
       />
+      {g.morphology &&
+        (() => {
+          const d = sectionDimensions(tubeSection(g, "seat"), 1),
+            a = g.seat.map((v, i) => v - g.seatAxis[i] * 0.003),
+            b = g.seat.map((v, i) => v + g.seatAxis[i] * 0.009),
+            nx = g.seatAxis[1],
+            ny = -g.seatAxis[0],
+            r = (d.depth + 4) / 2000;
+          return (
+            <path
+              data-seat-clamp="profiled"
+              d={polygon([
+                [a[0] + nx * r, a[1] + ny * r, 0],
+                [b[0] + nx * r, b[1] + ny * r, 0],
+                [b[0] - nx * r, b[1] - ny * r, 0],
+                [a[0] - nx * r, a[1] - ny * r, 0],
+              ])}
+              fill="#626d7c"
+              stroke="#303946"
+              strokeWidth="1"
+            />
+          );
+        })()}
       {(
         [
           [g.front, g.frontDropoutStyle, g.frontDropoutDiameter],
           [g.rear, g.rearDropoutStyle, g.rearDropoutDiameter],
         ] as const
       ).map(([center, style, diameter], i) => {
-        const outline = dropoutOutline(style as DropoutStyle, diameter).map(
-          ([x, y]) => [center[0] + x, center[1] + y, 0],
-        );
+        const outline = (
+          i === 1
+            ? rearDropoutOutline(g)
+            : dropoutOutline(style as DropoutStyle, diameter)
+        ).map(([x, y]) => [center[0] + x, center[1] + y, 0]);
         const a = p(center),
           r = (diameter / 2 + 0.0006) * 1000,
           hole =
@@ -225,15 +336,38 @@ export function FrameFinish2D({
               ? ` M${a.x - r} ${a.y}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0Z`
               : "";
         return (
-          <path
-            key={i}
-            data-dropout-style={style}
-            d={polygon(outline) + hole}
-            fill={metal}
-            fillRule="evenodd"
-            stroke="#3a4350"
-            strokeWidth=".7"
-          />
+          <g key={i}>
+            <path
+              data-dropout-style={style}
+              data-dropout-plate={
+                i === 1
+                  ? g.morphology?.rearPlate || "illustrative"
+                  : "illustrative"
+              }
+              d={polygon(outline) + hole}
+              fill={metal}
+              fillRule="evenodd"
+              stroke="#3a4350"
+              strokeWidth=".7"
+            />
+            {i === 1 &&
+              g.morphology &&
+              g.morphology.rearPlate !== "integrated" && (
+                <path
+                  data-visible-insert
+                  d={polygon(
+                    rearDropoutOutline(g, true).map(([x, y]) => [
+                      center[0] + x,
+                      center[1] + y,
+                      0,
+                    ]),
+                  )}
+                  fill="#adb6c2"
+                  stroke="#566170"
+                  strokeWidth=".6"
+                />
+              )}
+          </g>
         );
       })}
       <g data-layer="highlights" opacity={0.13} strokeLinecap="round">

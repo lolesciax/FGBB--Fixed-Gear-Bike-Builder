@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { seatpostGeometry } from "./sections";
 import {
   saddleSurfacePoint,
   saddleHalfWidth,
@@ -71,23 +72,18 @@ export function createSaddle(g: BicycleGeometry) {
     padding = material("#252a32", 0, 0.9);
   metal.name = "finish_seatpost";
   const railMetal = material("#8a929d", 0.82, 0.28);
-  cylinder(
-    group,
-    "seatpost",
-    g.seat,
-    g.saddlePost,
-    g.saddle.postDiameter / 2,
-    metal,
-  );
-  const collarEnd = g.seat.map((v, i) => v + g.seatAxis[i] * 0.011) as Position;
-  cylinder(
-    group,
-    "seatpost_collar",
-    g.seat,
-    collarEnd,
-    g.saddle.postDiameter / 2 + 0.0035,
-    metal,
-  );
+  if (g.morphology?.post.kind === "dedicated-aero") {
+    const post = mesh(group, "seatpost", seatpostGeometry(g), metal);
+    post.userData.profile = "dedicated-aero";
+  } else
+    cylinder(
+      group,
+      "seatpost",
+      g.seat,
+      g.saddlePost,
+      g.saddle.postDiameter / 2,
+      metal,
+    );
   const head = mesh(
     group,
     "seatpost_head",
@@ -152,8 +148,12 @@ export function createSaddle(g: BicycleGeometry) {
       `cover_seam_${side}`,
       Array.from({ length: 41 }, (_, i) => {
         const u = (i + 1) / 42;
-        const point=saddleSurfacePoint(g.saddle,u,0,'cover');
-        return [point[0]+g.saddlePost[0],point[1]+g.saddlePost[1],side*(saddleHalfWidth(g.saddle,u)+.0002)] as Position;
+        const point = saddleSurfacePoint(g.saddle, u, 0, "cover");
+        return [
+          point[0] + g.saddlePost[0],
+          point[1] + g.saddlePost[1],
+          side * (saddleHalfWidth(g.saddle, u) + 0.0002),
+        ] as Position;
       }),
       0.0007,
       seam,

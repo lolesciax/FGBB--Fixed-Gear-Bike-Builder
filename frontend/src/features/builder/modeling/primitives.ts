@@ -87,6 +87,11 @@ export function sweptSection(
   radial: number,
   radius: (t: number) => [number, number],
   lateral = false,
+  options: {
+    caps?: boolean | "start" | "end";
+    normal?: THREE.Vector3;
+    exponent?: number;
+  } = {},
 ) {
   const frames = path.computeFrenetFrames(segments, false),
     positions: number[] = [],
@@ -96,16 +101,36 @@ export function sweptSection(
       p = path.getPointAt(t),
       [ra, rb] = radius(t),
       tangent = path.getTangentAt(t),
-      normal = lateral ? new THREE.Vector3(0, 0, 1) : frames.normals[i],
-      binormal = lateral
-        ? new THREE.Vector3().crossVectors(tangent, normal).normalize()
-        : frames.binormals[i];
+      normal = options.normal
+        ? options.normal
+            .clone()
+            .addScaledVector(tangent, -options.normal.dot(tangent))
+            .normalize()
+        : lateral
+          ? new THREE.Vector3(0, 0, 1)
+          : frames.normals[i],
+      binormal =
+        lateral || options.normal
+          ? new THREE.Vector3().crossVectors(tangent, normal).normalize()
+          : frames.binormals[i];
     for (let j = 0; j <= radial; j++) {
       const angle = (j / radial) * Math.PI * 2,
+        cosine = Math.cos(angle),
+        sine = Math.sin(angle),
         v = p
           .clone()
-          .addScaledVector(normal, Math.cos(angle) * ra)
-          .addScaledVector(binormal, Math.sin(angle) * rb);
+          .addScaledVector(
+            normal,
+            Math.sign(cosine) *
+              Math.pow(Math.abs(cosine), 2 / (options.exponent || 2)) *
+              ra,
+          )
+          .addScaledVector(
+            binormal,
+            Math.sign(sine) *
+              Math.pow(Math.abs(sine), 2 / (options.exponent || 2)) *
+              rb,
+          );
       positions.push(v.x, v.y, v.z);
       if (i < segments && j < radial) {
         const a = i * (radial + 1) + j,
@@ -114,6 +139,25 @@ export function sweptSection(
       }
     }
   }
+  if (options.caps)
+    for (const end of options.caps === "end"
+      ? [segments]
+      : options.caps === "start"
+        ? [0]
+        : [0, segments]) {
+      const base = positions.length / 3,
+        p = path.getPointAt(end / segments);
+      positions.push(p.x, p.y, p.z);
+      for (let j = 0; j < radial; j++) {
+        const i = (end * (radial + 1) + j) * 3;
+        positions.push(positions[i], positions[i + 1], positions[i + 2]);
+      }
+      for (let j = 0; j < radial; j++) {
+        const a = base + 1 + j,
+          b = base + 1 + ((j + 1) % radial);
+        indices.push(...(end === 0 ? [base, b, a] : [base, a, b]));
+      }
+    }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute(
     "position",
@@ -132,8 +176,18 @@ export function revolved(profile: [number, number][], segments = 64) {
   geometry.rotateX(Math.PI / 2);
   return geometry;
 }
-export function axialProfile(group:THREE.Group,name:string,origin:Position,axis:Position,profile:[number,number][],mat:THREE.Material,segments=40){
- const item=mesh(group,name,revolved(profile,segments),mat,origin);item.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),vector(axis));return item;
+export function axialProfile(
+  group: THREE.Group,
+  name: string,
+  origin: Position,
+  axis: Position,
+  profile: [number, number][],
+  mat: THREE.Material,
+  segments = 40,
+) {
+  const item = mesh(group, name, revolved(profile, segments), mat, origin);
+  item.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), vector(axis));
+  return item;
 }
 export function instancedSegments(
   group: THREE.Group,

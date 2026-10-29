@@ -21,12 +21,17 @@ export async function importCatalog() {
       { $setOnInsert: { data } },
       { upsert: true },
     );
+    if(data.visual?.morphologyId){
+      const {morphologyId,...originalVisual}=data.visual;
+      await ProductModel.updateOne({_id:data.id,'data.source':data.source,'data.status':'published','data.visual':originalVisual},{$set:{'data.visual.morphologyId':morphologyId}});
+    }
     // Rendering metadata may be attached without changing a saved variant's technical identity.
     for(const variant of data.variants) if(variant.asset3D) await ProductModel.updateOne({_id:data.id,'data.source':data.source,'data.status':'published','data.variants':{$elemMatch:{id:variant.id,specs:variant.specs,asset3D:{$exists:false}}}},{$set:{'data.variants.$.asset3D':variant.asset3D}});
     // Replace only exact original older rendering registrations, never technical
     // dimensions, custom transforms, archived records or another asset's provenance.
-    for (const variant of data.variants) if (variant.asset3D?.revision === 'frame-kit-v3') {
-      for(const revision of ['frame-kit-v1','frame-kit-v2'])await ProductModel.updateOne({_id:data.id,'data.source':data.source,'data.status':'published','data.variants':{$elemMatch:{id:variant.id,specs:variant.specs,color:variant.color,asset3D:{...variant.asset3D,revision}}}},{$set:{'data.variants.$.asset3D':variant.asset3D}});
+    for (const variant of data.variants) if (variant.asset3D?.revision === 'frame-kit-v4') {
+      const legacy={...variant.asset3D};delete legacy.morphologyId;
+      for(const revision of ['frame-kit-v1','frame-kit-v2','frame-kit-v3'])await ProductModel.updateOne({_id:data.id,'data.source':data.source,'data.status':'published','data.variants':{$elemMatch:{id:variant.id,specs:variant.specs,color:variant.color,asset3D:{...legacy,revision}}}},{$set:{'data.variants.$.asset3D':variant.asset3D}});
     }
     // Append reviewed finish records/variants after exact legacy asset upgrades.
     // Never rewrite existing variants, archived records, admin colorways or builds.

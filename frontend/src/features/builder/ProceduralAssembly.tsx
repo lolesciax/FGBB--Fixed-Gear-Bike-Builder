@@ -3,6 +3,7 @@ import * as THREE from "three";
 import {
   componentGeometry,
   renderFrameSpecs,
+  renderMorphologyId,
   slots,
   selectedColorway,
   variantById,
@@ -94,11 +95,12 @@ export function ProceduralAssembly({
     variantById(catalog, configuration[slot])?.variant;
   const frameRecord=variantById(catalog,configuration.frameset);
   const frame = get("frameset");
+  const morphologyId=frameRecord&&renderMorphologyId(frameRecord.product,frameRecord.variant);
   const geometryKey = JSON.stringify(
     Object.fromEntries(
       slots.map((slot) => [
         slot,
-        slot==='frameset'?renderFrameSpecs(get('frameset')?.specs||{}):get(slot as Slot)?.specs,
+        slot==='frameset'?renderFrameSpecs(get('frameset')?.specs||{},morphologyId):get(slot as Slot)?.specs,
       ]),
     ),
   );
@@ -108,7 +110,7 @@ export function ProceduralAssembly({
   );
   const key = (...slots: Slot[]) =>
     JSON.stringify(
-      Object.fromEntries(slots.map((slot) => [slot, slot==='frameset'?renderFrameSpecs(get(slot)?.specs||{}):get(slot)?.specs])),
+      Object.fromEntries(slots.map((slot) => [slot, slot==='frameset'?renderFrameSpecs(get(slot)?.specs||{},morphologyId):get(slot)?.specs])),
     );
   const models = {
     frame: useOwnedModel(
@@ -116,7 +118,7 @@ export function ProceduralAssembly({
       fallbackFrame,
     ),
     wheels: useOwnedModel(key("frameset", "wheels"), wheels),
-    tires: useOwnedModel(JSON.stringify({frameset:renderFrameSpecs(get('frameset')?.specs||{}),wheels:{bsd:get('wheels')?.specs.bsd,rimWidth:get('wheels')?.specs.rimWidth},tires:get('tires')?.specs}), tires),
+    tires: useOwnedModel(JSON.stringify({frameset:renderFrameSpecs(get('frameset')?.specs||{},morphologyId),wheels:{bsd:get('wheels')?.specs.bsd,rimWidth:get('wheels')?.specs.rimWidth},tires:get('tires')?.specs}), tires),
     cockpit: useOwnedModel(key("frameset", "cockpit"), cockpit),
     saddle: useOwnedModel(key("frameset", "saddle"), createSaddle),
     drivetrain: useOwnedModel(key("frameset", "drivetrain"), createDrivetrain),
@@ -154,7 +156,7 @@ export function ProceduralAssembly({
         ref={group}
         name="bicycle_assembly"
         userData={{
-          geometryRevision: "components-v3",
+          geometryRevision: "components-v4",
           cockpit: g.cockpit.type,
         }}
       >

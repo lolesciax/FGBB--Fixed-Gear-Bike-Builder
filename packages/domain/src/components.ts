@@ -2,6 +2,7 @@ import { assemblyGeometry, type Point } from "./visual";
 import {steeringStack,type DropoutStyle} from './steering';
 import {wheelBuild} from './wheels';
 import {railInterface} from './seating';
+import {frameMorphology} from './morphology';
 
 export type ComponentSpecs = Record<string, string | number | boolean>;
 export type Position = [number, number, number];
@@ -317,7 +318,8 @@ export function componentGeometry(
     seatAxis = scale(add(seat, scale(bb, -1)), 1 / distance(seat, bb)),
     cockpit = cockpitDimensions(c),
     wheel = wheelDimensions(parts.wheels, parts.tires),
-    steering=steeringStack(f,c,frame.frameWidth),
+    morphology=frameMorphology(f.morphologyId),
+    steering=steeringStack({...f,...(morphology?.fork.kind==='carbon-blade'?{upperSteererDiameter:28.6,lowerSteererDiameter:38.1}:{})},c,frame.frameWidth),
     stemBase = add(head, scale(axis, steering.stemCenter)),
     barClamp = add(stemBase, [
       Math.cos(cockpit.stemAngle) * cockpit.stemLength,
@@ -326,7 +328,7 @@ export function componentGeometry(
     ]),
     saddlePost = add(
       seat,
-      scale(seatAxis, numberSpec(s, "extension", 145) / 1000),
+      scale(seatAxis, numberSpec(s, "extension",morphology?.post.exposure||clamp(numberSpec(f,'seatTube',555)*.2,90,135)) / 1000),
     ),
     saddleClamp = add(saddlePost, [0, 0.012, 0]);
   let crownStack = 0.012;
@@ -369,6 +371,11 @@ export function componentGeometry(
     wheel,
     cockpit,
     steering,
+    morphology,
+    nominalClearance:numberSpec(f,'tireClearance',28)/1000,
+    nominalBsd:numberSpec(f,'wheelBsd',622)/1000,
+    seatJunction:add(seat,scale(seatAxis,-(morphology?.seatJunction||0)/1000)),
+    stayJunction:add(seat,scale(seatAxis,-(morphology?.stayJunction||0)/1000)),
     stemBase,
     barClamp,
     steererTop: add(head, scale(axis, steering.steererEnd)),
@@ -414,13 +421,13 @@ export function componentGeometry(
 export type BicycleGeometry = ReturnType<typeof componentGeometry>;
 
 export function forkBladePoints(g: BicycleGeometry, side: number): Position[] {
-  const start: Position = [g.crown[0], g.crown[1] - 0.007, side * 0.035];
+  const start: Position = [g.crown[0], g.crown[1] - (g.morphology?.fork?.kind==='carbon-blade'?.025:.007), side * (g.morphology?.fork.rootHalf||35)/1000];
   const end: Position = [g.front[0], g.front[1] + 0.014, side * g.forkHalf];
   const blend = (t: number): Position =>
     start.map((v, i) => v + (end[i] - v) * t) as Position;
   const a = blend(0.32),
     b = blend(0.76);
-  if (!g.forkProfile.startsWith("straight")) {
+  if (!g.forkProfile.startsWith("straight")&&g.morphology?.fork.kind!=='alloy-straight') {
     a[0] -= 0.012;
     b[0] -= 0.024;
   }

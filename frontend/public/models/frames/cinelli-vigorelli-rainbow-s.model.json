@@ -22,6 +22,11 @@
     "brakeMount": "caliper",
     "geometry": "track"
   },
+  "morphology": {
+    "id": "cinelli-vigorelli-alu-v1",
+    "source": "https://usa.cinelli-milano.com/products/vigorelli-track-alu-frame",
+    "dimensions": "Authored illustrative sections; no proprietary section measurements claimed."
+  },
   "anchors": {
     "anchor_rear": [
       -0.37366964019036925,
@@ -62,7 +67,7 @@
     ],
     "max": [
       0.5848303593923982,
-      0.5456358993734206,
+      0.5434868919718816,
       0.07002007216215134
     ]
   },

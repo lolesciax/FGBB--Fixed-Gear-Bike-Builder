@@ -7,6 +7,8 @@ import {
   crankArmOutline,
   saddleSilhouette,saddleRailPoints,saddleSurfacePoint,
   catmullRomSegments,
+  postSilhouette,
+  renderMorphologyId,
   variantById,
   slots,
   finishZones,
@@ -110,8 +112,9 @@ export function Bike2D({
 }: Props) {
   const uid = useId().replace(/:/g, ""),
     get = (slot: Slot) => variantById(catalog, configuration[slot])?.variant;
+  const renderingFrame=variantById(catalog,configuration.frameset),morphologyId=renderingFrame&&renderMorphologyId(renderingFrame.product,renderingFrame.variant);
   const m = componentGeometry(
-      Object.fromEntries(slots.map((slot) => [slot, get(slot as Slot)?.specs])),
+      Object.fromEntries(slots.map((slot) => [slot,slot==='frameset'?{...get(slot)?.specs,...(morphologyId?{morphologyId}:{})}:get(slot)?.specs])),
     ),
     g = m.frame,
     { rear, front, bb, seat } = g,
@@ -135,7 +138,7 @@ export function Bike2D({
   const barPoints=barWorld.map(project);
   const bounds = {
     x: -radius - 8,
-    y: Math.min(g.bounds.y, saddle.y - 65, ...barPoints.map((p) => p.y - 18)),
+    y: Math.min(saddle.y-72,-radius-10,-m.head[1]*1000-60,-m.seat[1]*1000-35,...barPoints.map((p) => p.y - 18)),
     width: front.x + radius * 2 + 16,
     height: 0,
   };
@@ -267,7 +270,8 @@ export function Bike2D({
       data-frame-variant={configuration.frameset}
       data-cockpit-variant={configuration.cockpit}
       data-cockpit-shape={m.cockpit.type}
-      data-geometry-revision="components-v3"
+      data-geometry-revision="components-v4"
+      data-frame-morphology={m.morphology?.id||'illustrative-round'}
       data-steering-profile={stack.profile}
       data-stem-style={stack.quill ? "quill" : "ahead"}
     >
@@ -434,7 +438,7 @@ export function Bike2D({
           />
         </g>
         <g {...interactive("saddle")} data-seating-profile="shared-contour">
-          <g data-finish-zone="seatpost">{tube(seat,saddle,m.saddle.postDiameter*1000,finish('seatpost'))}</g>
+          <g data-finish-zone="seatpost" data-post-profile={m.morphology?.post.kind||'round'}>{m.morphology?.post.kind==='dedicated-aero'?<path d={line(postSilhouette(m).map(project),true)} fill={finish('seatpost')} stroke="#394452" strokeWidth="1"/>:tube(seat,saddle,m.saddle.postDiameter*1000,finish('seatpost'))}</g>
           <path d={line([{x:saddle.x-22,y:saddle.y+4},{x:saddle.x+22,y:saddle.y+4},{x:saddle.x+18,y:saddle.y-13},{x:saddle.x-18,y:saddle.y-13}],true)} fill={finish('seatpost')} stroke="#424b59" strokeWidth=".8"/>
           <path data-saddle-rails d={spline(saddleRailPoints(m.saddle,1).map(p=>add(m.saddlePost,p)))} fill="none" stroke="#87919e" strokeWidth={m.saddle.railHeight*1000}/>
           <g data-saddle-clamp fill={finish('seatpost')} stroke="#424b59" strokeWidth=".7">

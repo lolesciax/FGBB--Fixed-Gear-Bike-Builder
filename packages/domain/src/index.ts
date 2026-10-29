@@ -4,14 +4,17 @@ import { colorwaySchema, selectedColorway } from './colorways';
 import {appearanceSchema,componentFinishSchema,appearanceIssues} from './finishes';
 import {wheelBuild} from './wheels';
 import {saddleRailFit} from './seating';
+import {morphologyIdSchema,frameMorphology,morphologyBindings} from './morphology';
+export * from './morphology';
 export * from './seating';
 export * from './paths';
+export * from './forks';
 export * from './wheels';
 export * from './finishes';
 export {steeringStack,dropoutOutline,type DropoutStyle} from './steering';
 export * from './colorways';
 export { brandSchema, modelRecordSchema, type CatalogBrand, type ModelRecord } from './catalog-registry';
-export const frameAssetSchema=z.object({variantId:z.string(),url:z.string().regex(/^\/models\/frames\/[a-z0-9-]+\.glb$/),fidelity:z.literal('illustrative'),license:z.literal('CC0-1.0'),source:z.string(),scale:z.literal(1),rotation:z.tuple([z.number(),z.number(),z.number()]),origin:z.literal('bottom-bracket'),units:z.literal('metres'),revision:z.enum(['frame-kit-v1','frame-kit-v2','frame-kit-v3'])}).strict();
+export const frameAssetSchema=z.object({variantId:z.string(),url:z.string().regex(/^\/models\/frames\/[a-z0-9-]+\.glb$/),fidelity:z.literal('illustrative'),license:z.literal('CC0-1.0'),source:z.string(),scale:z.literal(1),rotation:z.tuple([z.number(),z.number(),z.number()]),origin:z.literal('bottom-bracket'),units:z.literal('metres'),revision:z.enum(['frame-kit-v1','frame-kit-v2','frame-kit-v3','frame-kit-v4']),morphologyId:morphologyIdSchema.optional()}).strict();
 export const registeredFrameAssets=z.array(frameAssetSchema).parse(frameAssets);
 export { quotaPolicySchema, defaultQuotaPolicy, type QuotaPolicy } from './policy';
 export { visualizationInfo } from './fidelity';
@@ -36,7 +39,7 @@ export const productSchema = z.object({
   catalogKind: z.enum(['demo', 'manufacturer']).optional(),
   brandId: z.string().regex(/^[a-z0-9-]{1,100}$/).optional(),
   revision: z.string().max(100).optional(), year: z.number().int().min(1900).max(2100).optional(),
-  visual: z.object({ assetId: z.literal('tracklab-parametric-v2'), fidelity: z.literal('measurement-schematic'), source: z.string().max(200), license: z.literal('CC0-1.0'), reviewedAt: z.iso.datetime() }).strict().optional(),
+  visual: z.object({ assetId: z.literal('tracklab-parametric-v2'), fidelity: z.literal('measurement-schematic'), source: z.string().max(200), license: z.literal('CC0-1.0'), reviewedAt: z.iso.datetime(),morphologyId:morphologyIdSchema.optional() }).strict().optional(),
   provenance: z.object({ reviewedAt: z.iso.datetime(), fields: z.array(z.string().max(100)).max(60), limitations: z.string().max(1000) }).strict().optional(),
   colorways:z.array(colorwaySchema).max(40).optional(),
   variants: z.array(z.object({
@@ -48,7 +51,7 @@ export const productSchema = z.object({
     componentFinishes:z.array(componentFinishSchema).max(6).refine(v=>new Set(v.map(r=>r.zone)).size===v.length,'Component finish regions must be unique.').optional(),
     asset3D:frameAssetSchema.optional(),
   }).strict()).min(1).max(30),
-}).strict();
+}).strict().refine(p=>!p.visual?.morphologyId||morphologyBindings[p.id]===p.visual.morphologyId,'Morphology must match the reviewed model family.').refine(p=>p.variants.every(v=>!v.asset3D?.morphologyId||v.asset3D.morphologyId===p.visual?.morphologyId),'Frame asset and surface profile must agree.');
 export type Product = z.infer<typeof productSchema>;
 export type Variant = Product['variants'][number];
 export type State = 'compatible' | 'incompatible' | 'unverified';
@@ -99,7 +102,11 @@ export function compatibility(config: Configuration, catalog: Product[]) {
   // Seatpost tube diameter belongs to the frame; saddle rails meet a separate clamp.
   const railFit=saddleRailFit(selected.saddle?.variant.specs);
   rules.push({id:'saddle-rails',state:railFit.state,message:`Saddle rails and post clamp: ${railFit.state==='unverified'?'rail type, dimensions and clamp support need verification':railFit.state==='incompatible'?'listed rail/clamp interfaces conflict':'listed rail/clamp interfaces agree'}.`,slots:['saddle'],missing:railFit.missing,sources:[selected.saddle?.product.source].filter((v):v is string=>!!v)});
-  check('frame-seatpost','frameset','seatpost','saddle','postDiameter','Frame and selected seatpost diameter');
+  const post=frameMorphology(selected.frameset?.product.visual?.morphologyId)?.post;
+  if(post?.kind==='dedicated-aero'){
+    const seating=selected.saddle?.variant.specs,listed=seating?.postInterface,state:State=listed===post.interface?'compatible':listed||seating?.postDiameter!==undefined?'incompatible':'unverified';
+    rules.push({id:'frame-seatpost',state,message:`Frame and seatpost: ${state==='unverified'?'dedicated aero interface needs verification':state==='incompatible'?'selected post does not match the dedicated aero interface':'listed dedicated interfaces agree'}.`,slots:['frameset','saddle'],missing:state==='unverified'?['saddle.postInterface']:[],sources:[selected.frameset?.product.source].filter((v):v is string=>!!v)});
+  }else check('frame-seatpost','frameset','seatpost','saddle','postDiameter','Frame and selected seatpost diameter');
   check('clamp', 'frameset', 'stemClamp', 'cockpit', 'stemClamp', 'Stem and handlebar clamp');
   check('bottom-bracket', 'frameset', 'bottomBracket', 'drivetrain', 'bottomBracket', 'Bottom bracket interface');
   check('chain-width', 'drivetrain', 'chainWidth', 'wheels', 'cogWidth', 'Chain and cog width');

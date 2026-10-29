@@ -4,6 +4,7 @@ import * as THREE from "three";
 import {
   selectedColorway,
   renderFrameSpecs,
+  renderMorphologyId,
   type Product,
   type Variant,
 } from "@tracklab/domain";
@@ -16,7 +17,7 @@ export function useFrameFinish(
 ) {
   const { invalidate } = useThree(),
     first = useRef(true);
-  const geometryKey = JSON.stringify(renderFrameSpecs(variant?.specs || {}));
+  const geometryKey = JSON.stringify(renderFrameSpecs(variant?.specs || {},product&&variant?renderMorphologyId(product,variant):undefined));
   const materials = useMemo(
     () => prepareFinish(scene, JSON.parse(geometryKey)),
     [scene, geometryKey],

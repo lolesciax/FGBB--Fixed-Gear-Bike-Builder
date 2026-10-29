@@ -361,6 +361,7 @@ export function PartsInspector({
                       ? " Unverified anchors: " + fidelity.missing.join(", ")
                       : ""}
                   </p>
+                  {fidelity.construction&&<p className="fidelity-summary">{fidelity.construction}</p>}
                   <dl>
                     {Object.entries(shown.specs)
                       .filter(

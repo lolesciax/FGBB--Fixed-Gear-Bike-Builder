@@ -1,4 +1,4 @@
-import { registeredFrameAssets, type Product } from "@tracklab/domain";
+import { registeredFrameAssets,morphologyBindings, type Product } from "@tracklab/domain";
 import { expandedFramesets, expandedDrafts } from './modules/catalog/expanded-framesets';
 import { withSeedColorways } from './modules/catalog/colorway-seeds';
 
@@ -215,7 +215,7 @@ const existingManufacturerCatalog: Product[] = [
     ],
   },
 ];
-export const manufacturerCatalog:Product[]=[...existingManufacturerCatalog,...expandedFramesets,...expandedDrafts].map(withSeedColorways);
+export const manufacturerCatalog:Product[]=[...existingManufacturerCatalog,...expandedFramesets,...expandedDrafts].map(withSeedColorways).map(product=>product.visual&&morphologyBindings[product.id]?{...product,visual:{...product.visual,morphologyId:morphologyBindings[product.id]}}:product);
 export const seedBrands = [
   {
     id: "cinelli",
