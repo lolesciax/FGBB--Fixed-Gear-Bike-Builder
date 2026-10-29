@@ -15,8 +15,8 @@ Actual code gaps: `wheelDimensions` exposes one spoke count for both wheels; `sp
 | 3 Wheelsets | Complete | Additional authored 20/24 demo, actual spokes/drilled flanges/rim bridges, independent lacing, SVG/export/save/history verification |
 | 4 Drivetrain | Complete | Lenticular tapered arms, connected root bosses/cog seat, bored lockring and pedal hardware; unchanged gearing and chain path |
 | 5 Seating | Complete | Shared shell/cover contour, supported rail anchors, split round/oval clamp grooves; distinct fit checks and unknown => unverified |
-| 6 Cockpit | Pending | Four distinct profiles, steering/clamp continuity, tape/grips kept separate |
-| 7 Materials | In progress | Separate rim/spoke/hub materials and coordinated finish verified; mixed factory registration still pending |
+| 6 Cockpit | Complete | Four bar profiles/materials verified; faceplate and fasteners now share the stem angle |
+| 7 Materials | Complete | Independent rim/spoke/hub materials, coordinated presets and source-backed mixed factory regions verified |
 | 8 SVG synchronization | Pending | Geometry/count/finish agreement, coherent silhouettes/layering and all visible interfaces |
 | 9 Camera | Pending | Actual rendered projection bounds at all presets/aspects, reset and sensible zoom limits |
 | 10 UX | In progress | Wheel count/lacing/rim/drilling labels added; final responsive review pending |
@@ -56,3 +56,11 @@ Both viewers now share the full saddle section contour, cover/shell silhouette, 
 `postDiameter`, when explicitly registered, is checked against the frame separately. Legacy bundled saddle `seatpost` fields remain unchanged and are not used as rail-fit restrictions. Without a selected post diameter, the renderer illustrates the frame's post size and the actual post fit stays unverified. Rail/clamp checks recognize round, oval and named proprietary interfaces; incomplete/unknown interfaces are unverified, and documented type/dimension/system conflicts are incompatible. Generic visible hardware remains illustrative rather than a certification of a proprietary clamp.
 
 Verification: 65 relevant domain/mesh/API checks passed after correcting a floating-point test assertion; a further isolated API check brings the API suite to 42 passing tests and verifies rejection without quota charges. Thirteen seating/assembly tests pass after the cover-tip correction. Seven browser workflows pass across all four bars, finish materials, mobile controls, source frames, save/reload/garage/export and missing-asset recovery. Updated SVG and saddle close-ups were inspected. Wheel milestone [CI 40820446499](https://github.com/lolesciax/FGBB--Fixed-Gear-Bike-Builder/actions/runs/40820446499) passed. Drivetrain CI found an existing cockpit-test timing race (frame response counted in the next four-bar test); the test now waits for the actual selected frame before recording usage. Its rerun is tracked with this follow-up.
+
+## Stages 6–7 — cockpit contact and finish regions
+
+Preserved all four continuous, symmetric bar profiles, tapered center clamps, wrapped/gripped ends and caps. Faceplate position and bolt axes now use the stem angle consistently. Independent stem and bar materials leave tape/grips rubber. The earlier shared stack controls the steerer clamp rather than extending a fork mesh to fill gaps.
+
+Optional source-backed `brand.regions` specifies rim, spoke and hub paints within an exact wheelset variant; the existing wheelset selection and six appearance zones remain canonical. SVG gradients and owned 3D materials read the same regions. Polished/Pure Black still override all regions together; original/factory appearance preserves a registered mix. Other component zones reject wheel-specific regions. No manufacturer component graphics or unsupported real products were added. Current demos retain their original appearance plus controlled presets; real component manufacturers remain a catalog/rights dependency.
+
+Verification: TypeScript/lint and 13 focused finish/assembly tests pass. Five isolated browser workflows pass, including an administrator-registered temporary mixed-finish fixture exercised through the actual API, both viewers, coordinated overrides and restoration without geometry changes. The fixture is restored in `finally` and never enters Atlas. All four cockpit profiles, mobile finish editing and save/export behavior also pass. Materials remain per-model owned and disposed, with no texture/decal downloads for these color-only regions.

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
+import type {Product} from '@tracklab/domain';
 async function scene(page: Page) {
   return page.evaluate(async () => {
     const url = performance
@@ -34,6 +35,26 @@ async function scene(page: Page) {
     };
   });
 }
+
+test('registered mixed wheel finishes retain separate factory regions across viewers',async({page})=>{
+ const credentials=JSON.parse(await readFile('.local/e2e-admin.json','utf8'));
+ await page.goto('/');await page.getByRole('button',{name:'Sign in',exact:true}).click();const dialog=page.getByRole('dialog');
+ await dialog.getByLabel('Email address').fill(credentials.email);await dialog.getByLabel('Password',{exact:true}).fill(credentials.password);await dialog.getByRole('button',{name:'Sign in',exact:true}).click();await expect(dialog).not.toBeVisible();
+ const session=await(await page.request.get('/api/session')).json(),headers={Origin:'http://127.0.0.1:5190','X-CSRF-Token':session.csrf};
+ const catalog=await(await page.request.get('/api/admin/catalog')).json(),product:Product=catalog.items.find((r:{data:Product})=>r.data.id==='studio-classic').data,original=structuredClone(product);
+ const paint={color:'#80664d',finish:'satin' as const,roughness:.4,metalness:.5,clearcoat:.1,clearcoatRoughness:.4};
+ product.variants[0].componentFinishes=[{zone:'wheelset',options:['brand','polished','pure-black'],brand:{...paint,name:'Isolated finish fixture',source:'https://example.com/finish-fixture',regions:{rim:{...paint,color:'#202731'},spokes:{...paint,color:'#b9c2cd',metalness:.85}}}}];
+ expect((await page.request.put('/api/admin/catalog/'+product.id,{headers,data:product})).ok()).toBe(true);
+ try{
+  await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/builder');await page.getByRole('button',{name:'Wheels',exact:true}).click();
+  await expect(page.locator('linearGradient[id$="-wheel-rim"] stop').nth(3)).toHaveAttribute('stop-color','#202731');
+  await expect(page.locator('linearGradient[id$="-wheel-spokes"] stop').nth(3)).toHaveAttribute('stop-color','#b9c2cd');
+  await page.getByRole('button',{name:'3D',exact:true}).click();await expect(page.locator('.bike3d-wrapper')).toHaveAttribute('data-loading','false');
+  const mixed=await scene(page);expect(mixed.colors).toMatchObject({rim_profile:'202731',laced_spokes:'b9c2cd',hub_shell:'80664d'});
+  await page.getByLabel('Wheelset finish',{exact:true}).selectOption('pure-black');await expect.poll(async()=>(await scene(page)).colors).toMatchObject({rim_profile:'202731',laced_spokes:'202731',hub_shell:'202731'});
+  await page.getByLabel('Wheelset finish',{exact:true}).selectOption('brand');await expect.poll(async()=>(await scene(page)).colors).toMatchObject(mixed.colors);expect((await scene(page)).geometries).toEqual(mixed.geometries);
+ }finally{expect((await page.request.put('/api/admin/catalog/'+product.id,{headers,data:original})).ok()).toBe(true);}
+});
 test("all controlled component finishes synchronize materials, preserve geometry and support history", async ({
   page,
 }) => {

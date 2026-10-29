@@ -180,16 +180,17 @@ export function createCockpit(
     "stem_faceplate",
     new THREE.BoxGeometry(0.007, 0.034, 0.036),
     metal,
-    [g.barClamp[0] + 0.019, g.barClamp[1], 0],
+    [g.barClamp[0]+Math.cos(d.stemAngle)*.019,g.barClamp[1]+Math.sin(d.stemAngle)*.019,0],
   );
   plate.rotation.z = d.stemAngle;
+  const clampPoint=(x:number,y:number,z:number):Position=>[g.barClamp[0]+x*Math.cos(d.stemAngle)-y*Math.sin(d.stemAngle),g.barClamp[1]+x*Math.sin(d.stemAngle)+y*Math.cos(d.stemAngle),z];
   for (const y of [-0.011, 0.011])
     for (const z of [-0.012, 0.012])
       cylinder(
         group,
         `stem_bolt_${y}_${z}`,
-        [g.barClamp[0] + 0.02, g.barClamp[1] + y, z],
-        [g.barClamp[0] + 0.026, g.barClamp[1] + y, z],
+        clampPoint(.02,y,z),
+        clampPoint(.026,y,z),
         0.0028,
         hardware,
         0.0028,

@@ -12,6 +12,8 @@ export const finishZones = [
 export type FinishZone = (typeof finishZones)[number];
 export const finishIdSchema = z.enum(["polished", "pure-black", "brand"]);
 export type FinishId = z.infer<typeof finishIdSchema>;
+export const wheelFinishRegions=['rim','spokes','hub'] as const;
+export type WheelFinishRegion=(typeof wheelFinishRegions)[number];
 export const appearanceSchema = z
   .object({
     wheelset: finishIdSchema.optional(),
@@ -30,6 +32,7 @@ export const componentFinishSchema = z
       .extend({
         name: z.string().trim().min(1).max(100),
         source: z.url().refine((v) => v.startsWith("https://")),
+        regions:z.object({rim:paintSchema.optional(),spokes:paintSchema.optional(),hub:paintSchema.optional()}).strict().optional(),
       })
       .optional(),
   })
@@ -39,7 +42,7 @@ export const componentFinishSchema = z
       new Set(v.options).size === v.options.length &&
       (!v.options.includes("brand") || !!v.brand),
     "Brand Color needs an exact source-backed finish; options must be unique.",
-  );
+  ).refine(v=>!v.brand?.regions||v.zone==='wheelset','Mixed rim/spoke/hub regions belong only to a wheelset finish.');
 export const finishSlots: Record<FinishZone, Slot> = {
   wheelset: "wheels",
   crankArms: "drivetrain",
@@ -97,15 +100,15 @@ export function componentPaint(
   variant: Variant,
   zone: FinishZone,
   id?: FinishId,
+  region?:WheelFinishRegion,
 ): Paint | undefined {
   const registration = variant.componentFinishes?.find((r) => r.zone === zone);
   const selected =
     id || (registration?.options.includes("brand") ? "brand" : undefined);
   if (!selected || !finishOptions(product, variant, zone).includes(selected))
     return;
-  return selected === "brand"
-    ? variant.componentFinishes?.find((r) => r.zone === zone)?.brand
-    : componentPresets[selected];
+  if(selected==='brand')return (zone==='wheelset'&&region?registration?.brand?.regions?.[region]:undefined)||registration?.brand;
+  return componentPresets[selected];
 }
 export function appearanceIssues(
   configuration: Configuration,

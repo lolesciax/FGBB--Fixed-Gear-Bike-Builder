@@ -65,6 +65,13 @@ describe("controlled component appearances", () => {
     expect(
       componentPaint(registered, registered.variants[0], "wheelset")?.color,
     ).toBe("#645e89");
+    registered.variants[0].componentFinishes[0].brand!.regions={rim:componentPresets['pure-black'],spokes:componentPresets.polished};
+    expect(productSchema.safeParse(registered).success).toBe(true);
+    expect(componentPaint(registered,registered.variants[0],'wheelset','brand','rim')?.color).toBe('#202731');
+    expect(componentPaint(registered,registered.variants[0],'wheelset','brand','spokes')?.color).toBe('#b9c2cd');
+    expect(componentPaint(registered,registered.variants[0],'wheelset','brand','hub')?.color).toBe('#645e89');
+    registered.variants[0].componentFinishes[0].options.push('pure-black');
+    for(const region of ['rim','spokes','hub'] as const)expect(componentPaint(registered,registered.variants[0],'wheelset','pure-black',region)?.color).toBe('#202731');
     delete registered.variants[0].componentFinishes[0].brand;
     expect(productSchema.safeParse(registered).success).toBe(false);
   });

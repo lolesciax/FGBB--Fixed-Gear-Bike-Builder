@@ -34,7 +34,7 @@ export function ComponentFinishSelector({
       className="component-finishes"
       aria-label={`${product.name} finishes`}
     >
-      <p className="small muted">Visual finish · illustrative materials</p>
+      <p className="small muted">{product.illustrative?'Visual finish · illustrative materials':'Visual finish · registered product colors'}</p>
       {zones.map((zone) => (
         <label key={zone}>
           {finishLabels[zone]} finish
@@ -60,7 +60,7 @@ export function ComponentFinishSelector({
       ))}
       {product.slot === "wheels" && (
         <small>
-          Rims, spokes and hubs change together. Tire rubber stays separate.
+          Polished and Pure Black coordinate rims, spokes and hubs. Registered factory finishes retain their mixed colors. Tire rubber stays separate.
         </small>
       )}
       {product.slot === "saddle" && (

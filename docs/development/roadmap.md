@@ -12,6 +12,11 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
 
+## Task · Cockpit hardware and factory finish regions — verified locally, 29 October 2026
+
+- Aligned faceplate/fasteners with the stem angle and verified all four bars, independent stem/bar paints and separate rubber. Added optional source-backed rim/spoke/hub factory paints under the existing wheelset selection. Shared SVG gradients and owned 3D materials retain mixed factory colors while coordinated presets recolor all three regions.
+- TypeScript/lint, 13 focused finish/geometry checks and five isolated browser workflows pass, including an actual admin API registration/restoration of a temporary mixed-color fixture. No real component product or protected graphic was invented. [Evidence and remaining SVG/camera/acceptance work](modeling-refinement.md). No deployment.
+
 ## Task · Shared saddle and separate seating interfaces — verified locally, 29 October 2026
 
 - Unified SVG/3D shell and cover contours, connected rail anchors, slimmer race padding, closed tips and actual split clamp grooves. Explicit post sizing is checked against the frame independently of rail type/dimensions/proprietary support. Unknown interfaces are unverified; documented conflicts are rejected without quota charges.

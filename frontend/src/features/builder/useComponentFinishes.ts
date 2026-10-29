@@ -6,6 +6,7 @@ import {
   finishSlots,
   variantById,
   type FinishZone,
+  type WheelFinishRegion,
   type Configuration,
   type Product,
 } from "@tracklab/domain";
@@ -21,6 +22,7 @@ export function useComponentFinishes(
       items: {
         material: THREE.MeshStandardMaterial;
         zone: FinishZone;
+        region?:WheelFinishRegion;
         original: { color: THREE.Color; roughness: number; metalness: number };
       }[] = [];
     scene.traverse((node) => {
@@ -37,6 +39,7 @@ export function useComponentFinishes(
           items.push({
             material,
             zone: material.name.slice(7) as FinishZone,
+            region:material.userData.finishRegion as WheelFinishRegion|undefined,
             original: {
               color: material.color.clone(),
               roughness: material.roughness,
@@ -59,6 +62,7 @@ export function useComponentFinishes(
           selected.variant,
           item.zone,
           configuration.appearance?.[item.zone],
+          item.region,
         );
     return paint
       ? {

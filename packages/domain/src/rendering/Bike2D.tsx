@@ -9,6 +9,7 @@ import {
   variantById,
   slots,
   finishZones,
+  wheelFinishRegions,type WheelFinishRegion,
   finishSlots,
   componentPaint,
   finishGradient,
@@ -172,6 +173,9 @@ export function Bike2D({
   );
   const finish = (zone: FinishZone) =>
     componentPaints[zone] ? `url(#${uid}-${zone})` : metal;
+  const wheelRecord=variantById(catalog,configuration.wheels)!;
+  const wheelPaints=Object.fromEntries(wheelFinishRegions.map(region=>[region,componentPaint(wheelRecord.product,wheelRecord.variant,'wheelset',configuration.appearance?.wheelset,region)]));
+  const wheelFinish=(region:WheelFinishRegion)=>wheelPaints[region]?`url(#${uid}-wheel-${region})`:metal;
   const tube = (a: Point, b: Point, width: number, color = framePaint) => (
     <g>
       <path
@@ -265,6 +269,7 @@ export function Bike2D({
       data-stem-style={stack.quill ? "quill" : "ahead"}
     >
       <defs>
+        {wheelFinishRegions.map(region=>wheelPaints[region]&&<linearGradient key={region} id={`${uid}-wheel-${region}`} gradientUnits="userSpaceOnUse" x1="0" y1={-radius} x2="20" y2={radius}>{finishGradient(wheelPaints[region]).map((stop,i)=><stop key={i} offset={stop.at} stopColor={stop.color}/>)}</linearGradient>)}
         {finishZones.map(
           (zone) =>
             componentPaints[zone] && (
@@ -341,14 +346,14 @@ export function Bike2D({
               <circle
                 r={(m.wheel.rimOuter + m.wheel.rimInner) * 500}
                 fill="none"
-                stroke={finish("wheelset")}
+                stroke={wheelFinish('rim')}
                 strokeWidth={m.wheel.rimDepth * 1000}
               />
               <circle
                 r={m.wheel.rimOuter * 1000}
                 fill="none"
                 stroke={
-                  componentPaints.wheelset ? finish("wheelset") : "#a7afba"
+                  componentPaints.wheelset ? wheelFinish('rim') : "#a7afba"
                 }
                 strokeWidth="1.5"
               />
@@ -361,27 +366,27 @@ export function Bike2D({
                   x2={s.rim[0] * 1000}
                   y2={-s.rim[1] * 1000}
                   stroke={
-                    componentPaints.wheelset ? finish("wheelset") : "#858f9e"
+                    componentPaints.wheelset ? wheelFinish('spokes') : "#858f9e"
                   }
                   strokeWidth="1.3"
                 />
               ))}
-              <circle r={i === 0 ? 28 : 22} fill={finish("wheelset")} />
+              <circle r={i === 0 ? 32 : 26} fill={wheelFinish('hub')} />
               <circle
                 r="10"
                 fill="none"
-                stroke={finish("wheelset")}
+                stroke={wheelFinish('hub')}
                 strokeWidth="3"
               />
               <circle
                 r="6"
-                fill={componentPaints.wheelset ? finish("wheelset") : "#c0c7d1"}
+                fill={componentPaints.wheelset ? wheelFinish('hub') : "#c0c7d1"}
                 stroke="#353e4b"
                 strokeWidth="2"
               />
               <path
                 d={`M0 ${-m.wheel.rimInner * 1000 + 3}v16`}
-                stroke={finish("wheelset")}
+                stroke={wheelFinish('hub')}
                 strokeWidth="4"
               />
             </g>
@@ -613,7 +618,7 @@ export function Bike2D({
               cx={p.x}
               cy={p.y}
               r="7.5"
-              fill={finish("wheelset")}
+              fill={wheelFinish('hub')}
               stroke="#323b47"
               strokeWidth="1"
             />
