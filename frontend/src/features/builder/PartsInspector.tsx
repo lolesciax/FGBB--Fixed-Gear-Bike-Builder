@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Check, Search } from "lucide-react";
-import {WheelSpokeSelector} from './WheelSpokeSelector';
+import { WheelSpokeSelector } from "./WheelSpokeSelector";
 import {
   visualizationInfo,
   barTypes,
@@ -12,11 +12,12 @@ import {
   type Configuration,
   type Product,
   type Slot,
-  type FinishZone,type FinishId,
+  type FinishZone,
+  type FinishId,
 } from "@tracklab/domain";
 import { PartThumbnail } from "./PartThumbnail";
-import {ColorwaySelector} from './ColorwaySelector';
-import {ComponentFinishSelector} from './ComponentFinishSelector';
+import { ColorwaySelector } from "./ColorwaySelector";
+import { ComponentFinishSelector } from "./ComponentFinishSelector";
 
 export const categoryNames: Record<Slot, string> = {
   frameset: "Frameset",
@@ -34,7 +35,7 @@ type Props = {
   locked: boolean;
   loading: boolean;
   onSelect: (slot: Slot, variant: string) => void;
-  onFinish?:(zone:FinishZone,value:FinishId|undefined)=>void;
+  onFinish?: (zone: FinishZone, value: FinishId | undefined) => void;
   onCategory?: (slot: Slot) => void;
   notice?: ReactNode;
 };
@@ -54,7 +55,15 @@ const specLabels: Record<string, string> = {
   frontTeeth: "Chainring teeth",
   rearTeeth: "Cog teeth",
   rimDepth: "Rim depth · mm",
-  rimWidth:'Rim width · mm',frontSpokeCount:'Front spokes',rearSpokeCount:'Rear spokes',frontLacing:'Front lacing',rearLacing:'Rear lacing',frontHubDrilling:'Front hub holes',frontRimDrilling:'Front rim holes',rearHubDrilling:'Rear hub holes',rearRimDrilling:'Rear rim holes',
+  rimWidth: "Rim width · mm",
+  frontSpokeCount: "Front spokes",
+  rearSpokeCount: "Rear spokes",
+  frontLacing: "Front lacing",
+  rearLacing: "Rear lacing",
+  frontHubDrilling: "Front hub holes",
+  frontRimDrilling: "Front rim holes",
+  rearHubDrilling: "Rear hub holes",
+  rearRimDrilling: "Rear rim holes",
   rise: "Rise · mm",
   reach: "Reach · mm",
   drop: "Drop · mm",
@@ -220,8 +229,36 @@ export function PartsInspector({
               : variants.find((variant) => variant.label === "Graphite") ||
                 variants[0];
             const fidelity = visualizationInfo(product, shown);
+            const variantControl = (
+              <label className="variant-row">
+                <span>
+                  {slot === "wheels"
+                    ? "All wheel variants"
+                    : product.illustrative
+                      ? "Variant"
+                      : "Size / finish"}
+                </span>
+                <select
+                  aria-label={`${product.name} variant`}
+                  disabled={pending || locked}
+                  value={shown.id}
+                  onChange={(e) => onSelect(slot, e.target.value)}
+                >
+                  {variants.map((v) => (
+                    <option
+                      key={v.id}
+                      value={v.id}
+                      disabled={v.status === "archived" || v.status === "draft"}
+                    >
+                      {v.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            );
             return (
               <article
+                data-variant-id={shown.id}
                 data-catalog-kind={
                   product.illustrative ? "demo" : "manufacturer"
                 }
@@ -254,7 +291,30 @@ export function PartsInspector({
                   <div className="product-identity">
                     <span className="product-brand">{product.brand}</span>
                     <h3>{product.name}</h3>
-                    {slot==='wheels'&&<span className="render-support" data-wheel-summary>{wheelBuild(shown.specs).count}F / {wheelBuild(shown.specs,true).count}R · {shown.specs.rimDepth||25} mm rim<br/>Front: {wheelBuild(shown.specs).label} · Rear: {wheelBuild(shown.specs,true).label}<br/>{[wheelBuild(shown.specs),wheelBuild(shown.specs,true)].some(b=>b.errors.length)?'Drilling/lacing conflict': [wheelBuild(shown.specs),wheelBuild(shown.specs,true)].some(b=>b.illustrative)?'Illustrative lacing · drilling unverified':product.illustrative?'Matching authored drilling · demo':'Listed drilling matches'}</span>}
+                    {slot === "wheels" && (
+                      <span className="render-support" data-wheel-summary>
+                        {wheelBuild(shown.specs).count}F /{" "}
+                        {wheelBuild(shown.specs, true).count}R ·{" "}
+                        {shown.specs.rimDepth || 25} mm rim
+                        <br />
+                        Front: {wheelBuild(shown.specs).label} · Rear:{" "}
+                        {wheelBuild(shown.specs, true).label}
+                        <br />
+                        {[
+                          wheelBuild(shown.specs),
+                          wheelBuild(shown.specs, true),
+                        ].some((b) => b.errors.length)
+                          ? "Drilling/lacing conflict"
+                          : [
+                                wheelBuild(shown.specs),
+                                wheelBuild(shown.specs, true),
+                              ].some((b) => b.illustrative)
+                            ? "Illustrative lacing · drilling unverified"
+                            : product.illustrative
+                              ? "Matching authored drilling · demo"
+                              : "Listed drilling matches"}
+                      </span>
+                    )}
                     {slot === "cockpit" && (
                       <span className="render-support">
                         {barTypes.find(
@@ -289,68 +349,72 @@ export function PartsInspector({
                     </span>
                   )}
                 </button>
-                {slot==='frameset' && product.illustrative && product.variants.length > 1 && (
-                  <div className="finish-controls">
-                    <div className="finish-label">
-                      <span>Finish</span>
-                      <span>{shown.label}</span>
+                {slot === "frameset" &&
+                  product.illustrative &&
+                  product.variants.length > 1 && (
+                    <div className="finish-controls">
+                      <div className="finish-label">
+                        <span>Finish</span>
+                        <span>{shown.label}</span>
+                      </div>
+                      <div className="swatches">
+                        {product.variants.map((variant) => (
+                          <button
+                            key={variant.id}
+                            title={variant.label}
+                            aria-label={`${product.name} ${variant.label} finish`}
+                            aria-pressed={configuration?.[slot] === variant.id}
+                            className={
+                              configuration?.[slot] === variant.id
+                                ? "selected"
+                                : ""
+                            }
+                            style={
+                              {
+                                "--swatch": variant.color,
+                              } as React.CSSProperties
+                            }
+                            disabled={pending || locked}
+                            onClick={() => onSelect(slot, variant.id)}
+                          />
+                        ))}
+                      </div>
                     </div>
-                    <div className="swatches">
-                      {product.variants.map((variant) => (
-                        <button
-                          key={variant.id}
-                          title={variant.label}
-                          aria-label={`${product.name} ${variant.label} finish`}
-                          aria-pressed={configuration?.[slot] === variant.id}
-                          className={
-                            configuration?.[slot] === variant.id
-                              ? "selected"
-                              : ""
-                          }
-                          style={
-                            { "--swatch": variant.color } as React.CSSProperties
-                          }
-                          disabled={pending || locked}
-                          onClick={() => onSelect(slot, variant.id)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
+                  )}
                 {!product.illustrative && (
                   <p className="visual-disclosure">
                     Schematic preview / approximate finish
                   </p>
                 )}
-                <label className="variant-row">
-                  <span>
-                    {product.illustrative ? "Variant" : "Size / finish"}
-                  </span>
-                  <select
-                    aria-label={`${product.name} variant`}
+                {slot !== "wheels" && variantControl}
+                {slot === "wheels" && isSelected && (
+                  <WheelSpokeSelector
+                    product={product}
+                    variant={shown}
+                    disabled={pending || locked || !configuration}
+                    onSelect={(id) => onSelect(slot, id)}
+                  />
+                )}
+                {slot === "frameset" && (
+                  <ColorwaySelector
+                    product={product}
+                    variant={shown}
+                    disabled={pending || locked || !configuration}
+                    onSelect={(id) => onSelect(slot, id)}
+                  />
+                )}
+                {isSelected && configuration && onFinish && (
+                  <ComponentFinishSelector
+                    product={product}
+                    variant={shown}
+                    configuration={configuration}
                     disabled={pending || locked}
-                    value={shown.id}
-                    onChange={(event) => onSelect(slot, event.target.value)}
-                  >
-                    {variants.map((variant) => (
-                      <option
-                        key={variant.id}
-                        value={variant.id}
-                        disabled={
-                          variant.status === "archived" ||
-                          variant.status === "draft"
-                        }
-                      >
-                        {variant.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {slot==='wheels'&&isSelected&&<WheelSpokeSelector product={product} variant={shown} disabled={pending||locked||!configuration} onSelect={id=>onSelect(slot,id)}/>}
-                {slot==='frameset'&&<ColorwaySelector product={product} variant={shown} disabled={pending||locked||!configuration} onSelect={id=>onSelect(slot,id)}/>}
-                {isSelected&&configuration&&onFinish&&<ComponentFinishSelector product={product} variant={shown} configuration={configuration} disabled={pending||locked} onChange={onFinish}/>}
+                    onChange={onFinish}
+                  />
+                )}
                 <details className="product-specs">
                   <summary>Specifications</summary>
+                  {slot === "wheels" && variantControl}
                   <p>{product.description}</p>
                   <p className="fidelity-summary">
                     {fidelity.specifications}. {fidelity.fidelity}. 2D:{" "}
@@ -363,7 +427,9 @@ export function PartsInspector({
                       ? " Unverified anchors: " + fidelity.missing.join(", ")
                       : ""}
                   </p>
-                  {fidelity.construction&&<p className="fidelity-summary">{fidelity.construction}</p>}
+                  {fidelity.construction && (
+                    <p className="fidelity-summary">{fidelity.construction}</p>
+                  )}
                   <dl>
                     {Object.entries(shown.specs)
                       .filter(
@@ -375,7 +441,9 @@ export function PartsInspector({
                           <dt>
                             {slot === "cockpit" && key === "width"
                               ? "Handlebar width · mm"
-                              : slot==='saddle'&&key==='seatpost'?'Legacy post reference · mm (not saddle fit)':specLabels[key] || key}
+                              : slot === "saddle" && key === "seatpost"
+                                ? "Legacy post reference · mm (not saddle fit)"
+                                : specLabels[key] || key}
                           </dt>
                           <dd>{String(value)}</dd>
                         </div>

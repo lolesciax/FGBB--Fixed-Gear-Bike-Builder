@@ -7,6 +7,8 @@ import {
   slots,
   variantById,
   type Configuration,
+  selectedColorway,
+  productSchema,
 } from "@tracklab/domain";
 import { seedCatalog, defaultConfiguration } from "../backend/src/catalog";
 import {
@@ -27,6 +29,30 @@ import { createCockpit } from "../frontend/src/features/builder/modeling/cockpit
 import { createSaddle } from "../frontend/src/features/builder/modeling/saddle";
 import { createDrivetrain } from "../frontend/src/features/builder/modeling/drivetrain";
 import { disposeModel } from "../frontend/src/features/builder/modeling/primitives";
+import { finiteBlend } from "../frontend/src/features/builder/studio-math";
+it("finishes finite material interpolation exactly and continues from an interrupted value", () => {
+  let value = 0,
+    elapsed = 0;
+  while (elapsed < 0.35) {
+    const next = Math.min(0.35, elapsed + 0.016);
+    value += (1 - value) * finiteBlend(elapsed, next, 0.35);
+    elapsed = next;
+  }
+  expect(value).toBe(1);
+  value = 0.4;
+  elapsed = 0;
+  for (let i = 0; i < 8; i++) {
+    const next = elapsed + 0.02;
+    value += (0 - value) * finiteBlend(elapsed, next, 0.35);
+    elapsed = next;
+  }
+  const interrupted = value;
+  expect(value).toBeGreaterThan(0);
+  expect(value).toBeLessThan(0.4);
+  value += (1 - value) * finiteBlend(0, 0.016, 0.35);
+  expect(value).toBeGreaterThan(interrupted);
+  expect(value).toBeLessThan(1);
+});
 const from = {
     ...defaultConfiguration,
     frameset: "cinelli-vigorelli-80s-national-blu-m-v1",
@@ -65,6 +91,41 @@ function assembly(configuration: Configuration) {
   add("drivetrain", createDrivetrain(g));
   return root;
 }
+it("uses controlled replacement for permitted artwork changes on otherwise identical geometry", () => {
+  const catalog = structuredClone(seedCatalog),
+    r = variantById(catalog, from.frameset)!,
+    colorway = structuredClone(selectedColorway(r.product, r.variant)!);
+  colorway.id = "original-graphic-fixture";
+  colorway.graphics = [
+    {
+      id: "original-calibration",
+      zone: "down",
+      side: "both",
+      from: 0.25,
+      to: 0.65,
+      width: 200,
+      height: 20,
+      license: "CC0-1.0",
+      evidence: "https://example.com/original-calibration",
+      permission: "confirmed",
+      paths: [{ d: "M0 0H200V20H0Z", fill: "#ffffff" }],
+    },
+  ];
+  r.product.colorways!.push(colorway);
+  r.product.variants.push({
+    ...structuredClone(r.variant),
+    id: "original-graphic-fixture",
+    colorwayId: colorway.id,
+  });
+  expect(productSchema.safeParse(r.product).success).toBe(true);
+  expect(
+    transitionPlan(
+      from,
+      { ...from, frameset: "original-graphic-fixture" },
+      catalog,
+    ),
+  ).toMatchObject({ strategy: "replacement", slots: ["frameset"] });
+});
 it("selects verified family morphs, construction replacement and material-only work without inventing support", () => {
   expect(transitionPlan(from, to, seedCatalog).strategy).toBe("morph");
   expect(

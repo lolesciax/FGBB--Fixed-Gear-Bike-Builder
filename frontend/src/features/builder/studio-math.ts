@@ -1,5 +1,15 @@
 import * as THREE from "three";
 import type { CameraView } from "./studio-settings";
+/** Fraction of the remaining distance; interrupted tweens continue from their current value. */
+export function finiteBlend(before: number, after: number, seconds: number) {
+  if (seconds <= 0 || after >= seconds) return 1;
+  const curve = (t: number) =>
+    1 - (1 - Math.min(1, Math.max(0, t / seconds))) ** 3;
+  return Math.min(
+    1,
+    (curve(after) - curve(before)) / Math.max(0.0000001, 1 - curve(before)),
+  );
+}
 export function viewDirection(view: CameraView) {
   const xyz: Record<CameraView, [number, number, number]> = {
     studio: [0.65, 0.24, 1],

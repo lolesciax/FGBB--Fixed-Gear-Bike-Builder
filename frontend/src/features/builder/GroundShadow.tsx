@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { HorizontalBlurShader, VerticalBlurShader } from "three-stdlib";
+import { useFiniteTween } from "./useFiniteTween";
 
 // Owned render targets keep finite contact shadows bounded across component and
 // quality changes. The depth camera sees bicycle layer 1; the blur camera has its
@@ -12,12 +13,14 @@ export function GroundShadow({
   resolution,
   opacity,
   revision,
+  reducedMotion = false,
 }: {
   centerX: number;
   groundY: number;
   resolution: number;
   opacity: number;
   revision: string;
+  reducedMotion?: boolean;
 }) {
   const { gl, scene, invalidate } = useThree();
   const dirty = useRef(true);
@@ -67,6 +70,21 @@ export function GroundShadow({
       plane,
     };
   }, [resolution]);
+  const shadowMaterial = useRef<THREE.MeshBasicMaterial>(null);
+  useFiniteTween(
+    resources.target.texture.uuid,
+    String(opacity),
+    reducedMotion,
+    (amount) => {
+      if (shadowMaterial.current)
+        shadowMaterial.current.opacity = THREE.MathUtils.lerp(
+          shadowMaterial.current.opacity,
+          opacity,
+          amount,
+        );
+    },
+    0.45,
+  );
   useEffect(
     () => () => {
       resources.target.dispose();
@@ -140,9 +158,10 @@ export function GroundShadow({
       rotation={[Math.PI / 2, 0, 0]}
     >
       <meshBasicMaterial
+        ref={shadowMaterial}
         map={resources.target.texture}
         transparent
-        opacity={opacity}
+        opacity={0.3}
         depthWrite={false}
         forceSinglePass
         side={THREE.DoubleSide}

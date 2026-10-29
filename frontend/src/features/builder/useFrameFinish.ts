@@ -1,5 +1,5 @@
-import { useLayoutEffect, useMemo, useRef } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useLayoutEffect, useMemo } from "react";
+import { useFiniteTween } from "./useFiniteTween";
 import * as THREE from "three";
 import {
   selectedColorway,
@@ -15,9 +15,12 @@ export function useFrameFinish(
   variant: Variant | undefined,
   reducedMotion: boolean,
 ) {
-  const { invalidate } = useThree(),
-    first = useRef(true);
-  const geometryKey = JSON.stringify(renderFrameSpecs(variant?.specs || {},product&&variant?renderMorphologyId(product,variant):undefined));
+  const geometryKey = JSON.stringify(
+    renderFrameSpecs(
+      variant?.specs || {},
+      product && variant ? renderMorphologyId(product, variant) : undefined,
+    ),
+  );
   const materials = useMemo(
     () => prepareFinish(scene, JSON.parse(geometryKey)),
     [scene, geometryKey],
@@ -53,9 +56,13 @@ export function useFrameFinish(
           Math.abs(c.g - target.g) +
           Math.abs(c.b - target.b);
         c.lerp(target, amount);
-        u.stops.value[i] = t.stops[Math.min(i, t.stops.length - 1)].at;
+        u.stops.value[i] = THREE.MathUtils.lerp(
+          u.stops.value[i],
+          t.stops[Math.min(i, t.stops.length - 1)].at,
+          amount,
+        );
       }
-      u.count.value = t.stops.length;
+      u.count.value = 8;
       for (const key of [
         "roughness",
         "metalness",
@@ -72,15 +79,6 @@ export function useFrameFinish(
   };
   useLayoutEffect(() => {
     materials.forEach(enableFinish);
-    if (first.current || reducedMotion) apply(1);
-    first.current = false;
-    invalidate();
-  });
-  useFrame((_, delta) => {
-    const error = apply(
-      reducedMotion ? 1 : 1 - Math.exp(-10 * Math.min(delta, 0.05)),
-    );
-    if (error > 0.0003) invalidate();
-    else apply(1);
-  });
+  }, [materials]);
+  useFiniteTween(scene.uuid, JSON.stringify(targets), reducedMotion, apply);
 }

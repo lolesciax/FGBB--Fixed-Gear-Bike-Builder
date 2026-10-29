@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Box, Frame, FileCheck } from "lucide-react";
@@ -6,19 +6,41 @@ import { loadCatalog } from "../services/api";
 import { useApp } from "../app/context";
 import { Bike2D } from "../features/builder/Bike2D";
 import { PartThumbnail } from "../features/builder/PartThumbnail";
+import { useSectionReveal } from "../components/useSectionReveal";
 
 export function HomePage() {
   const { session, auth } = useApp();
   const catalog = useQuery({ queryKey: ["catalog"], queryFn: loadCatalog });
   const [studio, setStudio] = useState<"light" | "dark">("dark");
+  const root = useRef<HTMLElement>(null),
+    [heroProduct, setHeroProduct] = useState("cinelli-vigorelli");
+  useSectionReveal(root);
   const frames =
     catalog.data?.items.filter(
       (p) =>
         p.slot === "frameset" && !p.illustrative && p.status === "published",
     ) || [];
   const brands = [...new Set(frames.map((p) => p.brand))];
+  const featured = [
+    "cinelli-vigorelli",
+    "skream-magnum",
+    "skream-ranger",
+    "8bar-krzberg-v8",
+  ].flatMap((id) => frames.filter((p) => p.id === id));
+  const studies = (featured.length ? featured : frames.slice(0, 4)).map(
+    (product) => ({
+      product,
+      variant:
+        product.variants.find(
+          (v) => v.id === "cinelli-vigorelli-80s-national-blu-m-v1",
+        ) ||
+        product.variants.find((v) => v.specs.size === "M" && !v.colorwayId) ||
+        product.variants[0],
+    }),
+  );
+  const study = studies.find((s) => s.product.id === heroProduct) || studies[0];
   return (
-    <main className="cinematic-home">
+    <main ref={root} className="cinematic-home">
       <section className="cinematic-hero">
         <div className="cinematic-copy">
           <h1>
@@ -40,24 +62,58 @@ export function HomePage() {
           </div>
           <span className="small muted">No account needed to explore.</span>
         </div>
-        <figure className="hero-render">
-          <img
-            className="hero-dark"
-            src="/studio/studio-dark.png"
-            width="1438"
-            height="798"
-            fetchPriority="high"
-            alt="Original TrackLab fixed-gear illustration in a graphite studio"
-          />
-          <img
-            className="hero-light"
-            src="/studio/studio-light.png"
-            width="1438"
-            height="798"
-            fetchPriority="high"
-            alt="Original TrackLab fixed-gear illustration in a light studio"
-          />
-          <figcaption>Original TrackLab illustration</figcaption>
+        <figure className="hero-render" data-live={!!study}>
+          {catalog.data && study ? (
+            <>
+              <div className="hero-live-bike" key={study.variant.id}>
+                <Bike2D
+                  configuration={{
+                    ...catalog.data.configuration,
+                    frameset: study.variant.id,
+                  }}
+                  catalog={catalog.data.items}
+                />
+              </div>
+              <label className="hero-study-control">
+                Frameset study
+                <select
+                  aria-label="Landing frameset study"
+                  value={study.product.id}
+                  onChange={(e) => setHeroProduct(e.target.value)}
+                >
+                  {studies.map((s) => (
+                    <option value={s.product.id} key={s.product.id}>
+                      {s.product.brand} / {s.product.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <figcaption>
+                {study.variant.label} · Source-based illustration / approximate
+                surfaces
+              </figcaption>
+            </>
+          ) : (
+            <>
+              <img
+                className="hero-dark"
+                src="/studio/studio-dark.png"
+                width="1438"
+                height="798"
+                fetchPriority="high"
+                alt="Original TrackLab fixed-gear illustration in a graphite studio"
+              />
+              <img
+                className="hero-light"
+                src="/studio/studio-light.png"
+                width="1438"
+                height="798"
+                fetchPriority="high"
+                alt="Original TrackLab fixed-gear illustration in a light studio"
+              />
+              <figcaption>Original TrackLab illustration</figcaption>
+            </>
+          )}
         </figure>
       </section>
       <section
@@ -76,7 +132,7 @@ export function HomePage() {
           ))}
         </div>
       </section>
-      <section className="studio-experience">
+      <section className="studio-experience" data-reveal>
         <div className="studio-experience-copy">
           <h2>
             One configuration.
@@ -154,7 +210,7 @@ export function HomePage() {
           </figcaption>
         </figure>
       </section>
-      <section className="cinematic-frames">
+      <section className="cinematic-frames" data-reveal>
         <header>
           <div>
             <h2>Find your starting point.</h2>

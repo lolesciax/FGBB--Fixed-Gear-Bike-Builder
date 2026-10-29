@@ -2,13 +2,7 @@ import { useLayoutEffect } from "react";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
-export function SoftboxEnvironment({
-  resolution,
-  intensity,
-}: {
-  resolution: number;
-  intensity: number;
-}) {
+export function SoftboxEnvironment({ resolution }: { resolution: number }) {
   const { gl, scene, invalidate } = useThree();
   useLayoutEffect(() => {
     // Pre-filter the original three studio panels once, then own the resulting
@@ -63,13 +57,12 @@ export function SoftboxEnvironment({
     const previous = scene.environment,
       previousIntensity = scene.environmentIntensity;
     scene.environment = target.texture;
-    scene.environmentIntensity = intensity;
     invalidate();
     return () => {
       scene.environment = previous;
       scene.environmentIntensity = previousIntensity;
       target.dispose();
     };
-  }, [gl, scene, resolution, intensity, invalidate]);
+  }, [gl, scene, resolution, invalidate]);
   return null;
 }

@@ -8,6 +8,7 @@ type Pose = {
   matrix: THREE.Matrix4;
   instances?: Float32Array;
   groups: string;
+  anchors: ({ start: THREE.Vector3; end: THREE.Vector3 } | null)[];
 };
 export type AssemblyPose = {
   family: string;
@@ -47,6 +48,15 @@ export function captureAssembly(
       index: node.geometry.index,
       matrix: node.matrixWorld.clone(),
       groups: JSON.stringify(node.geometry.groups),
+      anchors: (Array.isArray(node.material)
+        ? node.material
+        : [node.material]
+      ).map((m) => {
+        const u = m.userData.tracklabFinishUniforms;
+        return u
+          ? { start: u.start.value.clone(), end: u.end.value.clone() }
+          : null;
+      }),
       ...(node instanceof THREE.InstancedMesh
         ? { instances: new Float32Array(node.instanceMatrix.array) }
         : {}),
@@ -143,11 +153,37 @@ export function prepareMorph(
     q = new THREE.Quaternion(),
     s = new THREE.Vector3();
   let bytes = 0;
+  const anchors: {
+      start: THREE.Vector3;
+      end: THREE.Vector3;
+      fromStart: THREE.Vector3;
+      fromEnd: THREE.Vector3;
+      toStart: THREE.Vector3;
+      toEnd: THREE.Vector3;
+    }[] = [],
+    seenAnchors = new Set<unknown>();
   for (const [key, node] of targets) {
     const old = source.meshes.get(key)!,
       g = node.geometry,
       position = g.getAttribute("position"),
       normals = g.getAttribute("normal");
+    (Array.isArray(node.material) ? node.material : [node.material]).forEach(
+      (m, i) => {
+        const u = m.userData.tracklabFinishUniforms,
+          from = old.anchors[i];
+        if (u && from && !seenAnchors.has(u)) {
+          seenAnchors.add(u);
+          anchors.push({
+            start: u.start.value,
+            end: u.end.value,
+            fromStart: from.start,
+            fromEnd: from.end,
+            toStart: u.start.value.clone(),
+            toEnd: u.end.value.clone(),
+          });
+        }
+      },
+    );
     if (node instanceof THREE.InstancedMesh) {
       const inverse = node.matrixWorld.clone().invert(),
         from: Transform[] = [],
@@ -230,6 +266,10 @@ export function prepareMorph(
     node.updateMorphTargets();
   }
   const apply = (amount: number) => {
+    for (const a of anchors) {
+      a.start.lerpVectors(a.fromStart, a.toStart, amount);
+      a.end.lerpVectors(a.fromEnd, a.toEnd, amount);
+    }
     for (const { node } of geometries)
       node.morphTargetInfluences![0] = 1 - amount;
     for (const item of transforms) {
@@ -257,6 +297,10 @@ export function prepareMorph(
     if (disposed) return;
     disposed = true;
     delete root.userData.transitionBounds;
+    for (const a of anchors) {
+      a.start.copy(a.toStart);
+      a.end.copy(a.toEnd);
+    }
     for (const { node, original, temporary } of geometries) {
       node.geometry = original;
       node.updateMorphTargets();

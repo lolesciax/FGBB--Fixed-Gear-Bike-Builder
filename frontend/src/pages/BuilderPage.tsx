@@ -2,7 +2,7 @@ import {
   cameraPresets,
   compactCameraLabels,
 } from "../features/builder/studio-settings";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -60,7 +60,7 @@ import {
   type InspectionTarget,
   type CameraCommand,
 } from "../features/builder/inspection";
-const Bike3D = lazy(() => import("../features/builder/Bike3D"));
+import { StudioViewport } from "../features/builder/StudioViewport";
 const categories = {
   frameset: {
     label: "Frameset",
@@ -422,6 +422,7 @@ export function BuilderPage() {
   }
   async function setMode(mode: "2d" | "3d") {
     if (mode === "2d") {
+      setInspectPanel(false);
       b.set({ mode, turntable: false });
       return;
     }
@@ -866,58 +867,52 @@ export function BuilderPage() {
             }}
           >
             {b.configuration && !loadError ? (
-              b.mode === "2d" ? (
-                <div
-                  className="pan-layer"
-                  style={{ transform: `translate(${pan.x}px,${pan.y}px)` }}
-                >
-                  <Bike2D
-                    configuration={b.configuration}
-                    catalog={data}
-                    zoom={b.zoom}
-                    active={b.slot}
-                    onSelect={
-                      panning
-                        ? undefined
-                        : (slot) => {
-                            b.set({ slot });
-                            if (compact) setSheetOpen(true);
-                          }
-                    }
-                  />
-                </div>
-              ) : (
-                <Suspense
-                  fallback={
-                    <div className="studio-loading-plan">
-                      <Bike2D configuration={b.configuration} catalog={data} />
-                      <span className="model-loading" role="status">
-                        Loading the studio…
-                      </span>
-                    </div>
-                  }
-                >
-                  <Bike3D
-                    configuration={b.configuration}
-                    catalog={data}
-                    onSelect={(slot) => {
-                      b.set({ slot, turntable: false });
-                      setInspection(undefined);
-                      setInspectPanel(false);
-                      if (compact) setSheetOpen(true);
-                    }}
-                    studio={b.studio}
-                    graphicsQuality={b.graphicsQuality}
-                    turntable={b.turntable}
-                    activeSlot={b.slot}
-                    onInteract={() => b.set({ turntable: false })}
-                    cameraView={b.cameraView}
-                    resetKey={resetKey}
-                    inspection={inspection}
-                    navigation={navigation}
-                  />
-                </Suspense>
-              )
+              <StudioViewport
+                key={b.ownerKey}
+                mode={b.mode}
+                available={!!b.previewGrant}
+                expiresAt={b.previewExpiresAt}
+                plan={
+                  <div
+                    className="pan-layer"
+                    style={{ transform: `translate(${pan.x}px,${pan.y}px)` }}
+                  >
+                    <Bike2D
+                      configuration={b.configuration}
+                      catalog={data}
+                      zoom={b.zoom}
+                      active={b.slot}
+                      onSelect={
+                        panning
+                          ? undefined
+                          : (slot) => {
+                              b.set({ slot });
+                              if (compact) setSheetOpen(true);
+                            }
+                      }
+                    />
+                  </div>
+                }
+                scene={{
+                  configuration: b.configuration,
+                  catalog: data,
+                  onSelect: (slot) => {
+                    b.set({ slot, turntable: false });
+                    setInspection(undefined);
+                    setInspectPanel(false);
+                    if (compact) setSheetOpen(true);
+                  },
+                  studio: b.studio,
+                  graphicsQuality: b.graphicsQuality,
+                  turntable: b.turntable,
+                  activeSlot: b.slot,
+                  onInteract: () => b.set({ turntable: false }),
+                  cameraView: b.cameraView,
+                  resetKey,
+                  inspection,
+                  navigation,
+                }}
+              />
             ) : (
               <div className="viewer-fallback">
                 <div className="loader" />
@@ -933,7 +928,7 @@ export function BuilderPage() {
                 <span>Camera</span>
                 <select
                   aria-label="Camera view"
-                  value={b.cameraView}
+                  value={inspection ? "inspection" : b.cameraView}
                   onChange={(e) => {
                     setInspection(undefined);
                     b.set({
@@ -942,6 +937,11 @@ export function BuilderPage() {
                     });
                   }}
                 >
+                  {inspection && (
+                    <option value="inspection" disabled>
+                      Inspection
+                    </option>
+                  )}
                   {cameraPresets.map(([value, label]) => (
                     <option key={value} value={value} aria-label={label}>
                       {compact ? compactCameraLabels[value] : label}

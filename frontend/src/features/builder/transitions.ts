@@ -64,8 +64,25 @@ export function transitionPlan(
   if (!from) return { strategy: "initial", slots: [...slots], seconds: 0 };
   if (JSON.stringify(from) === JSON.stringify(to))
     return { strategy: "initial", slots: [], seconds: 0 };
-  if (geometryIdentity(from, catalog) === geometryIdentity(to, catalog))
-    return { strategy: "material", slots: [], seconds: simplified ? 0 : 0.4 };
+  if (geometryIdentity(from, catalog) === geometryIdentity(to, catalog)) {
+    const artwork = (c: Configuration) => {
+      const r = variantById(catalog, c.frameset);
+      return JSON.stringify(
+        (r &&
+          selectedColorway(r.product, r.variant)?.graphics.filter(
+            (g) => g.permission === "confirmed",
+          )) ||
+          [],
+      );
+    };
+    return artwork(from) === artwork(to)
+      ? { strategy: "material", slots: [], seconds: simplified ? 0 : 0.4 }
+      : {
+          strategy: "replacement",
+          slots: ["frameset"],
+          seconds: simplified ? 0.18 : 0.48,
+        };
+  }
   const changed = slots.filter((s) => from[s] !== to[s]);
   const affected = changed.includes("frameset") ? [...slots] : changed;
   const a = variantById(catalog, from.frameset),

@@ -33,7 +33,7 @@ import { useMediaQuery } from "../../components/useMediaQuery";
 import { TransitionCoordinator, transitionPlan } from "./transitions";
 import { captureAssembly } from "./morph-pose";
 import type { PresentationBridge } from "./AssemblyPresentation";
-import type {InspectionTarget,CameraCommand} from './inspection';
+import type { InspectionTarget, CameraCommand } from "./inspection";
 class SceneBoundary extends Component<
   { children: ReactNode; fallback: ReactNode; onError?: () => void },
   { failed: boolean }
@@ -62,8 +62,10 @@ type Props = {
   onInteract?: () => void;
   active?: boolean;
   onReady?: () => void;
-  inspection?:InspectionTarget;navigation?:CameraCommand;
+  inspection?: InspectionTarget;
+  navigation?: CameraCommand;
 };
+export type Bike3DProps = Props;
 export default function Bike3D(props: Props) {
   const { onReady } = props;
   const [job, setJob] = useState<{
@@ -133,7 +135,13 @@ export default function Bike3D(props: Props) {
           current.reducedMotion || current.quality === "performance",
         ),
       );
-    if (asset) {
+    const prior =
+      displayRef.current &&
+      variantById(current.catalog, displayRef.current.frameset)?.variant;
+    const priorAsset = prior?.asset3D
+      ? frameRequestUrl(prior.asset3D)
+      : undefined;
+    if (asset && asset !== priorAsset) {
       coordinator.loading(id);
       setJob({ asset, id, target: current.configuration });
     } else {
@@ -159,7 +167,7 @@ export default function Bike3D(props: Props) {
     setReady(true);
   }, []);
   useEffect(() => {
-    if (ready && active && !coordinator.busy && state.phase !== "failed")
+    if ((ready || state.phase === "failed") && active && !coordinator.busy)
       onReady?.();
   }, [ready, active, state.phase, coordinator, onReady]);
   useEffect(() => () => coordinator.dispose(), [coordinator]);
@@ -173,7 +181,7 @@ export default function Bike3D(props: Props) {
     assetPending =
       state.phase === "loading-assets" || state.phase === "preparing",
     failed = state.phase === "failed";
-  const fallback = (
+  const fallback = active ? (
     <div className="studio-fallback">
       <Bike2D configuration={props.configuration} catalog={props.catalog} />
       <div className="studio-fallback-message">
@@ -184,9 +192,15 @@ export default function Bike3D(props: Props) {
         </button>
       </div>
     </div>
+  ) : (
+    <div />
   );
   return (
-    <SceneBoundary key={attempt} fallback={fallback}>
+    <SceneBoundary
+      key={attempt}
+      fallback={fallback}
+      onError={() => coordinator.fail(state.id)}
+    >
       {active && job && (
         <SceneBoundary
           key={job.asset + "/" + job.id}
@@ -238,7 +252,7 @@ export default function Bike3D(props: Props) {
         aria-busy={pending && !failed}
       >
         {failed && !displayed && fallback}
-        {!ready && !failed && (
+        {!ready && !failed && active && (
           <div className="studio-loading-plan">
             <Bike2D
               configuration={props.configuration}
@@ -246,7 +260,7 @@ export default function Bike3D(props: Props) {
             />
           </div>
         )}
-        {(coordinator.busy || (failed&&!!displayed)) && (
+        {(coordinator.busy || (failed && !!displayed)) && (
           <div className="model-loading transition-feedback" role="status">
             <span>{state.message}</span>
             {failed ? (
@@ -305,7 +319,8 @@ export default function Bike3D(props: Props) {
                   coordinator={coordinator}
                   bridge={bridge.current}
                   active={active}
-                inspection={props.inspection} navigation={props.navigation}
+                  inspection={props.inspection}
+                  navigation={props.navigation}
                 />
                 <ModelReady onReady={sceneReady} />
               </>
@@ -324,6 +339,11 @@ export default function Bike3D(props: Props) {
         <span className="studio-quality-status">
           {requested === "auto" ? "Auto / " + quality : quality}
           {reducedMotion ? " / reduced motion" : ""}
+        </span>
+        <span className="sr-only" role="status">
+          {["completed", "cancelled"].includes(state.phase)
+            ? state.message
+            : ""}
         </span>
       </div>
     </SceneBoundary>

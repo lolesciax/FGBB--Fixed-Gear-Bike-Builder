@@ -66,7 +66,11 @@ export function AssemblyPresentation({
         : plan.strategy;
     root.userData.morphBuffers = morph?.geometryCount || 0;
     root.userData.morphBytes = morph?.bytes || 0;
+    let disposed = false;
     const apply = (progress: number) => {
+      // A new request may start before React installs its presentation effect.
+      // Never let the previous frame callback rewrite an already restored pose.
+      if (disposed) return;
       const incoming = Math.max(0, Math.min(1, (progress - 0.24) / 0.61)),
         ease = 1 - (1 - incoming) ** 3;
       const actualMorph = plan.strategy === "morph" && (!targetRoot || !!morph);
@@ -88,7 +92,6 @@ export function AssemblyPresentation({
       morph?.apply(ease);
       root.userData.transitionProgress = progress;
     };
-    let disposed = false;
     const dispose = () => {
       if (disposed) return;
       disposed = true;

@@ -66,8 +66,9 @@ export function prepareFinish(scene: THREE.Object3D, specs: Variant["specs"]) {
 export type FinishMaterials = ReturnType<typeof prepareFinish>;
 export function enableFinish(item: FinishMaterials[number]) {
   const m = item.material;
-  if (m.userData.tracklabFinish) return;
+  if (m.userData.tracklabFinishUniforms===item.uniforms) return;
   m.userData.tracklabFinish = true;
+  m.userData.tracklabFinishUniforms=item.uniforms;
   m.onBeforeCompile = (shader) => {
     shader.uniforms.finishColors = item.uniforms.colors;
     shader.uniforms.finishStops = item.uniforms.stops;

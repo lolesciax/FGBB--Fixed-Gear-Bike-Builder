@@ -176,6 +176,8 @@ export function ProceduralAssembly({
     () => ({ geometryRevision: "components-v4", cockpit: g.cockpit.type }),
     [g.cockpit.type],
   );
+  const settledShadow=useRef(0),transition=coordinator.getSnapshot();
+  if(transition.phase==='completed'&&['morph','replacement'].includes(transition.plan.strategy))settledShadow.current=transition.id;
   useLayoutEffect(() => {
     bridge.root = group.current;
     return () => {
@@ -263,9 +265,10 @@ export function ProceduralAssembly({
       <StudioLighting
         studio={studio}
         quality={quality}
-        modelKey={modelKey}
+        modelKey={modelKey+'|'+settledShadow.current}
         centerX={g.front[0] / 2}
         groundY={g.groundY}
+        reducedMotion={reducedMotion}
       />
       <StudioCamera
         assembly={group}

@@ -1,5 +1,5 @@
-import { useLayoutEffect, useMemo } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useMemo } from "react";
+import { useFiniteTween } from "./useFiniteTween";
 import * as THREE from "three";
 import {
   componentPaint,
@@ -16,13 +16,12 @@ export function useComponentFinishes(
   catalog: Product[],
   reducedMotion: boolean,
 ) {
-  const { invalidate } = useThree();
   const materials = useMemo(() => {
     const seen = new Set<THREE.Material>(),
       items: {
         material: THREE.MeshStandardMaterial;
         zone: FinishZone;
-        region?:WheelFinishRegion;
+        region?: WheelFinishRegion;
         original: { color: THREE.Color; roughness: number; metalness: number };
       }[] = [];
     scene.traverse((node) => {
@@ -39,7 +38,8 @@ export function useComponentFinishes(
           items.push({
             material,
             zone: material.name.slice(7) as FinishZone,
-            region:material.userData.finishRegion as WheelFinishRegion|undefined,
+            region: material.userData.finishRegion as
+              WheelFinishRegion | undefined,
             original: {
               color: material.color.clone(),
               roughness: material.roughness,
@@ -89,16 +89,5 @@ export function useComponentFinishes(
     }
     return error;
   };
-  useLayoutEffect(() => {
-    if (reducedMotion) apply(1);
-    invalidate();
-  });
-  useFrame((_, delta) => {
-    if (
-      apply(reducedMotion ? 1 : 1 - Math.exp(-12 * Math.min(delta, 0.05))) >
-      0.0003
-    )
-      invalidate();
-    else apply(1);
-  });
+  useFiniteTween(scene.uuid, JSON.stringify(targets), reducedMotion, apply);
 }

@@ -1,4 +1,87 @@
 import { test, expect, type Page } from "@playwright/test";
+test("finite finishes and studio effects settle without remeshing; a single canvas and manual camera survive mode changes", async ({
+  page,
+}) => {
+  await page.goto("/builder");
+  await page.getByRole("button", { name: "3D", exact: true }).click();
+  const viewer = page.locator(".bike3d-wrapper");
+  await expect(viewer).toHaveAttribute("data-loading", "false");
+  await expect(viewer).toHaveAttribute("data-camera-moving", "false");
+  await page.getByLabel("Graphics quality").selectOption("balanced");
+  const before = await sceneDetails(page);
+  await page.getByRole("button", { name: "Wheels", exact: true }).click();
+  await page
+    .getByLabel("Wheelset finish", { exact: true })
+    .selectOption("polished");
+  await expect
+    .poll(async () => (await sceneDetails(page)).wheelPaint)
+    .toBe("b9c2cd");
+  await expect(viewer).toHaveAttribute("data-loading", "false");
+  const painted = await sceneDetails(page);
+  expect(painted.geometries).toEqual(before.geometries);
+  expect(painted.rubberPaint).toBe(before.rubberPaint);
+  await page
+    .getByLabel("Wheelset finish", { exact: true })
+    .selectOption("pure-black");
+  await expect
+    .poll(async () => (await sceneDetails(page)).wheelPaint, {
+      intervals: [20, 30],
+    })
+    .not.toBe("b9c2cd");
+  await page
+    .getByLabel("Wheelset finish", { exact: true })
+    .selectOption("polished");
+  await expect
+    .poll(async () => (await sceneDetails(page)).wheelPaint)
+    .toBe("b9c2cd");
+  expect((await sceneDetails(page)).geometries).toEqual(before.geometries);
+  await page.getByLabel("Studio environment").selectOption("dark");
+  await expect
+    .poll(async () => (await sceneDetails(page)).background)
+    .toBe("151a22");
+  expect((await sceneDetails(page)).environment).toBe(painted.environment);
+  expect((await sceneDetails(page)).exposure).toBeCloseTo(1.12, 6);
+  const inspectionColors = await page
+    .getByRole("button", { name: "Inspect", exact: true })
+    .evaluate((button) => ({
+      foreground: getComputedStyle(button).color,
+      appText: getComputedStyle(document.documentElement).color,
+    }));
+  expect(inspectionColors.foreground).toBe(inspectionColors.appText);
+  const bounds = await page.locator("canvas").boundingBox();
+  await page.mouse.move(bounds!.x + 50, bounds!.y + 70);
+  await page.mouse.down();
+  await page.mouse.move(bounds!.x + 100, bounds!.y + 95, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForTimeout(700);
+  const camera = (await sceneDetails(page)).camera;
+  await page.evaluate(() => {
+    (
+      window as unknown as { retainedCanvas: HTMLCanvasElement | null }
+    ).retainedCanvas = document.querySelector("canvas");
+  });
+  await page.getByRole("button", { name: "2D", exact: true }).click();
+  await expect(page.locator(".bike-svg")).toBeVisible();
+  await expect(page.locator("canvas")).toHaveCount(1);
+  await expect.poll(async () => (await sceneDetails(page)).loop).toBe("never");
+  const idle = (await sceneDetails(page)).frame;
+  await page.waitForTimeout(300);
+  expect((await sceneDetails(page)).frame).toBe(idle);
+  await page.getByRole("button", { name: "3D", exact: true }).click();
+  await expect(viewer).toHaveAttribute("data-loading", "false");
+  await expect(viewer).toHaveAttribute("data-camera-moving", "false");
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { retainedCanvas: HTMLCanvasElement | null })
+          .retainedCanvas === document.querySelector("canvas"),
+    ),
+  ).toBe(true);
+  const after = (await sceneDetails(page)).camera;
+  expect(
+    Math.hypot(...after.map((v: number, i: number) => v - camera[i])),
+  ).toBeLessThan(0.002);
+});
 async function sceneDetails(page: Page) {
   return page.evaluate(async () => {
     const url = performance
@@ -8,12 +91,15 @@ async function sceneDetails(page: Page) {
       s = _roots.get(document.querySelector("canvas")).store.getState(),
       root = s.scene.getObjectByName("bicycle_assembly");
     let morphs = 0;
+    const geometries: string[] = [];
     root.traverse(
       (n: {
         isMesh: boolean;
         geometry: { morphAttributes: { position?: unknown } };
       }) => {
         if (n.isMesh && n.geometry.morphAttributes.position) morphs++;
+        if (n.isMesh)
+          geometries.push((n.geometry as unknown as { uuid: string }).uuid);
       },
     );
     return {
@@ -25,12 +111,25 @@ async function sceneDetails(page: Page) {
       memory: { ...s.gl.info.memory },
       postCount: root.getObjectsByProperty("name", "seatpost").length,
       paddingVisible: root.getObjectByName("shaped_padding").visible,
+      geometries,
+      frame: s.gl.info.render.frame,
+      loop: s.frameloop,
+      environment: s.scene.environment?.uuid,
+      background: s.scene.background.getHexString(),
+      exposure: s.gl.toneMappingExposure,
+      wheelPaint: root
+        .getObjectByName("laced_spokes")
+        .material.color.getHexString(),
+      rubberPaint: root
+        .getObjectByName("rubber_section")
+        .material.color.getHexString(),
     };
   });
 }
 test("validated size morphs use temporary buffers and compatible geometry while construction and spoke changes replace", async ({
   page,
 }) => {
+  test.setTimeout(120000);
   await page.goto("/builder");
   await page.getByLabel("Filter by brand").selectOption("Cinelli");
   await page
@@ -102,6 +201,7 @@ test("validated size morphs use temporary buffers and compatible geometry while 
 test("obsolete loads cannot replace the latest selection and a failed target retains the previous scene", async ({
   page,
 }) => {
+  test.setTimeout(120000);
   let release!: () => void;
   const gate = new Promise<void>((r) => (release = r));
   await page.route(
@@ -164,6 +264,59 @@ test("obsolete loads cannot replace the latest selection and a failed target ret
     "cinelli-vigorelli-rainbow-xl",
   );
   await expect(viewer).toHaveAttribute("data-loading", "false");
+});
+test("network loss during a model load preserves the accepted 2D selection and retries the latest target", async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(120000);
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => (release = resolve));
+  const targetUrl = "**/models/frames/dosnoventa-03-det-m.glb*";
+  await page.route(targetUrl, async (route) => {
+    await gate;
+    await route.abort("internetdisconnected");
+  });
+  await page.goto("/builder");
+  await page.getByRole("button", { name: "3D", exact: true }).click();
+  const viewer = page.locator(".bike3d-wrapper");
+  await expect(viewer).toHaveAttribute("data-loading", "false");
+  const previous = await viewer.getAttribute("data-frame-variant");
+  await page.getByLabel("Filter by brand").selectOption("Dosnoventa");
+  await page
+    .getByLabel("03 DET variant", { exact: true })
+    .selectOption("dosnoventa-03-det-m");
+  await expect(viewer).toHaveAttribute(
+    "data-transition-phase",
+    "loading-assets",
+  );
+  const usage = (await (await page.request.get("/api/session")).json()).usage;
+  await context.setOffline(true);
+  release();
+  await expect(viewer).toHaveAttribute("data-transition-phase", "failed");
+  await expect(viewer).toHaveAttribute("data-frame-variant", previous!);
+  await page.getByRole("button", { name: "2D", exact: true }).click();
+  await expect(page.locator(".bike-svg")).toBeVisible();
+  await expect(page.locator(".bike-svg")).toHaveAttribute(
+    "data-frame-variant",
+    "dosnoventa-03-det-m",
+  );
+  await expect(page.locator("canvas")).toHaveCount(1);
+  await context.setOffline(false);
+  await page.unroute(targetUrl);
+  await page.getByRole("button", { name: "3D", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Retry 3D model", exact: true })
+    .click();
+  await expect(viewer).toHaveAttribute(
+    "data-frame-variant",
+    "dosnoventa-03-det-m",
+  );
+  await expect(viewer).toHaveAttribute("data-loading", "false");
+  expect((await (await page.request.get("/api/session")).json()).usage).toEqual(
+    usage,
+  );
+  expect((await sceneDetails(page)).groups).toBe(6);
 });
 test("assembly inspection focuses actual parts, provides navigation and resets without charging a component change", async ({
   page,

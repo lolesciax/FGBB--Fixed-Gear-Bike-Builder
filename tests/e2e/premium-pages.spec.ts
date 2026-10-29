@@ -67,15 +67,15 @@ test("landing previews stay lightweight and manufacturer links apply real catalo
   await expect(
     page.getByRole("heading", { name: "Build Beyond the Ordinary." }),
   ).toBeVisible();
-  await expect
-    .poll(() =>
-      page
-        .locator(".hero-light")
-        .evaluate(
-          (node: HTMLImageElement) => node.complete && node.naturalWidth > 0,
-        ),
-    )
-    .toBe(true);
+  await expect(page.locator(".hero-render .bike-svg")).toHaveAttribute(
+    "data-frame-morphology",
+    "cinelli-vigorelli-alu-v1",
+  );
+  await page.getByLabel("Landing frameset study").selectOption("skream-ranger");
+  await expect(page.locator(".hero-render .bike-svg")).toHaveAttribute(
+    "data-frame-morphology",
+    "skream-ranger-v1",
+  );
   await page.getByRole("button", { name: "Studio Light", exact: true }).click();
   await expect(page.locator(".environment-preview")).toHaveAttribute(
     "data-environment",
