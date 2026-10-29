@@ -3,7 +3,12 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import type { OrbitControls as Controls } from "three-stdlib";
 import * as THREE from "three";
-import { fitAssembly, shortestAngle, easeCamera } from "./studio-math";
+import {
+  fitAssembly,
+  shortestAngle,
+  easeCamera,
+  stopOrbitMotion,
+} from "./studio-math";
 import { motion, type CameraView } from "./studio-settings";
 import {
   inspectionObject,
@@ -59,6 +64,9 @@ export function StudioCamera({
     lastNavigation = useRef(0),
     fitSignature = useRef("");
   const { camera, size, invalidate } = useThree();
+  useLayoutEffect(() => {
+    if (!active && controls.current) stopOrbitMotion(controls.current);
+  }, [active, camera]);
   const requestFit = useCallback(() => {
     if (
       !assembly.current ||
@@ -324,7 +332,7 @@ export function StudioCamera({
       }}
       onChange={() => {
         const control = controls.current;
-        if (!control || journey.current) return;
+        if (!control || !active || journey.current) return;
         const target = control.target.clone(),
           bounds = panBounds.current,
           offset = target

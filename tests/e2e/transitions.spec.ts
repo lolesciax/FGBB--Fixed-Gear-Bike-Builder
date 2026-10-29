@@ -54,26 +54,16 @@ test("finite finishes and studio effects settle without remeshing; a single canv
   await page.mouse.down();
   await page.mouse.move(bounds!.x + 100, bounds!.y + 95, { steps: 8 });
   await page.mouse.up();
-  // Orbit damping is frame based; a fixed delay finishes at different poses on
-  // hardware Chrome and the slower CI renderer. Observe the settled pose.
-  let previous = (await sceneDetails(page)).camera,
-    stableSamples = 0;
-  await expect
-    .poll(
-      async () => {
-        const current = (await sceneDetails(page)).camera;
-        const distance = Math.hypot(
-          ...current.map((v: number, i: number) => v - previous[i]),
-        );
-        previous = current;
-        stableSamples = distance < 0.00001 ? stableSamples + 1 : 0;
-        return stableSamples;
-      },
-      { timeout: 20000, intervals: [100] },
-    )
-    .toBeGreaterThanOrEqual(3);
-  const camera = (await sceneDetails(page)).camera;
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
+    const url = performance
+        .getEntriesByType("resource")
+        .find((e) => e.name.includes("/@react-three_fiber.js?"))!.name,
+      { _roots } = await import(url),
+      controls = _roots
+        .get(document.querySelector("canvas"))
+        .store.getState().controls;
+    // Guarantee queued momentum even on a fast renderer before pausing it.
+    controls.setAzimuthalAngle(controls.getAzimuthalAngle() + 0.45);
     (
       window as unknown as { retainedCanvas: HTMLCanvasElement | null }
     ).retainedCanvas = document.querySelector("canvas");
@@ -82,7 +72,9 @@ test("finite finishes and studio effects settle without remeshing; a single canv
   await expect(page.locator(".bike-svg")).toBeVisible();
   await expect(page.locator("canvas")).toHaveCount(1);
   await expect.poll(async () => (await sceneDetails(page)).loop).toBe("never");
-  const idle = (await sceneDetails(page)).frame;
+  const paused = await sceneDetails(page),
+    camera = paused.camera,
+    idle = paused.frame;
   await page.waitForTimeout(300);
   expect((await sceneDetails(page)).frame).toBe(idle);
   await page.getByRole("button", { name: "3D", exact: true }).click();

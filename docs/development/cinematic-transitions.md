@@ -33,7 +33,7 @@ Baseline private screenshots/video were captured before implementation at 1440×
 | 9 Landing | Verified locally | Four live source-based SVG studies, immediate CTA, two restrained section reveals, no initial 3D download |
 | 10 Renderer modes | Verified locally | One retained canvas, paused hidden rendering, manual camera retained at an unchanged viewport and grant expiry cleanup |
 | 11 Performance | Verified locally | Four collected-heap/GPU cycles, two reused downloads, zero idle frames and desktop/mobile-viewport timings |
-| 12 Acceptance | Verified locally; CI on push | TypeScript/lint, 111 local unit/API tests, all 42 normal browser scenarios across full/focused runs, development/PWA checks, builds and 19 reviewed captures |
+| 12 Acceptance | Verified locally; CI on push | TypeScript/lint, 112 local unit/API tests, all 42 normal browser scenarios across full/focused runs, development/PWA checks, builds and 19 reviewed captures |
 
 ## Core presentation milestone
 
@@ -62,7 +62,7 @@ The verified story is a published selection accepted by the existing workspace A
 | Boundary | Local evidence |
 | --- | --- |
 | Static/source | TypeScript and lint pass; no new animation/rendering dependency |
-| Domain/API/data | 111 tests pass, including isolated API, geometry, exact morph endpoints, correspondence rejection, finite interruption and artwork replacement; one live Redis test skips without local test Redis |
+| Domain/API/data | 112 tests pass, including isolated API, geometry, exact morph endpoints, correspondence rejection, finite interruption and artwork replacement; one live Redis test skips without local test Redis |
 | Full browser regression | Initial full run: 40/42 pass. Fixed a cancelled reveal writing opacity after disposal; corrected the new offline test to keep the loading boundary active until its error. All eight affected morphology/transition/performance scenarios pass on rerun |
 | Final finish/resource check | Both final normal-motion interrupted-finish/contrast and collected-heap/resource scenarios pass; TypeScript/lint and the web build pass again |
 | Existing systems | Registration, quotas, grant expiry, compatibility, save/reload, garage, undo/redo, admin, SVG export, all spoke variants and all cockpit types pass their browser scenarios |
@@ -85,7 +85,7 @@ Measurements below come from the isolated local Chrome harness. `gl.info` report
 | Desktop camera sample | Mean 5.00ms, p95 5.60ms between main-scene renders (about 200 renders/s in this harness) |
 | 375×812 camera sample | Mean 5.16ms, p95 5.30ms, about 194 renders/s on the same desktop host, Auto/Performance; this is viewport emulation |
 | Scene work | Cinelli/default wheels: 143 calls / 193,170 triangles; 8bar/deep 36/36: 147 calls / 189,674 triangles, reduced to 146 calls / 189,672 triangles without the shadow plane in Performance |
-| Production output | Main 619.01 KB / 187.61 KB gzip; deferred 3D about 1,064.72 KB / 289.39 KB gzip; CSS about 94.9 KB; PWA precache 17.38 KiB |
+| Production output | Main 619.01 KB / 187.62 KB gzip; deferred 3D about 1,064.99 KB / 289.46 KB gzip; CSS 94.88 KB; PWA precache 17.38 KiB |
 
 The warmed two-asset plateau demonstrates repeated-switch cleanup, not a catalog-wide cache limit. Selecting previously unseen source kits intentionally adds their cached geometry; the final multi-brand capture reached 220 geometries/four textures and returned to zero temporary morphs. No GPU-byte measurement or physical mobile benchmark is claimed.
 
@@ -100,7 +100,11 @@ Nineteen final views were captured and inspected: source-derived landing studies
 
 The review corrected an Inspect button inheriting white studio text on a light app control. Its unselected text now follows the app's tested text token; its selected state uses the existing blue treatment. Inspection intentionally crops unrelated assemblies while keeping its actual target visible; Reset Assembly restores the full bicycle. The mobile parts sheet can expand and scroll to its navigation controls.
 
-Final local verification of code commit `96b16ba` also passed all 42 normal browser scenarios in one clean run (5.3 minutes). Its [CI run](https://github.com/lolesciax/FGBB--Fixed-Gear-Bike-Builder/actions/runs/40899895966) passed lint, all unit/API tests including Redis and the builds, then 41/42 browser scenarios. The remaining camera test sampled a still-damping orbit after a fixed 700ms delay; CI's resumed momentum moved it 0.104m. The follow-up waits for three observed stable camera samples before checking retention, preserving the strict 0.002m tolerance, single-canvas identity and zero hidden rendering assertions. This corrects the measurement timing without changing camera behavior or weakening its retention limit. The focused scenario, TypeScript and lint pass again before the follow-up push.
+Final local verification of code commit `96b16ba` also passed all 42 normal browser scenarios in one clean run (5.3 minutes). Its [CI run](https://github.com/lolesciax/FGBB--Fixed-Gear-Bike-Builder/actions/runs/40899895966) passed lint, all unit/API tests including Redis and the builds, then 41/42 browser scenarios. The remaining camera test sampled a still-damping orbit after a fixed 700ms delay; CI's resumed momentum moved it 0.104m. Test-only follow-up `9b73047` observed stability before checking retention and passed normal/software WebGL locally. Its [CI run](https://github.com/lolesciax/FGBB--Fixed-Gear-Bike-Builder/actions/runs/40902275455) still found 0.00294m of resumed movement: waiting reduced the drift but did not clear residual control momentum.
+
+The camera follow-up clears queued OrbitControls rotation/pan/dolly through its public update API when pausing, restores the current camera/target and synchronizes the control before rendering can resume. It does not access private control fields, remount the canvas or overwrite a requested new model fit. A regression using the actual installed OrbitControls starts with active momentum, verifies that pausing preserves the pose within 1e-10m and checks 100 subsequent updates without drift. The browser scenario explicitly queues momentum before choosing 2D, checks zero hidden rendering and compares the actual paused pose after returning to 3D with the unchanged 0.002m tolerance and canvas identity. This tests pausing during motion rather than relying on an arbitrary wait or a presumed settled pose.
+
+Follow-up verification: TypeScript/lint, 112 local unit/API tests (one live Redis skip), the web build and ten focused camera/framing/inspection/transition/resource browser scenarios pass. The explicit queued-momentum browser scenario also passes under software WebGL (16.2s scenario / 23.5s including isolated startup). CI remains required after this source correction.
 
 ## Remaining dependencies
 

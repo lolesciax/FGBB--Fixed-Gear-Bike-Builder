@@ -12,6 +12,12 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
 
+## Task · Preserve the paused camera without resumed momentum — verified locally, 29 October 2026
+
+- Corrected a remaining slow-renderer mode-switch drift by clearing queued OrbitControls motion through its public update API while preserving the current camera and target. No private control fields, new canvas, configuration change or quota operation is involved.
+- TypeScript/lint, all 112 local unit/API tests (one live Redis skip), the web build, ten focused camera/framing/inspection/transition/resource scenarios and the explicit queued-momentum scenario under software WebGL pass. The real-control unit regression verifies the preserved pose across 100 resumed updates within 1e-10m. The browser retains its strict 0.002m tolerance, checks the actual paused pose and proves zero hidden rendering. [Evidence and earlier CI findings](cinematic-transitions.md).
+- The first timing-only correction reduced but did not eliminate CI drift. This follow-up fixes the actual residual control velocity; CI is inspected after the push. Device/asset dependencies and the local-only deployment hold remain.
+
 ## Task · Finite finishes, retained viewers and cinematic acceptance — verified locally, 29 October 2026
 
 - Completed the supported presentation stages in the [cinematic transition review](cinematic-transitions.md): finite interrupted paint/PBR and light/dark transitions, reused environment/shadow resources, a retained authorized canvas with paused hidden rendering, preserved manual camera placement, registered wheel controls and a lightweight live SVG landing study. Inspection controls retain contrast in either studio; manufacturer drafts/rights boundaries and backend policy remain intact.
@@ -19,6 +25,7 @@ The initial commit records the existing working development baseline together. F
 - Four warmed M↔XL cycles retain 155 geometries/four textures/12 programs, reuse two GLBs, return to zero idle rendering and keep collected heap near 131–132 MB. Main-scene frame intervals and real selection/settle timings are recorded with their headless/device limits. Nineteen views were visually reviewed; twelve curated original-renderer captures accompany private short recordings.
 - Core push `6fb09ee` failed CI on a 36px select and a combined scenario exceeding its 45-second budget. The follow-up restores 44px controls and gives that scenario 120 seconds; both scenarios pass locally. Physical-device/accessibility coverage and proprietary assets remain dependencies. The development app stays local, quotas remain disabled only in development, and no deployment or other database is changed.
 - Final code commit `96b16ba` passed all 42 normal browser workflows in a clean 5.3-minute run. Its CI passed lint, unit/API/Redis and builds, then 41/42 browsers; the camera check sampled frame-based orbit damping after an arbitrary 700ms wait. The follow-up observes actual camera stability before the unchanged strict retention/idle/canvas assertions. The focused scenario, TypeScript and lint pass before that push; CI is inspected again.
+- Test-only follow-up `9b73047` passed normal/software WebGL locally but CI still found 0.00294m of resumed drift. The camera now clears residual control momentum on pause while preserving its current pose. A real OrbitControls regression checks 100 resumed updates within 1e-10m; the browser explicitly pauses queued momentum and checks the actual frozen pose, zero hidden rendering and one retained canvas at the same strict tolerance. [Camera acceptance details](cinematic-transitions.md).
 
 ## Task · Coordinated morphing, replacement and assembly inspection — verified locally, 29 October 2026
 

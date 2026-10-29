@@ -1,5 +1,21 @@
 import * as THREE from "three";
 import type { CameraView } from "./studio-settings";
+import type { OrbitControls } from "three-stdlib";
+/** Clear queued rotation/pan/dolly through the public update API, preserving the visible pose. */
+export function stopOrbitMotion(control: OrbitControls) {
+  const position = control.object.position.clone(),
+    target = control.target.clone(),
+    damping = control.enableDamping;
+  try {
+    control.enableDamping = false;
+    control.update();
+    control.object.position.copy(position);
+    control.target.copy(target);
+    control.update();
+  } finally {
+    control.enableDamping = damping;
+  }
+}
 /** Fraction of the remaining distance; interrupted tweens continue from their current value. */
 export function finiteBlend(before: number, after: number, seconds: number) {
   if (seconds <= 0 || after >= seconds) return 1;
