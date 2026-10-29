@@ -12,6 +12,11 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
 
+## Task · Cinematic transition audit — completed, 29 October 2026
+
+- Archived the animation continuation and audited actual loading, ownership, camera, finish, environment, mode and landing behavior. [Strategy boundaries and stage evidence](cinematic-transitions.md) preserve source geometry, drafts, backend quotas and the six slots.
+- Baseline desktop/mobile captures and a short recording report no page errors. Balanced scene: 143 calls, 190,738 triangles, 139 geometries/four textures; zero idle frames in a settled one-second sample. Existing demand rendering/material interpolation/camera fit are retained. Lifecycle coordination, validated morphs, replacement/inspection/mode transitions and final measurements remain pending. No deployment.
+
 ## Task · Advanced geometry and wheel acceptance — verified locally, 29 October 2026
 
 - Completed the supported implementation stages in the [advanced geometry review](advanced-geometry.md): differentiated frame/post/fork/rear-end construction, rim-independent 20/24, 32/32 and 36/36 variants, open deep rims, shared SVG/3D geometry and complete preset framing. Reviewed 29 final captures; ten curated original-renderer images document the result.
