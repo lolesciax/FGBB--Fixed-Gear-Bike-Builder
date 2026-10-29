@@ -8,6 +8,7 @@ import {
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { motion, selectionEmissiveIntensity } from "./studio-settings";
+import type { Slot } from "@tracklab/domain";
 export function PaintMaterial({
   color,
   reducedMotion,
@@ -98,11 +99,13 @@ export function useKitPaint(
   });
 }
 export function PartGroup({
+  slot,
   active,
   modelKey,
   onClick,
   children,
 }: {
+  slot: Slot;
   active: boolean;
   modelKey: string;
   onClick: (event: { stopPropagation: () => void }) => void;
@@ -143,7 +146,12 @@ export function PartGroup({
     };
   }, [active, modelKey, invalidate]);
   return (
-    <group ref={group} onClick={onClick}>
+    <group
+      ref={group}
+      name={`assembly_${slot}`}
+      userData={{ slot }}
+      onClick={onClick}
+    >
       {children}
     </group>
   );

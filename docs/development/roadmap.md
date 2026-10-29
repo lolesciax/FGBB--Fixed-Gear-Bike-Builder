@@ -12,6 +12,12 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
 
+## Task · Coordinated morphing, replacement and assembly inspection — verified locally, 29 October 2026
+
+- Added explicit cancellable presentation transactions, identity-bound asset readiness, retained previews/failure recovery and a Skip Animation action that preserves the accepted target. Validated same-family procedural sizes morph through private GPU buffers; different constructions and component topologies use controlled replacement. Backend selection/quota/save authority is unchanged.
+- Kept one camera owner, added bounded pan/zoom, actual assembly focus/highlighting, available technical details, non-drag navigation and Reset Assembly. Morph bounds cover both endpoints and final cleanup restores exact geometry. No temporary pose is persisted or treated as a manufacturer product.
+- TypeScript/lint, 16 focused lifecycle/geometry/camera tests and eight focused browser workflows pass. A live size-change probe used 16 buffers/183,672 bytes and returned to four textures with no residual morph attributes, duplicate assemblies or page errors. [Evidence and remaining stages](cinematic-transitions.md). No deployment.
+
 ## Task · Cinematic transition audit — completed, 29 October 2026
 
 - Archived the animation continuation and audited actual loading, ownership, camera, finish, environment, mode and landing behavior. [Strategy boundaries and stage evidence](cinematic-transitions.md) preserve source geometry, drafts, backend quotas and the six slots.

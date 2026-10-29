@@ -3,6 +3,19 @@
   margin: auto;
   padding: 0 40px 48px;
 }
+.assembly-inspector {display:grid;gap:14px;}
+.assembly-inspector label {display:grid;gap:6px;font-size:14px;}
+.assembly-inspector select {width:100%;min-height:44px;}
+.assembly-inspector fieldset {border:1px solid var(--line);border-radius:8px;padding:12px;}
+.inspection-navigation {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+.inspection-navigation button {min-height:44px;padding:8px 4px;font-size:12px;}
+.assembly-inspector dl {margin:0;display:grid;gap:8px;font-size:14px;}
+.assembly-inspector dl>div {display:flex;justify-content:space-between;gap:12px;}
+.assembly-inspector dt {color:var(--muted);}
+.assembly-inspector dd {margin:0;text-align:right;}
+.transition-feedback {display:flex;align-items:center;gap:10px;}
+.transition-feedback button {min-height:36px;flex-shrink:0;}
+.studio-fallback {z-index:3;background:var(--studio-canvas);}
 .colorway-selector {margin:12px 0; border-top:1px solid var(--line); padding-top:12px;}
 .colorway-selector .finish-label {gap:8px;flex-wrap:wrap;}
 .colorway-options {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px;}

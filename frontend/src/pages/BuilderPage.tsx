@@ -54,6 +54,12 @@ import {
 import { PartsSheet } from "../features/builder/PartsSheet";
 import { FrameChangeReview } from "../features/builder/FrameChangeReview";
 import { useMediaQuery } from "../components/useMediaQuery";
+import { AssemblyInspector } from "../features/builder/AssemblyInspector";
+import {
+  inspectionSlot,
+  type InspectionTarget,
+  type CameraCommand,
+} from "../features/builder/inspection";
 const Bike3D = lazy(() => import("../features/builder/Bike3D"));
 const categories = {
   frameset: {
@@ -111,6 +117,9 @@ export function BuilderPage() {
     return () => document.removeEventListener("visibilitychange", stop);
   }, [reducedMotion]);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [inspection, setInspection] = useState<InspectionTarget | undefined>(),
+    [inspectPanel, setInspectPanel] = useState(false),
+    [navigation, setNavigation] = useState<CameraCommand | undefined>();
   const previewRef = useRef<HTMLElement>(null);
   const b = useBuilder(),
     [loadError, setLoadError] = useState(""),
@@ -540,43 +549,66 @@ export function BuilderPage() {
       </button>
     </div>
   ) : null;
-  const inspectorContents = (
-    <PartsInspector
-      key={b.slot}
-      products={data}
-      configuration={b.configuration}
-      slot={b.slot}
-      pending={b.pending}
-      locked={selectionLocked}
-      loading={catalog.isPending}
-      onSelect={(slot, variant) => void change(slot, variant)}
-      onFinish={changeFinish}
-      notice={
-        <>
-          {quotaNotice}
-          {showIntro && b.slot === "frameset" && !selectionLocked && (
-            <div className="frame-intro">
-              <p>
-                Choose a real brand, model and size below. Dimension-based
-                previews remain illustrative.
-              </p>
-              <button
-                className="text-button"
-                aria-label="Dismiss frameset introduction"
-                onClick={() => {
-                  setShowIntro(false);
-                  sessionStorage.setItem("tracklab-frame-intro", "dismissed");
-                }}
-              >
-                Got it
-              </button>
-            </div>
-          )}
-        </>
-      }
-      onCategory={compact ? (slot) => b.set({ slot }) : undefined}
-    />
-  );
+  const inspectorContents =
+    inspectPanel && b.configuration ? (
+      <AssemblyInspector
+        configuration={b.configuration}
+        catalog={data}
+        target={inspection}
+        onTarget={(target) => {
+          setInspection(target);
+          b.set({
+            turntable: false,
+            ...(target ? { slot: inspectionSlot(target) } : {}),
+          });
+        }}
+        onCommand={(action) =>
+          setNavigation((previous) => ({ id: (previous?.id || 0) + 1, action }))
+        }
+        onReset={() => {
+          setInspection(undefined);
+          b.set({ turntable: false });
+          setResetKey((k) => k + 1);
+        }}
+        onClose={() => setInspectPanel(false)}
+      />
+    ) : (
+      <PartsInspector
+        key={b.slot}
+        products={data}
+        configuration={b.configuration}
+        slot={b.slot}
+        pending={b.pending}
+        locked={selectionLocked}
+        loading={catalog.isPending}
+        onSelect={(slot, variant) => void change(slot, variant)}
+        onFinish={changeFinish}
+        notice={
+          <>
+            {quotaNotice}
+            {showIntro && b.slot === "frameset" && !selectionLocked && (
+              <div className="frame-intro">
+                <p>
+                  Choose a real brand, model and size below. Dimension-based
+                  previews remain illustrative.
+                </p>
+                <button
+                  className="text-button"
+                  aria-label="Dismiss frameset introduction"
+                  onClick={() => {
+                    setShowIntro(false);
+                    sessionStorage.setItem("tracklab-frame-intro", "dismissed");
+                  }}
+                >
+                  Got it
+                </button>
+              </div>
+            )}
+          </>
+        }
+        onCategory={compact ? (slot) => b.set({ slot }) : undefined}
+      />
+    );
   return (
     <main className="builder-page compact-workshop">
       <div className="workspace-heading">
@@ -751,6 +783,19 @@ export function BuilderPage() {
                 3D
               </button>
             </div>
+            {b.mode === "3d" && (
+              <button
+                className="button inspection-trigger"
+                aria-pressed={inspectPanel}
+                onClick={() => {
+                  setInspectPanel((v) => !v);
+                  b.set({ turntable: false });
+                  if (compact) setSheetOpen(true);
+                }}
+              >
+                Inspect
+              </button>
+            )}
             <span className="viewer-label">
               {compact
                 ? "Illustrative preview"
@@ -857,6 +902,8 @@ export function BuilderPage() {
                     catalog={data}
                     onSelect={(slot) => {
                       b.set({ slot, turntable: false });
+                      setInspection(undefined);
+                      setInspectPanel(false);
                       if (compact) setSheetOpen(true);
                     }}
                     studio={b.studio}
@@ -866,6 +913,8 @@ export function BuilderPage() {
                     onInteract={() => b.set({ turntable: false })}
                     cameraView={b.cameraView}
                     resetKey={resetKey}
+                    inspection={inspection}
+                    navigation={navigation}
                   />
                 </Suspense>
               )
@@ -885,12 +934,13 @@ export function BuilderPage() {
                 <select
                   aria-label="Camera view"
                   value={b.cameraView}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    setInspection(undefined);
                     b.set({
                       cameraView: e.target.value as typeof b.cameraView,
                       turntable: false,
-                    })
-                  }
+                    });
+                  }}
                 >
                   {cameraPresets.map(([value, label]) => (
                     <option key={value} value={value} aria-label={label}>
@@ -947,7 +997,10 @@ export function BuilderPage() {
                       ? "Turntable is disabled by your reduced-motion preference"
                       : "Turntable pauses when you interact"
                   }
-                  onClick={() => b.set({ turntable: !b.turntable })}
+                  onClick={() => {
+                    setInspection(undefined);
+                    b.set({ turntable: !b.turntable });
+                  }}
                 >
                   {b.turntable ? "Pause turntable" : "Turntable"}
                 </button>
@@ -983,6 +1036,7 @@ export function BuilderPage() {
               className="reset-button"
               onClick={() => {
                 b.set({ zoom: 1, turntable: false });
+                setInspection(undefined);
                 setPan({ x: 0, y: 0 });
                 setResetKey((k) => k + 1);
               }}
@@ -1080,7 +1134,9 @@ export function BuilderPage() {
       )}
       {compact && sheetOpen && (
         <PartsSheet
-          title={categories[b.slot].label}
+          title={
+            inspectPanel ? "Assembly inspection" : categories[b.slot].label
+          }
           preview={previewRef}
           onClose={() => setSheetOpen(false)}
         >

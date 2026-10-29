@@ -15,10 +15,17 @@ import {
 import { StudioCamera } from "./StudioCamera";
 import { StudioLighting } from "./StudioLighting";
 import { PartGroup } from "./MaterialMotion";
-import {useFrameFinish} from './useFrameFinish';
-import {FinishGraphics} from './FinishGraphics';
-import {useComponentFinishes} from './useComponentFinishes';
+import { useFrameFinish } from "./useFrameFinish";
+import { FinishGraphics } from "./FinishGraphics";
+import { useComponentFinishes } from "./useComponentFinishes";
 import { FrameKit } from "./FrameKit";
+import {
+  AssemblyPresentation,
+  type PresentationBridge,
+} from "./AssemblyPresentation";
+import type { TransitionCoordinator } from "./transitions";
+import type { InspectionTarget, CameraCommand } from "./inspection";
+import { InspectionHighlight } from "./InspectionHighlight";
 import type {
   CameraView,
   StudioEnvironment,
@@ -76,6 +83,11 @@ export function ProceduralAssembly({
   onInteract,
   onMoving,
   onFinishFailure,
+  coordinator,
+  bridge,
+  active = true,
+  inspection,
+  navigation,
 }: {
   configuration: Configuration;
   catalog: Product[];
@@ -89,18 +101,26 @@ export function ProceduralAssembly({
   activeSlot?: Slot;
   onInteract: () => void;
   onMoving: (moving: boolean) => void;
-  onFinishFailure:(failed:boolean)=>void;
+  onFinishFailure: (failed: boolean) => void;
+  coordinator: TransitionCoordinator;
+  bridge: PresentationBridge;
+  active?: boolean;
+  inspection?: InspectionTarget;
+  navigation?: CameraCommand;
 }) {
   const get = (slot: Slot) =>
     variantById(catalog, configuration[slot])?.variant;
-  const frameRecord=variantById(catalog,configuration.frameset);
+  const frameRecord = variantById(catalog, configuration.frameset);
   const frame = get("frameset");
-  const morphologyId=frameRecord&&renderMorphologyId(frameRecord.product,frameRecord.variant);
+  const morphologyId =
+    frameRecord && renderMorphologyId(frameRecord.product, frameRecord.variant);
   const geometryKey = JSON.stringify(
     Object.fromEntries(
       slots.map((slot) => [
         slot,
-        slot==='frameset'?renderFrameSpecs(get('frameset')?.specs||{},morphologyId):get(slot as Slot)?.specs,
+        slot === "frameset"
+          ? renderFrameSpecs(get("frameset")?.specs || {}, morphologyId)
+          : get(slot as Slot)?.specs,
       ]),
     ),
   );
@@ -110,7 +130,14 @@ export function ProceduralAssembly({
   );
   const key = (...slots: Slot[]) =>
     JSON.stringify(
-      Object.fromEntries(slots.map((slot) => [slot, slot==='frameset'?renderFrameSpecs(get(slot)?.specs||{},morphologyId):get(slot)?.specs])),
+      Object.fromEntries(
+        slots.map((slot) => [
+          slot,
+          slot === "frameset"
+            ? renderFrameSpecs(get(slot)?.specs || {}, morphologyId)
+            : get(slot)?.specs,
+        ]),
+      ),
     );
   const models = {
     frame: useOwnedModel(
@@ -118,18 +145,43 @@ export function ProceduralAssembly({
       fallbackFrame,
     ),
     wheels: useOwnedModel(key("frameset", "wheels"), wheels),
-    tires: useOwnedModel(JSON.stringify({frameset:renderFrameSpecs(get('frameset')?.specs||{},morphologyId),wheels:{bsd:get('wheels')?.specs.bsd,rimWidth:get('wheels')?.specs.rimWidth},tires:get('tires')?.specs}), tires),
+    tires: useOwnedModel(
+      JSON.stringify({
+        frameset: renderFrameSpecs(get("frameset")?.specs || {}, morphologyId),
+        wheels: {
+          bsd: get("wheels")?.specs.bsd,
+          rimWidth: get("wheels")?.specs.rimWidth,
+        },
+        tires: get("tires")?.specs,
+      }),
+      tires,
+    ),
     cockpit: useOwnedModel(key("frameset", "cockpit"), cockpit),
     saddle: useOwnedModel(key("frameset", "saddle"), createSaddle),
     drivetrain: useOwnedModel(key("frameset", "drivetrain"), createDrivetrain),
   };
-  useFrameFinish(models.frame,frameRecord?.product,frame,reducedMotion);
-  useComponentFinishes(models.wheels,configuration,catalog,reducedMotion);
-  useComponentFinishes(models.drivetrain,configuration,catalog,reducedMotion);
-  useComponentFinishes(models.cockpit,configuration,catalog,reducedMotion);
-  useComponentFinishes(models.saddle,configuration,catalog,reducedMotion);
+  useFrameFinish(models.frame, frameRecord?.product, frame, reducedMotion);
+  useComponentFinishes(models.wheels, configuration, catalog, reducedMotion);
+  useComponentFinishes(
+    models.drivetrain,
+    configuration,
+    catalog,
+    reducedMotion,
+  );
+  useComponentFinishes(models.cockpit, configuration, catalog, reducedMotion);
+  useComponentFinishes(models.saddle, configuration, catalog, reducedMotion);
   const group = useRef<THREE.Group>(null),
-    modelKey = slots.map(slot=>configuration[slot]).join("|");
+    modelKey = slots.map((slot) => configuration[slot]).join("|");
+  const rootData = useMemo(
+    () => ({ geometryRevision: "components-v4", cockpit: g.cockpit.type }),
+    [g.cockpit.type],
+  );
+  useLayoutEffect(() => {
+    bridge.root = group.current;
+    return () => {
+      bridge.root = null;
+    };
+  }, [bridge]);
   useLayoutEffect(() => {
     // Layer 0 is the visible scene. Layer 1 contains only bicycle shadow casters,
     // excluding the near-coplanar studio floor from the contact depth texture.
@@ -152,17 +204,11 @@ export function ProceduralAssembly({
   });
   return (
     <>
-      <group
-        ref={group}
-        name="bicycle_assembly"
-        userData={{
-          geometryRevision: "components-v4",
-          cockpit: g.cockpit.type,
-        }}
-      >
+      <group ref={group} name="bicycle_assembly" userData={rootData}>
         <PartGroup
+          slot="frameset"
           {...pick("frameset")}
-          active={activeSlot === "frameset"}
+          active={!inspection && activeSlot === "frameset"}
           modelKey={modelKey}
         >
           {frame?.asset3D ? (
@@ -175,20 +221,44 @@ export function ProceduralAssembly({
           ) : (
             <primitive object={models.frame} />
           )}
-          {frameRecord&&<FinishGraphics assembly={group} specs={frameRecord.variant.specs} colorway={selectedColorway(frameRecord.product,frameRecord.variant)} geometryKey={geometryKey} onFailure={onFinishFailure}/>}
+          {frameRecord && (
+            <FinishGraphics
+              assembly={group}
+              specs={frameRecord.variant.specs}
+              colorway={selectedColorway(
+                frameRecord.product,
+                frameRecord.variant,
+              )}
+              geometryKey={geometryKey}
+              onFailure={onFinishFailure}
+            />
+          )}
         </PartGroup>
         {(["wheels", "tires", "cockpit", "saddle", "drivetrain"] as const).map(
           (slot) => (
             <PartGroup
+              slot={slot}
               key={slot}
               {...pick(slot)}
-              active={activeSlot === slot}
+              active={!inspection && activeSlot === slot}
               modelKey={modelKey}
             >
               <primitive object={models[slot]} />
             </PartGroup>
           ),
         )}
+        <AssemblyPresentation
+          assembly={group}
+          configuration={configuration}
+          coordinator={coordinator}
+          bridge={bridge}
+          active={active}
+        />
+        <InspectionHighlight
+          assembly={group}
+          target={inspection}
+          revision={modelKey}
+        />
       </group>
       <StudioLighting
         studio={studio}
@@ -207,9 +277,13 @@ export function ProceduralAssembly({
         view={cameraView}
         resetKey={resetKey}
         reducedMotion={reducedMotion}
-        turntable={turntable}
+        turntable={turntable && active && !coordinator.busy}
         onInteract={onInteract}
         onMoving={onMoving}
+        inspection={inspection}
+        navigation={navigation}
+        coordinator={coordinator}
+        active={active}
       />
     </>
   );

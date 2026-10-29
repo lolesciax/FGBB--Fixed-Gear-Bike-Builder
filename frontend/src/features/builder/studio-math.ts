@@ -23,6 +23,12 @@ export function fitAssembly(
   const box = new THREE.Box3().setFromObject(root),
     center = box.getCenter(new THREE.Vector3()),
     sphere = box.getBoundingSphere(new THREE.Sphere());
+  const envelope = root.userData.transitionBounds as THREE.Box3 | undefined;
+  if (envelope) {
+    box.union(envelope);
+    box.getCenter(center);
+    box.getBoundingSphere(sphere);
+  }
   const direction = viewDirection(view),
     right = new THREE.Vector3()
       .crossVectors(new THREE.Vector3(0, 1, 0), direction)
@@ -62,6 +68,21 @@ export function fitAssembly(
       }
     }
   });
+  if (envelope)
+    for (const x of [box.min.x, box.max.x])
+      for (const y of [box.min.y, box.max.y])
+        for (const z of [box.min.z, box.max.z]) {
+          const delta = new THREE.Vector3(x, y, z).sub(center);
+          distance = Math.max(
+            distance,
+            delta.dot(direction) +
+              Math.max(
+                Math.abs(delta.dot(right)) /
+                  (tan * Math.max(0.1, aspect) * 0.82),
+                Math.abs(delta.dot(up)) / (tan * 0.9),
+              ),
+          );
+        }
   const minDistance = Math.max(0.6, sphere.radius * 1.15 + 0.08);
   return {
     center,
