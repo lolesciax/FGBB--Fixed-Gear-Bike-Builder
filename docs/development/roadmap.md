@@ -12,6 +12,11 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
 
+## Task · Structural assembly and 20F/24R audit — completed, 29 October 2026
+
+- Archived the new continuation and inspected the shared steering/spoke geometry, original GLBs, both renderers, camera fitting, finish zones and compatibility paths. [The audit](modeling-refinement.md) identifies fixed/baked steering-stack dimensions, uniform annular dropouts, one shared spoke count and fixed lacing, and the changed saddle acceptance rule. Implementation is pending in this audit milestone.
+- The new brief supersedes the earlier compatible-by-abstraction seating behavior: unknown rail/clamp interfaces must be unverified. Preserve frame-specific dimensions, saved IDs/appearances, six slots and the development bypass. Add 20F/24R as an additional authored demo configuration; do not invent a factory wheelset or protected graphics. No screenshots or new asset rights were supplied with the attachment. No deployment.
+
 ## Task · Builder visual refinement and final acceptance — completed locally, 29 October 2026
 
 - Inspected 31 actual renders and two mobile screens: Polished/Pure Black, all four bars, two sourced frame colorways, six major camera angles, dark studio and wheel/crank/saddle/cockpit close-ups. [The review](builder-polish.md) links the curated images and records what was checked. Frame/fork paint, post sizing, clamps, paired cranks/pedals and controlled material zones remain coherent across modes.

@@ -54,6 +54,10 @@ Do not invent product specifications, prices, affiliations or asset rights. Pric
 
 The [builder polish brief](requirements/builder-polish.md) extends the geometry and colorway milestones with controlled Polished/Pure Black component finishes and Brand Color only when supported by the actual variant. Preserve six canonical part slots and official frame colorways. Appearance must persist through signed workspace changes, history, saves, shared previews and exports. Saddle selection must not be blocked by the frame's post diameter; validate actual rail/clamp conflicts where known. Audit and acceptance evidence belong in [the implementation review](development/builder-polish.md).
 
+## Structural assembly and asymmetric spoke-count continuation
+
+The [modeling refinement brief](requirements/modeling-refinement.md) prioritizes head tube/steerer/headset/fork/dropout assembly, actual selectable 20F/24R wheels with drilling/lacing checks, and multi-angle 2D/3D geometry verification. Preserve the canonical finish system and existing products. This continuation supersedes the earlier abstracted-saddle rule: unknown rail/clamp interfaces must report Needs Verification; only documented matches are compatible. Separate frame/post fit from saddle rail fit without inventing a new purchasing slot. Evidence and stage statuses belong in [the review](development/modeling-refinement.md).
+
 ## Verification and milestone acceptance
 
 Each phase must have an explicit status: completed and verified; implemented but not fully verified; partially implemented; not started; or blocked. File existence alone is not completion evidence.
