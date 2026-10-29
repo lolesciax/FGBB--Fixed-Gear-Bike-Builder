@@ -15,6 +15,7 @@ test('wheelset counts, lacing, drilling and coordinated finishes agree across bo
  await page.getByRole('button',{name:'Select Studio 20 / 24',exact:true}).click();
  await expect.poll(()=>wheelScene(page)).toMatchObject({counts:[20,24],lacing:['radial','two-cross']});
  await expect(page.locator('.product-option.selected [data-wheel-summary]')).toContainText('20F / 24R');
+ await expect(page.locator('.product-option.selected [data-wheel-summary]')).toBeVisible();
  await page.getByLabel('Wheelset finish',{exact:true}).selectOption('pure-black');
  await expect.poll(async()=>(await wheelScene(page)).colors).toEqual(['202731','202731','202731']);
  await page.getByRole('button',{name:'2D',exact:true}).click();

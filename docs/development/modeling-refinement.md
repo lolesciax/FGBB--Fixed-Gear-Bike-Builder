@@ -13,7 +13,7 @@ Actual code gaps: `wheelDimensions` exposes one spoke count for both wheels; `sp
 | 1 Audit | Complete | Code, prior renders and new requirements compared |
 | 2 Structural assembly | Complete | Shared steering stack, profiled head tube/crown, open dropout slots, v3 kits and synchronized SVG; checks below |
 | 3 Wheelsets | Complete | Additional authored 20/24 demo, actual spokes/drilled flanges/rim bridges, independent lacing, SVG/export/save/history verification |
-| 4 Drivetrain | Pending | Arm/spider/pedal/cog/chain proportions and attachments inspected/refined |
+| 4 Drivetrain | Complete | Lenticular tapered arms, connected root bosses/cog seat, bored lockring and pedal hardware; unchanged gearing and chain path |
 | 5 Seating | Pending | Supported shell/rails/clamp; separate frame/post and rail/clamp checks, unknown => unverified |
 | 6 Cockpit | Pending | Four distinct profiles, steering/clamp continuity, tape/grips kept separate |
 | 7 Materials | In progress | Separate rim/spoke/hub materials and coordinated finish verified; mixed factory registration still pending |
@@ -40,3 +40,11 @@ Verification: TypeScript and ESLint pass; 54 targeted tests pass across structur
 Both viewers derive each wheel's count and lacing from one shared build definition. Real flange holes and curved inner-rim bridge holes align with the spoke endpoints. Nipple/spoke instances have the actual counts. Hub shoulders connect the shell to axle endcaps. Separate rim/spoke/hub materials retain coordinated Polished/Pure Black behavior, with tire rubber separate. Lacing and drilling mismatches become incompatible; absent data remains unverified. Wheel cards show counts, lacing, depth and drilling status. Spoke-only/depth changes no longer rebuild unchanged tire meshes.
 
 Verification: TypeScript and ESLint pass; 20 targeted domain/mesh tests pass, including raycasts through actual drilling and exact SVG counts. Four isolated browser workflows pass: 20/24 versus retained 32/32, actual instance counts, finishes/history, unchanged unrelated geometry, responsive finish controls, save/reload/garage and an exported SVG containing exactly 44 spoke lines. Final multi-angle visual/camera review remains stage 11.
+
+## Stage 4 — drivetrain and live geometry corrections
+
+Added tapered crank outlines shared with SVG, varying arm thickness, root bosses that join the arms to the spindle/spider, a rear-hub cog seat, a bored lockring and pedal grip pins. Pitch circles, tooth counts, opposed pedals, chain tangency and independent crank/chainring finishes remain intact. Mounting contours and tooth/link closure remain illustrative; unspecified real cog/crank interfaces still require verification.
+
+The live wheel review exposed an interior-rim triangulation defect missed by vertex/raycast tests: long triangles bent across the wheel center. Clipping the developed strip into short angular bands before curving it preserves real drilling without disc-like faces. A trial general tessellator was too expensive and did not meet the surface-envelope test; it was replaced by bounded band clipping. New triangle-centroid checks prevent the regression. Live review also found that the compact workspace's existing CSS hid wheel metadata; the dedicated wheel summary is now explicitly visible and its browser assertion checks visibility.
+
+Verification: 16 focused assembly/wheel/finish tests pass, including mount contact and the corrected wheel surface envelope. TypeScript/lint pass. Updated isolated live captures of all six major angles and four structural/drivetrain close-ups show open wheels and connected crank/cog assemblies, with no page errors. Structural commit [CI 40820060821](https://github.com/lolesciax/FGBB--Fixed-Gear-Bike-Builder/actions/runs/40820060821) passed. Seating and final regression review remain next.

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { BicycleGeometry, Position } from "@tracklab/domain";
+import {crankArmOutline,type BicycleGeometry,type Position} from "@tracklab/domain";
 import {
   axle,
   curve,
@@ -8,6 +8,7 @@ import {
   material,
   mesh,
   vector,
+  annulus,
 } from "./primitives";
 
 function gear(teeth: number, radius: number, inner: number, thickness: number) {
@@ -33,12 +34,18 @@ function gear(teeth: number, radius: number, inner: number, thickness: number) {
 }
 function arm(length: number) {
   const shape = new THREE.Shape();
-  shape.moveTo(0, 0.016);
-  shape.lineTo(length, 0.011);
-  shape.absarc(length, 0, 0.011, Math.PI / 2, -Math.PI / 2, true);
-  shape.lineTo(0, -0.016);
-  shape.absarc(0, 0, 0.016, -Math.PI / 2, Math.PI / 2, true);
-  return extrude(shape, 0.012, 0.0018);
+  crankArmOutline(length).forEach(([x,y],i)=>i?shape.lineTo(x,y):shape.moveTo(x,y));shape.closePath();
+  const geometry = extrude(shape, 0.012, 0.0018),
+    p = geometry.getAttribute("position");
+  // A forged-looking lenticular section: thicker root and pedal eye, slim middle.
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i),
+      t = THREE.MathUtils.clamp(x / length, 0, 1),
+      waist = Math.sin(Math.PI * t);
+    p.setZ(i, p.getZ(i) * (1.3 - 0.35 * waist));
+  }
+  geometry.computeVertexNormals();
+  return geometry;
 }
 function pedal() {
   const shape = new THREE.Shape();
@@ -81,7 +88,7 @@ export function createDrivetrain(g: BicycleGeometry) {
   crank.name = "finish_crankArms";
   const chainring = crank.clone();
   chainring.name = "finish_chainring";
-  axle(group, "crank_spindle", g.bb, 0.011, 0.145, silver);
+  axle(group, "crank_spindle", g.bb, 0.011, 2 * (d.armOffset + 0.004), silver);
   for (const side of [-1, 1])
     axle(
       group,
@@ -107,19 +114,17 @@ export function createDrivetrain(g: BicycleGeometry) {
   const cog = mesh(
     group,
     "fixed_rear_cog",
-    gear(d.rearTeeth, c.rearRadius, 0.012, 0.0035),
+    gear(d.rearTeeth, c.rearRadius, 0.0175, 0.0035),
     silver,
     [g.rear[0], g.rear[1], d.chainline],
   );
   cog.userData.teeth = d.rearTeeth;
-  axle(
-    group,
-    "fixed_cog_lockring",
-    [g.rear[0], g.rear[1], d.chainline + 0.004],
-    0.021,
-    0.004,
-    silver,
-  );
+  const lockring = annulus(0.021, 0.0165);
+  mesh(group, "fixed_cog_lockring", extrude(lockring, 0.0035, 0.0002), silver, [
+    g.rear[0],
+    g.rear[1],
+    d.chainline + 0.0038,
+  ]);
   const boltRadius = c.frontRadius - 0.02;
   axle(
     group,
@@ -163,6 +168,15 @@ export function createDrivetrain(g: BicycleGeometry) {
   const armGeometry = arm(d.crankLength),
     pedalGeometry = pedal();
   for (const [i, side] of [1, -1].entries()) {
+    cylinder(
+      group,
+      `crank_root_boss_${side}`,
+      [g.bb[0], g.bb[1], side * (side === 1 ? d.chainline : 0.038)],
+      [g.bb[0], g.bb[1], side * d.armOffset],
+      0.016,
+      crank,
+      0.015,
+    );
     const part = mesh(group, `crank_arm_${side}`, armGeometry, crank, [
       g.bb[0],
       g.bb[1],
@@ -191,6 +205,18 @@ export function createDrivetrain(g: BicycleGeometry) {
         [center[0] + x, center[1], center[2]],
       );
     }
+    for (const x of [-0.035, 0.035])
+      for (const z of [-0.03, 0.03])
+        cylinder(
+          group,
+          `pedal_pin_${side}_${x}_${z}`,
+          [center[0] + x, center[1] + 0.005, center[2] + z],
+          [center[0] + x, center[1] + 0.009, center[2] + z],
+          0.0016,
+          silver,
+          0.0016,
+          6,
+        );
   }
   const plateGeometry = chainPlate(),
     plates = new THREE.InstancedMesh(plateGeometry, chainMat, c.count * 2),

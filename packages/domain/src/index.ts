@@ -13,7 +13,7 @@ export const registeredFrameAssets=z.array(frameAssetSchema).parse(frameAssets);
 export { quotaPolicySchema, defaultQuotaPolicy, type QuotaPolicy } from './policy';
 export { visualizationInfo } from './fidelity';
 export { assemblyGeometry, assetRegistry } from './visual';
-export { componentGeometry, cockpitDimensions, handlebarPoints, forkBladePoints, wheelDimensions, spokeEndpoints, pitchRadius, barTypes, type Position, type BarType, type BicycleGeometry } from './components';
+export { componentGeometry, cockpitDimensions, handlebarPoints, forkBladePoints, wheelDimensions, spokeEndpoints, pitchRadius, crankArmOutline, barTypes, type Position, type BarType, type BicycleGeometry } from './components';
 
 export const slots = ['frameset', 'wheels', 'tires', 'cockpit', 'drivetrain', 'saddle'] as const;
 export const slotSchema = z.enum(slots);

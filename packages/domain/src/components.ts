@@ -173,6 +173,7 @@ export function wheelDimensions(
     rearSpacing: numberSpec(wheel, "rearSpacing", 120) / 1000,
     frontAxle: numberSpec(wheel, "frontAxleDiameter", 10) / 1000,
     rearAxle: numberSpec(wheel, "rearAxleDiameter", 10) / 1000,
+    chainline:numberSpec(wheel,'chainline',42)/1000,
     sidewall: tire.sidewall === "tan" ? "tan" : "black",
   };
 }
@@ -209,6 +210,14 @@ export function spokeEndpoints(
 }
 export function pitchRadius(teeth: number, pitch = 0.0127) {
   return pitch / (2 * Math.sin(Math.PI / teeth));
+}
+export function crankArmOutline(length:number):[number,number][]{
+ const points:[number,number][]=[];
+ for(let i=0;i<=12;i++){const t=i/12;points.push([t*length,-(.016*(1-t)+.011*t)*(1-.2*Math.sin(Math.PI*t))]);}
+ for(let i=1;i<=12;i++){const a=-Math.PI/2+i*Math.PI/12;points.push([length+.011*Math.cos(a),.011*Math.sin(a)]);}
+ for(let i=11;i>=0;i--){const t=i/12;points.push([t*length,(.016*(1-t)+.011*t)*(1-.2*Math.sin(Math.PI*t))]);}
+ for(let i=1;i<=12;i++){const a=Math.PI/2+i*Math.PI/12;points.push([.016*Math.cos(a),.016*Math.sin(a)]);}
+ return points;
 }
 export function chainGeometry(
   rear: Position,

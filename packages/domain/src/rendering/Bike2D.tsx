@@ -4,6 +4,7 @@ import {
   selectedColorway,
   handlebarPoints,
   spokeEndpoints,
+  crankArmOutline,
   variantById,
   slots,
   finishZones,
@@ -228,6 +229,7 @@ export function Bike2D({
     chain = line(d.chain.points.map(project), true),
     frontRadius = d.chain.frontRadius * 1000,
     rearRadius = d.chain.rearRadius * 1000;
+  const armPath=(angle:number)=>line(crankArmOutline(d.crankLength).map(([x,y])=>({x:bb.x+(Math.cos(angle)*x-Math.sin(angle)*y)*1000,y:bb.y-(Math.sin(angle)*x+Math.cos(angle)*y)*1000})),true);
   const finishAxes: Record<FinishZone, [number, number]> = {
     wheelset: [-radius, radius],
     crankArms: [bb.y - d.crankLength * 1000, bb.y + d.crankLength * 1000],
@@ -600,7 +602,7 @@ export function Bike2D({
           />
         </g>
         <g {...interactive("drivetrain")}>
-          {tube(bb, project(d.pedals[1]), 22, finish("crankArms"))}
+          <path d={armPath(d.crankAngle+Math.PI)} fill={finish('crankArms')} stroke="#343d48" strokeWidth="1"/>
           <rect
             x={project(d.pedals[1]).x - 43}
             y={project(d.pedals[1]).y - 6}
@@ -618,7 +620,7 @@ export function Bike2D({
             strokeDasharray="4 8.7"
           />
           <path
-            d={gear(d.rearTeeth, rearRadius, 12, rear)}
+            d={gear(d.rearTeeth, rearRadius, 17.5, rear)}
             fill={metal}
             fillRule="evenodd"
             data-teeth={d.rearTeeth}
@@ -663,7 +665,7 @@ export function Bike2D({
             );
           })}
           <g data-finish-zone="crankArms">
-            {tube(bb, project(d.pedals[0]), 23, finish("crankArms"))}
+            <path d={armPath(d.crankAngle)} fill={finish('crankArms')} stroke="#343d48" strokeWidth="1"/>
           </g>
           <rect
             x={project(d.pedals[0]).x - 44}

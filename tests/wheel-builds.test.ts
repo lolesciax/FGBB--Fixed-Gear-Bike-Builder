@@ -77,6 +77,22 @@ describe("complete wheel build variants", () => {
         ).intersectObject(bridge, false);
       expect(ray(a)).toHaveLength(0);
       expect(ray(a + 0.03).length).toBeGreaterThan(0);
+      const positions = (bridge as THREE.Mesh).geometry.getAttribute(
+        "position",
+      );
+      for (let i = 0; i < positions.count; i += 3) {
+        const x =
+            (positions.getX(i) +
+              positions.getX(i + 1) +
+              positions.getX(i + 2)) /
+            3,
+          y =
+            (positions.getY(i) +
+              positions.getY(i + 1) +
+              positions.getY(i + 2)) /
+            3;
+        expect(Math.hypot(x, y)).toBeGreaterThan(g.wheel.rimInner - 0.0002);
+      }
       const rim = (root.getObjectByName("rim_profile") as THREE.Mesh).material,
         spokes = (root.getObjectByName("laced_spokes") as THREE.Mesh).material,
         hub = (root.getObjectByName("hub_shell") as THREE.Mesh).material;

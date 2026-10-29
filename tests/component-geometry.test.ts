@@ -166,6 +166,18 @@ describe("mechanical assembly geometry", () => {
       expect(c.count % 2).toBe(0);
     }
   });
+  it('connects the cog seat and crank roots rather than leaving floating annuli',()=>{
+    const g=componentGeometry(),wheel=createWheel(g,true),drive=createDrivetrain(g);
+    wheel.updateWorldMatrix(true,true);drive.updateWorldMatrix(true,true);
+    const box=(root:THREE.Object3D,name:string)=>new THREE.Box3().setFromObject(root.getObjectByName(name)!);
+    const seat=box(wheel,'fixed_hub_cog_seat'),cog=box(drive,'fixed_rear_cog');
+    expect(seat.max.z).toBeGreaterThan(cog.min.z);expect(seat.min.z).toBeLessThan(cog.min.z);
+    for(const side of [-1,1])expect(box(drive,`crank_root_boss_${side}`).intersectsBox(box(drive,`crank_arm_${side}`))).toBe(true);
+    expect(box(drive,'crank_root_boss_1').intersectsBox(box(drive,'spider_boss'))).toBe(true);
+    const lock=drive.getObjectByName('fixed_cog_lockring')!;
+    expect(new THREE.Raycaster(new THREE.Vector3(g.rear[0],g.rear[1],1),new THREE.Vector3(0,0,-1)).intersectObject(lock,false)).toHaveLength(0);
+    disposeModel(wheel);disposeModel(drive);
+  });
   it("builds a shaped full-length saddle supported by rails and a seat-axis post", () => {
     const g = componentGeometry(),
       saddle = createSaddle(g);

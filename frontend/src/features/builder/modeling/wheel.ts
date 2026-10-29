@@ -32,11 +32,62 @@ function drilledBridge(g: BicycleGeometry, rear: boolean) {
     hole.absarc(a * w.rimInner, spoke.rim[2], 0.0015, 0, Math.PI * 2, true);
     shape.holes.push(hole);
   }
-  const geometry = new THREE.ExtrudeGeometry(shape, {
+  const flat = new THREE.ExtrudeGeometry(shape, {
     depth: 0.0018,
     bevelEnabled: false,
     curveSegments: 8,
   });
+  // Subdivide the developed strip before bending it. Long triangles otherwise
+  // cross the wheel's center even though every vertex lies on the rim radius.
+  const source = flat.getAttribute("position"),
+    vertices: number[] = [],
+    step = circumference / Math.ceil(circumference / 0.009);
+  type Vertex = [number, number, number];
+  const clip = (poly: Vertex[], boundary: number, greater: boolean) => {
+    const out: Vertex[] = [];
+    for (let i = 0; i < poly.length; i++) {
+      const a = poly[i],
+        b = poly[(i + 1) % poly.length],
+        insideA = greater ? a[0] >= boundary : a[0] <= boundary,
+        insideB = greater ? b[0] >= boundary : b[0] <= boundary;
+      if (insideA) out.push(a);
+      if (insideA !== insideB) {
+        const t = (boundary - a[0]) / (b[0] - a[0]);
+        out.push([
+          boundary,
+          a[1] + t * (b[1] - a[1]),
+          a[2] + t * (b[2] - a[2]),
+        ]);
+      }
+    }
+    return out;
+  };
+  for (let i = 0; i < source.count; i += 3) {
+    const triangle: Vertex[] = Array.from({ length: 3 }, (_, j) => [
+        source.getX(i + j),
+        source.getY(i + j),
+        source.getZ(i + j),
+      ]),
+      xs = triangle.map((p) => p[0]);
+    const start = Math.floor(Math.min(...xs) / step),
+      end = Math.floor(Math.max(...xs) / step);
+    for (let slab = start; slab <= end; slab++) {
+      const polygon = clip(
+        clip(triangle, slab * step, true),
+        (slab + 1) * step,
+        false,
+      );
+      for (let j = 1; j < polygon.length - 1; j++)
+        for (const v of [polygon[0], polygon[j], polygon[j + 1]])
+          vertices.push(...v);
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(vertices, 3),
+  );
+  flat.dispose();
   const p = geometry.getAttribute("position");
   for (let i = 0; i < p.count; i++) {
     const a = p.getX(i) / w.rimInner,
@@ -96,6 +147,19 @@ export function createWheel(g: BicycleGeometry, rear: boolean) {
     ]),
     alloy,
   );
+  if (rear)
+    mesh(
+      group,
+      "fixed_hub_cog_seat",
+      revolved([
+        [axleRadius + 0.0015, flange - 0.005],
+        [0.0173, flange - 0.005],
+        [0.0173, w.chainline + 0.002],
+        [axleRadius + 0.0015, w.chainline + 0.002],
+        [axleRadius + 0.0015, flange - 0.005],
+      ]),
+      alloy,
+    );
   for (const side of [-1, 1]) {
     const flangeShape = annulus(hubRadius + 0.004, 0.009);
     for (const spoke of spokeEndpoints(w, rear).filter(

@@ -12,6 +12,11 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
 
+## Task · Drivetrain connections and wheel surface correction — verified, 29 October 2026
+
+- Connected crank roots/spider and rear cog/hub, added shaped arm sections, bored lockring and pedal hardware, and shared the tapered arm outline with SVG. Gearing/chainline and finish selection remain unchanged.
+- Live review caught long rim-bridge triangles crossing the wheel center and hidden wheel labels. Corrected the actual surface subdivision and label visibility; added triangle-envelope and visible-label regressions. Sixteen focused geometry/finish checks and TypeScript/lint pass; refreshed live angles/close-ups were inspected. Structural CI passed. [Evidence and illustrative mounting limits](modeling-refinement.md). No deployment.
+
 ## Task · Additional 20F/24R wheelset — verified, 29 October 2026
 
 - Added an authored radial-front/two-cross-rear demo with 20/24 actual spokes, matching flange/rim holes, hub shoulders and clear wheel-build labels. Existing classic/deep/M9 options retain 32/32 geometry. Shared domain rules flag missing drilling/lacing and reject mismatches; no unverified manufacturer product was published.

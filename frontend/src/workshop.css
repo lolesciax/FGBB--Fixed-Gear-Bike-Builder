@@ -206,6 +206,10 @@
 .compact-workshop .render-support {
   display: none;
 }
+.compact-workshop [data-wheel-summary] {
+  display: block;
+  line-height: 1.5;
+}
 .compact-workshop .finish-controls {
   margin-top: 6px;
 }
