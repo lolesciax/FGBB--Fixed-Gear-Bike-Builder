@@ -197,6 +197,17 @@ export function Bike2D({
     chain = line(d.chain.points.map(project), true),
     frontRadius = d.chain.frontRadius * 1000,
     rearRadius = d.chain.rearRadius * 1000;
+  const finishAxes: Record<FinishZone, [number, number]> = {
+    wheelset: [-radius, radius],
+    crankArms: [bb.y - d.crankLength * 1000, bb.y + d.crankLength * 1000],
+    chainring: [bb.y - frontRadius, bb.y + frontRadius],
+    handlebar: [
+      bar.y - m.cockpit.rise * 1000 - 15,
+      bar.y + m.cockpit.drop * 1000 + 15,
+    ],
+    stem: [Math.min(stem.y, bar.y) - 20, Math.max(stem.y, bar.y) + 20],
+    seatpost: [saddle.y, seat.y],
+  };
   return (
     <svg
       className={"bike-svg " + (compact ? "compact" : "")}
@@ -224,10 +235,11 @@ export function Bike2D({
               <linearGradient
                 id={`${uid}-${zone}`}
                 key={zone}
+                gradientUnits="userSpaceOnUse"
                 x1="0"
-                y1="0"
-                x2=".2"
-                y2="1"
+                y1={finishAxes[zone][0]}
+                x2="20"
+                y2={finishAxes[zone][1]}
               >
                 {finishGradient(componentPaints[zone]).map((stop, i) => (
                   <stop key={i} offset={stop.at} stopColor={stop.color} />

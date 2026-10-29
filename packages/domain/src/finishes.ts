@@ -161,6 +161,7 @@ export const appearanceForSlot = (configuration: Configuration, slot: Slot) =>
       .map((zone) => configuration.appearance?.[zone] || null),
   );
 export function finishGradient(paint: Paint) {
+  const shine = paint.metalness > 0.7 && paint.roughness < 0.35 ? 0.62 : 0.16;
   const mix = (amount: number) =>
     "#" +
     [1, 3, 5]
@@ -175,8 +176,8 @@ export function finishGradient(paint: Paint) {
       .join("");
   return [
     { at: 0, color: mix(-0.35) },
-    { at: 0.24, color: mix(0.35) },
-    { at: 0.39, color: mix(0.7) },
+    { at: 0.24, color: mix(shine * 0.55) },
+    { at: 0.39, color: mix(shine) },
     { at: 0.53, color: paint.color },
     { at: 1, color: mix(-0.5) },
   ];

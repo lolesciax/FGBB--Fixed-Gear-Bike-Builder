@@ -89,6 +89,7 @@ describe("controlled component appearances", () => {
     expect(finishGradient(componentPresets.polished)).not.toEqual(
       finishGradient(componentPresets["pure-black"]),
     );
+    for(const stop of finishGradient(componentPresets['pure-black']))expect(Math.max(...[1,3,5].map(i=>parseInt(stop.color.slice(i,i+2),16)))).toBeLessThan(100);
   });
   it("separates saddle rails from every frame post diameter and renders the correct post", () => {
     for (const seatpost of [27.2, 30.9, 31.6])
