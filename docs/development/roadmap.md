@@ -12,6 +12,11 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
 
+## Task · Builder polish and controlled finishes audit — completed, 29 October 2026
+
+- Archived the continuation and inspected shared configuration, backend workspace mutation, SVG/WebGL components, material ownership and seating checks. [The audit](builder-polish.md) records the six controlled appearance zones and acceptance phases. Confirmed hard-coded component finishes and a saddle/frame post-diameter comparison that can reject an otherwise supported saddle. Implementation is pending in this audit milestone.
+- Preserve current frame colorways, six slots, saved IDs and local development access. Add optional canonical appearance data; keep cosmetics outside geometry and structural compatibility. Brand Color remains conditional on actual source-backed product support. No deployment or advanced modular overhaul.
+
 ## Task · Versioned paint colorways and permitted graphics — completed locally, 28 October 2026
 
 - Added model/size-specific colorways to the existing catalog: 16 published paint approximations and 68 new finish variants; four additional colorways remain draft with their model records. Preserved historical IDs/specifications and all six canonical component selections. Sources, model revisions, availability, surface properties, missing graphics and publication validation are recorded in [the colorway review](colorways.md).
