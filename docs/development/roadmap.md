@@ -12,6 +12,11 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
 
+## Task · Shared saddle and separate seating interfaces — verified locally, 29 October 2026
+
+- Unified SVG/3D shell and cover contours, connected rail anchors, slimmer race padding, closed tips and actual split clamp grooves. Explicit post sizing is checked against the frame independently of rail type/dimensions/proprietary support. Unknown interfaces are unverified; documented conflicts are rejected without quota charges.
+- TypeScript/lint, the 42-test isolated API suite, focused domain/geometry checks and seven browser workflows pass; actual SVG and saddle close-ups inspected. Corrected the old cockpit regression's missing wait after CI counted an unfinished frame response in its usage baseline. [Evidence and remaining stages](modeling-refinement.md). No deployment.
+
 ## Task · Drivetrain connections and wheel surface correction — verified, 29 October 2026
 
 - Connected crank roots/spider and rear cog/hub, added shaped arm sections, bored lockring and pedal hardware, and shared the tapered arm outline with SVG. Gearing/chainline and finish selection remain unchanged.

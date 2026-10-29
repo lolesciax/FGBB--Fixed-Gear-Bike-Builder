@@ -106,7 +106,7 @@ describe("controlled component appearances", () => {
         const config = { ...defaultConfiguration, saddle },
           result = compatibility(config, catalog);
         expect(result.rules.find((r) => r.id === "saddle-rails")?.state).toBe(
-          "compatible",
+          "unverified",
         );
         const spec = catalog.find((p) =>
           p.variants.some((v) => v.id === saddle),

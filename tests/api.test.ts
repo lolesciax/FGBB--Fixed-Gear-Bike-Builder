@@ -137,6 +137,15 @@ describe('authentication and authorization', () => {
     const image=(await post(c,`/builds/${saved._id}/export-image`).expect(200)).body.svg;
     expect(image).toContain('#202731');expect(image).toContain('#b9c2cd');
   });
+  it('rejects documented rail or post conflicts without charging and keeps unknown seating unverified',async()=>{
+    const c=await guest(),w=await workspace(c),base=seedCatalog.find(p=>p.id==='studio-comfort')!.variants[0].specs;
+    const replace=async(specs:typeof base)=>ProductModel.updateOne({_id:'studio-comfort'},{$set:{'data.variants.0.specs':specs}});
+    const change=()=>post(c,'/workspace/change',{token:w.token,slot:'saddle',variantId:'studio-comfort'});
+    await replace({...base,railInterface:'oval-7x9',clampInterface:'round-7'});await change().expect(422);
+    await replace({...base,railInterface:'round-7',clampInterface:'round-7',postDiameter:31.6});await change().expect(422);
+    expect((await c.agent.get('/api/session')).body.usage.changes).toBe(0);
+    await replace(base);await change().expect(200);expect((await c.agent.get('/api/session')).body.usage.changes).toBe(1);
+  });
   it('applies real frame/tire clearance repairs atomically, charges per changed slot and deduplicates retries',async()=>{
     const c=await guest(),w=await workspace(c);
     const wide=await post(c,'/workspace/change',{token:w.token,slot:'tires',variantId:'studio-tire28'}).expect(200);

@@ -11,6 +11,7 @@ test("cockpit type filters preserve the frame and synchronize all four bars acro
   await page
     .getByRole("combobox", { name: "02 LA variant", exact: true })
     .selectOption("dosnoventa-02-la-m");
+  await expect(page.locator('.bike-svg')).toHaveAttribute('data-frame-variant','dosnoventa-02-la-m');
   await page.getByRole("button", { name: "Cockpit", exact: true }).click();
   await expect(page.getByLabel("Filter by brand")).toHaveValue("");
   const shapes = [

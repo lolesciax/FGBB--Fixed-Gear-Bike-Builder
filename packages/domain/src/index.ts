@@ -3,6 +3,8 @@ import frameAssets from './frame-assets.json';
 import { colorwaySchema, selectedColorway } from './colorways';
 import {appearanceSchema,componentFinishSchema,appearanceIssues} from './finishes';
 import {wheelBuild} from './wheels';
+import {saddleRailFit} from './seating';
+export * from './seating';
 export * from './wheels';
 export * from './finishes';
 export {steeringStack,dropoutOutline,type DropoutStyle} from './steering';
@@ -94,8 +96,9 @@ export function compatibility(config: Configuration, catalog: Product[]) {
   check('rear-axle-diameter', 'frameset', 'rearAxleDiameter', 'wheels', 'rearAxleDiameter', 'Rear axle diameter');
   for(const rear of [false,true]){const build=wheelBuild(selected.wheels?.variant.specs,rear);rules.push({id:rear?'rear-wheel-build':'front-wheel-build',state:build.errors.length?'incompatible':build.missing.length?'unverified':'compatible',message:`${rear?'Rear':'Front'} wheel: ${build.errors.join(' ')|| (build.missing.length?'Spoke/lacing/drilling data needs verification.':build.label+'; hub and rim drilling agree.')}`,slots:['wheels'],missing:build.missing.map(k=>'wheels.'+k),sources:[selected.wheels?.product.source].filter((v):v is string=>!!v)});}
   // Seatpost tube diameter belongs to the frame; saddle rails meet a separate clamp.
-  const seating=selected.saddle?.variant.specs,rail=seating?.railInterface,clamp=seating?.clampInterface;
-  rules.push({id:'saddle-rails',state:rail!==undefined&&clamp!==undefined&&rail!==clamp?'incompatible':'compatible',message:rail!==undefined&&clamp!==undefined?(rail===clamp?'Saddle rails and post clamp: listed interfaces agree.':'Saddle rails and post clamp: listed interfaces conflict.'):'Saddle rail/clamp interface is abstracted; no documented conflict. Verify physical rail fit.',slots:['saddle'],missing:[],sources:[selected.saddle?.product.source].filter((v):v is string=>!!v)});
+  const railFit=saddleRailFit(selected.saddle?.variant.specs);
+  rules.push({id:'saddle-rails',state:railFit.state,message:`Saddle rails and post clamp: ${railFit.state==='unverified'?'rail type, dimensions and clamp support need verification':railFit.state==='incompatible'?'listed rail/clamp interfaces conflict':'listed rail/clamp interfaces agree'}.`,slots:['saddle'],missing:railFit.missing,sources:[selected.saddle?.product.source].filter((v):v is string=>!!v)});
+  check('frame-seatpost','frameset','seatpost','saddle','postDiameter','Frame and selected seatpost diameter');
   check('clamp', 'frameset', 'stemClamp', 'cockpit', 'stemClamp', 'Stem and handlebar clamp');
   check('bottom-bracket', 'frameset', 'bottomBracket', 'drivetrain', 'bottomBracket', 'Bottom bracket interface');
   check('chain-width', 'drivetrain', 'chainWidth', 'wheels', 'cogWidth', 'Chain and cog width');

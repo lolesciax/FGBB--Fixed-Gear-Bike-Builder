@@ -1,61 +1,31 @@
 import * as THREE from "three";
-import type { BicycleGeometry, Position } from "@tracklab/domain";
-import { cylinder, material, mesh, tube, extrude } from "./primitives";
-const contour = [
-  [0, 0],
-  [0.08, 0.7],
-  [0.22, 1],
-  [0.38, 0.96],
-  [0.54, 0.55],
-  [0.68, 0.23],
-  [0.86, 0.18],
-  [0.97, 0.14],
-  [1, 0],
-];
-function sectionWidth(u: number) {
-  let section = 1;
-  while (contour[section][0] < u) section++;
-  const before = contour[section - 1],
-    after = contour[section];
-  return THREE.MathUtils.lerp(
-    before[1],
-    after[1],
-    THREE.MathUtils.smoothstep(u, before[0], after[0]),
-  );
-}
+import {
+  saddleSurfacePoint,
+  saddleHalfWidth,
+  saddleRailPoints,
+  type BicycleGeometry,
+  type Position,
+} from "@tracklab/domain";
+import {
+  cylinder,
+  material,
+  mesh,
+  tube,
+  extrude,
+  curve,
+  sweptSection,
+} from "./primitives";
 
-function saddleSurface(
-  length: number,
-  width: number,
-  base: number,
-  thickness: number,
-) {
+function saddleSurface(g: BicycleGeometry, layer: "shell" | "cover") {
   const positions: number[] = [],
     indices: number[] = [],
     longitudinal = 42,
     radial = 24;
   for (let i = 0; i <= longitudinal; i++) {
     const u = i / longitudinal;
-    const half = (sectionWidth(u) * width) / 2,
-      y =
-        base +
-        0.006 * Math.cos(u * Math.PI) +
-        0.004 * Math.max(0, (u - 0.7) / 0.3);
-    const endRound = Math.sqrt(Math.min(1, u / 0.045, (1 - u) / 0.045));
     for (let j = 0; j <= radial; j++) {
       const a = (j / radial) * Math.PI * 2;
-      positions.push(
-        (u - 0.52) * length,
-        y +
-          Math.sin(a) * thickness * endRound -
-          (thickness > 0.01 && Math.sin(a) > 0
-            ? 0.0055 *
-              Math.exp(-Math.pow((Math.cos(a) * half) / 0.014, 2)) *
-              THREE.MathUtils.smoothstep(u, 0.15, 0.3) *
-              (1 - THREE.MathUtils.smoothstep(u, 0.72, 0.9))
-            : 0),
-        Math.cos(a) * half,
-      );
+      positions.push(...saddleSurfacePoint(g.saddle, u, a, layer));
       if (i < longitudinal && j < radial) {
         const k = i * (radial + 1) + j,
           n = k + radial + 1;
@@ -70,6 +40,27 @@ function saddleSurface(
   );
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
+  return geometry;
+}
+function railCradle(g: BicycleGeometry, upper = false) {
+  const shape = new THREE.Shape(),
+    rz = g.saddle.railWidth / 2 + 0.0002,
+    rh = g.saddle.railHeight / 2 + 0.0002;
+  shape.moveTo(-0.03, -0.007);
+  shape.lineTo(0.03, -0.007);
+  shape.lineTo(0.03, 0);
+  for (const z of [0.022, -0.022]) {
+    shape.lineTo(z + rz, 0);
+    for (let i = 1; i <= 16; i++) {
+      const a = (i * Math.PI) / 16;
+      shape.lineTo(z + Math.cos(a) * rz, -Math.sin(a) * rh);
+    }
+  }
+  shape.lineTo(-0.03, 0);
+  shape.closePath();
+  const geometry = extrude(shape, 0.032, 0);
+  if (upper) geometry.rotateX(Math.PI);
+  geometry.rotateY(Math.PI / 2);
   return geometry;
 }
 export function createSaddle(g: BicycleGeometry) {
@@ -107,48 +98,53 @@ export function createSaddle(g: BicycleGeometry) {
       shape.lineTo(0.018, 0.009);
       shape.lineTo(-0.018, 0.009);
       shape.closePath();
-      return extrude(shape, 0.05, 0.0025);
+      return extrude(shape, 0.032, 0.0025);
     })(),
     metal,
     g.saddlePost,
   );
   head.position.y += 0.004;
   for (const side of [-1, 1]) {
-    const rail: Position[] = [
-      [-0.094, 0.031, side * 0.022],
-      [-0.07, 0.015, side * 0.022],
-      [-0.035, 0.012, side * 0.022],
-      [0.04, 0.012, side * 0.022],
-      [0.08, 0.024, side * 0.012],
-      [0.098, 0.031, side * 0.008],
-    ].map((p) => [p[0] + g.saddlePost[0], p[1] + g.saddlePost[1], p[2]]);
-    tube(group, `saddle_rail_${side}`, rail, 0.0035, railMetal, 32, 8);
+    const rail: Position[] = saddleRailPoints(g.saddle, side).map((p) => [
+      p[0] + g.saddlePost[0],
+      p[1] + g.saddlePost[1],
+      p[2],
+    ]);
+    mesh(
+      group,
+      `saddle_rail_${side}`,
+      sweptSection(
+        curve(rail),
+        40,
+        12,
+        () => [g.saddle.railWidth / 2, g.saddle.railHeight / 2],
+        true,
+      ),
+      railMetal,
+    );
+    for (const [i, p] of [rail[0], rail.at(-1)!].entries())
+      mesh(
+        group,
+        `rail_shell_anchor_${side}_${i}`,
+        new THREE.SphereGeometry(0.005, 12, 8).scale(1.5, 0.8, 1.2),
+        shell,
+        p,
+      );
   }
-  mesh(
-    group,
-    "rail_clamp",
-    new THREE.BoxGeometry(0.032, 0.009, 0.055),
-    railMetal,
-    g.saddleClamp,
-  );
+  mesh(group, "rail_clamp", railCradle(g), metal, g.saddleClamp);
+  mesh(group, "rail_clamp_upper", railCradle(g, true), metal, g.saddleClamp);
   for (const x of [-0.01, 0.01])
     cylinder(
       group,
       `rail_clamp_bolt_${x}`,
       [g.saddleClamp[0] + x, g.saddleClamp[1] - 0.008, 0],
-      [g.saddleClamp[0] + x, g.saddleClamp[1] + 0.005, 0],
+      [g.saddleClamp[0] + x, g.saddleClamp[1] + 0.009, 0],
       0.003,
       railMetal,
       0.003,
       6,
     );
-  mesh(
-    group,
-    "saddle_shell",
-    saddleSurface(g.saddle.length * 0.99, g.saddle.width * 0.98, 0.034, 0.0035),
-    shell,
-    g.saddlePost,
-  );
+  mesh(group, "saddle_shell", saddleSurface(g, "shell"), shell, g.saddlePost);
   const seam = material("#454c57", 0, 0.82);
   for (const side of [-1, 1])
     tube(
@@ -156,14 +152,8 @@ export function createSaddle(g: BicycleGeometry) {
       `cover_seam_${side}`,
       Array.from({ length: 41 }, (_, i) => {
         const u = (i + 1) / 42;
-        return [
-          (u - 0.52) * g.saddle.length + g.saddlePost[0],
-          g.saddlePost[1] +
-            0.046 +
-            0.006 * Math.cos(u * Math.PI) +
-            0.004 * Math.max(0, (u - 0.7) / 0.3),
-          side * ((sectionWidth(u) * g.saddle.width) / 2 + 0.0002),
-        ] as Position;
+        const point=saddleSurfacePoint(g.saddle,u,0,'cover');
+        return [point[0]+g.saddlePost[0],point[1]+g.saddlePost[1],side*(saddleHalfWidth(g.saddle,u)+.0002)] as Position;
       }),
       0.0007,
       seam,
@@ -173,7 +163,7 @@ export function createSaddle(g: BicycleGeometry) {
   mesh(
     group,
     "shaped_padding",
-    saddleSurface(g.saddle.length, g.saddle.width, 0.046, 0.012),
+    saddleSurface(g, "cover"),
     padding,
     g.saddlePost,
   );

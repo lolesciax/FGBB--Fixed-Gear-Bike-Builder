@@ -1,6 +1,7 @@
 import { assemblyGeometry, type Point } from "./visual";
 import {steeringStack,type DropoutStyle} from './steering';
 import {wheelBuild} from './wheels';
+import {railInterface} from './seating';
 
 export type ComponentSpecs = Record<string, string | number | boolean>;
 export type Position = [number, number, number];
@@ -390,7 +391,10 @@ export function componentGeometry(
     saddle: {
       length: numberSpec(s, "length", s.shape === "comfort" ? 265 : 275) / 1000,
       width: numberSpec(s, "width", s.shape === "comfort" ? 175 : 142) / 1000,
-      postDiameter: numberSpec(f, "seatpost", 27.2) / 1000,
+      postDiameter: numberSpec(s,'postDiameter',numberSpec(f, "seatpost", 27.2)) / 1000,
+      padding:numberSpec(s,'paddingHeight',s.shape==='comfort'?14:8)/1000,
+      railWidth:(railInterface(s)?.width||7)/1000,
+      railHeight:(railInterface(s)?.height||7)/1000,
     },
     drivetrain: {
       chainline,

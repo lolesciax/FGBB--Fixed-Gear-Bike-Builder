@@ -5,6 +5,7 @@ import {
   handlebarPoints,
   spokeEndpoints,
   crankArmOutline,
+  saddleSilhouette,saddleRailPoints,saddleSurfacePoint,
   variantById,
   slots,
   finishZones,
@@ -420,92 +421,18 @@ export function Bike2D({
             rasterData={rasterData}
           />
         </g>
-        <g {...interactive("saddle")}>
-          <g data-finish-zone="seatpost">
-            {tube(
-              seat,
-              saddle,
-              m.saddle.postDiameter * 1000,
-              finish("seatpost"),
-            )}
+        <g {...interactive("saddle")} data-seating-profile="shared-contour">
+          <g data-finish-zone="seatpost">{tube(seat,saddle,m.saddle.postDiameter*1000,finish('seatpost'))}</g>
+          <path d={line([{x:saddle.x-22,y:saddle.y+4},{x:saddle.x+22,y:saddle.y+4},{x:saddle.x+18,y:saddle.y-13},{x:saddle.x-18,y:saddle.y-13}],true)} fill={finish('seatpost')} stroke="#424b59" strokeWidth=".8"/>
+          <path data-saddle-rails d={smooth(saddleRailPoints(m.saddle,1).map(p=>project(add(m.saddlePost,p))))} fill="none" stroke="#87919e" strokeWidth={m.saddle.railHeight*1000}/>
+          <g data-saddle-clamp fill={finish('seatpost')} stroke="#424b59" strokeWidth=".7">
+            <rect x={saddle.x-16} y={saddle.y-12} width="32" height="7" rx="2"/>
+            <rect x={saddle.x-16} y={saddle.y-19} width="32" height="7" rx="2"/>
           </g>
-          <path
-            d={smooth([
-              { x: saddle.x - 94, y: saddle.y - 31 },
-              { x: saddle.x - 70, y: saddle.y - 15 },
-              { x: saddle.x + 40, y: saddle.y - 12 },
-              { x: saddle.x + 98, y: saddle.y - 31 },
-            ])}
-            fill="none"
-            stroke="#87919e"
-            strokeWidth="7"
-          />
-          <rect
-            x={saddle.x - 23}
-            y={saddle.y - 17}
-            width="46"
-            height="18"
-            rx="5"
-            fill={finish("seatpost")}
-          />
-          <path
-            d={`M${saddle.x - 13} ${saddle.y - 11}h26`}
-            stroke="#8993a0"
-            strokeWidth="3"
-          />
-          {[-10, 10].map((x) => (
-            <circle
-              key={x}
-              cx={saddle.x + x}
-              cy={saddle.y - 10}
-              r="3"
-              fill="#bbc3cd"
-              stroke="#313a46"
-              strokeWidth="1"
-            />
-          ))}
-          <path
-            d={
-              "M" +
-              (saddle.x - m.saddle.length * 520) +
-              " " +
-              (saddle.y - 48) +
-              " Q" +
-              (saddle.x - m.saddle.length * 350) +
-              " " +
-              (saddle.y - 67) +
-              " " +
-              saddle.x +
-              " " +
-              (saddle.y - 54) +
-              " L" +
-              (saddle.x + m.saddle.length * 430) +
-              " " +
-              (saddle.y - 52) +
-              " Q" +
-              (saddle.x + m.saddle.length * 490) +
-              " " +
-              (saddle.y - 39) +
-              " " +
-              (saddle.x + m.saddle.length * 390) +
-              " " +
-              (saddle.y - 34) +
-              " L" +
-              (saddle.x - m.saddle.length * 410) +
-              " " +
-              (saddle.y - 32) +
-              "Z"
-            }
-            fill="#252c36"
-            stroke="#555f6e"
-            strokeWidth="2"
-          />
-          <path
-            d={`M${saddle.x - m.saddle.length * 450} ${saddle.y - 46}Q${saddle.x - 45} ${saddle.y - 58} ${saddle.x + m.saddle.length * 38} ${saddle.y - 46}L${saddle.x + m.saddle.length * 420} ${saddle.y - 44}`}
-            fill="none"
-            stroke="#626b77"
-            strokeWidth="1.4"
-          />
+          {[-10,10].map(x=><path key={x} d={'M'+(saddle.x+x)+' '+(saddle.y-3)+'v-18'} stroke="#a4adba" strokeWidth="3"/>)}
+          <path data-saddle-shell d={line(saddleSilhouette(m.saddle,'shell').map(p=>project(add(m.saddlePost,p))),true)} fill="#222831" stroke="#3d4653" strokeWidth=".8"/>
+          <path data-saddle-cover d={line(saddleSilhouette(m.saddle,'cover').map(p=>project(add(m.saddlePost,p))),true)} fill="#252a32" stroke="#555e6b" strokeWidth=".9"/>
+          <path d={smooth(Array.from({length:41},(_,i)=>project(add(m.saddlePost,saddleSurfacePoint(m.saddle,(i+1)/42,0,'cover')))))} fill="none" stroke="#626b77" strokeWidth=".8"/>
         </g>
         <g {...interactive("cockpit")}>
           <g data-steering-assembly="upper">
