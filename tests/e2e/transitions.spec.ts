@@ -2,6 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 test("finite finishes and studio effects settle without remeshing; a single canvas and manual camera survive mode changes", async ({
   page,
 }) => {
+  test.setTimeout(120000);
   await page.goto("/builder");
   await page.getByRole("button", { name: "3D", exact: true }).click();
   const viewer = page.locator(".bike3d-wrapper");
@@ -53,7 +54,24 @@ test("finite finishes and studio effects settle without remeshing; a single canv
   await page.mouse.down();
   await page.mouse.move(bounds!.x + 100, bounds!.y + 95, { steps: 8 });
   await page.mouse.up();
-  await page.waitForTimeout(700);
+  // Orbit damping is frame based; a fixed delay finishes at different poses on
+  // hardware Chrome and the slower CI renderer. Observe the settled pose.
+  let previous = (await sceneDetails(page)).camera,
+    stableSamples = 0;
+  await expect
+    .poll(
+      async () => {
+        const current = (await sceneDetails(page)).camera;
+        const distance = Math.hypot(
+          ...current.map((v: number, i: number) => v - previous[i]),
+        );
+        previous = current;
+        stableSamples = distance < 0.00001 ? stableSamples + 1 : 0;
+        return stableSamples;
+      },
+      { timeout: 20000, intervals: [100] },
+    )
+    .toBeGreaterThanOrEqual(3);
   const camera = (await sceneDetails(page)).camera;
   await page.evaluate(() => {
     (
