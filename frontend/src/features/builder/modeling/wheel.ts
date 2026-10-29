@@ -11,27 +11,64 @@ import {
   material,
   mesh,
   revolved,
+  annulus,
+  extrude,
 } from "./primitives";
+
+function drilledBridge(g: BicycleGeometry, rear: boolean) {
+  const w = g.wheel,
+    circumference = Math.PI * 2 * w.rimInner,
+    half = w.rimWidth * 0.35;
+  const shape = new THREE.Shape();
+  shape.moveTo(0, -half);
+  shape.lineTo(circumference, -half);
+  shape.lineTo(circumference, half);
+  shape.lineTo(0, half);
+  shape.closePath();
+  for (const spoke of spokeEndpoints(w, rear)) {
+    const a =
+        (Math.atan2(spoke.rim[1], spoke.rim[0]) + Math.PI * 2) % (Math.PI * 2),
+      hole = new THREE.Path();
+    hole.absarc(a * w.rimInner, spoke.rim[2], 0.0015, 0, Math.PI * 2, true);
+    shape.holes.push(hole);
+  }
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth: 0.0018,
+    bevelEnabled: false,
+    curveSegments: 8,
+  });
+  const p = geometry.getAttribute("position");
+  for (let i = 0; i < p.count; i++) {
+    const a = p.getX(i) / w.rimInner,
+      z = p.getY(i),
+      r = w.rimInner + p.getZ(i);
+    p.setXYZ(i, Math.cos(a) * r, Math.sin(a) * r, z);
+  }
+  geometry.computeVertexNormals();
+  return geometry;
+}
 
 export function createWheel(g: BicycleGeometry, rear: boolean) {
   const group = new THREE.Group();
   group.name = rear ? "rear_wheel" : "front_wheel";
   const w = g.wheel,
     alloy = material("#737d89", 0.75, 0.29),
+    spokeMetal = material("#858f9e", 0.82, 0.27),
     rim = material(w.rimDepth > 0.04 ? "#343c47" : "#697482", 0.65, 0.32);
-  alloy.name = rim.name = "finish_wheelset";
+  alloy.name = rim.name = spokeMetal.name = "finish_wheelset";
+  alloy.userData.finishRegion = "hub";
+  rim.userData.finishRegion = "rim";
+  spokeMetal.userData.finishRegion = "spokes";
   const profile: [number, number][] = [
-    [w.rimInner, -w.rimWidth * 0.22],
-    [w.rimInner + 0.002, -w.rimWidth * 0.35],
+    [w.rimInner, -w.rimWidth * 0.35],
     [w.rimOuter - 0.008, -w.rimWidth * 0.5],
     [w.rimOuter - 0.001, -w.rimWidth * 0.51],
     [w.rimOuter, w.rimWidth * 0.51],
     [w.rimOuter - 0.008, w.rimWidth * 0.5],
-    [w.rimInner + 0.002, w.rimWidth * 0.35],
-    [w.rimInner, w.rimWidth * 0.22],
-    [w.rimInner, -w.rimWidth * 0.22],
+    [w.rimInner, w.rimWidth * 0.35],
   ];
   mesh(group, "rim_profile", revolved(profile), rim);
+  mesh(group, "rim_drilled_bridge", drilledBridge(g, rear), rim);
   for (const side of [-1, 1])
     mesh(
       group,
@@ -41,7 +78,7 @@ export function createWheel(g: BicycleGeometry, rear: boolean) {
         [w.rimOuter, side * w.rimWidth * 0.515],
         [w.rimOuter + 0.0005, side * w.rimWidth * 0.46],
       ]),
-      alloy,
+      rim,
     );
   const hubRadius = rear ? 0.028 : 0.022,
     flange = rear ? 0.032 : 0.028,
@@ -60,14 +97,29 @@ export function createWheel(g: BicycleGeometry, rear: boolean) {
     alloy,
   );
   for (const side of [-1, 1]) {
-    axle(
+    const flangeShape = annulus(hubRadius + 0.004, 0.009);
+    for (const spoke of spokeEndpoints(w, rear).filter(
+      (s) => s.side === side,
+    )) {
+      const hole = new THREE.Path();
+      hole.absarc(spoke.hub[0], spoke.hub[1], 0.0014, 0, Math.PI * 2, true);
+      flangeShape.holes.push(hole);
+    }
+    mesh(
       group,
       `hub_flange_${side}`,
-      [0, 0, side * flange],
-      hubRadius,
-      0.003,
+      extrude(flangeShape, 0.003, 0.0002),
       alloy,
-      28,
+      [0, 0, side * flange],
+    );
+    cylinder(
+      group,
+      `hub_shoulder_${side}`,
+      [0, 0, side * flange],
+      [0, 0, side * (spacing / 2 - 0.006)],
+      0.01,
+      alloy,
+      0.009,
     );
     axle(
       group,
@@ -103,7 +155,7 @@ export function createWheel(g: BicycleGeometry, rear: boolean) {
     "laced_spokes",
     spokes.map((s) => ({ a: s.hub, b: s.rim })),
     0.00085,
-    alloy,
+    spokeMetal,
   );
   instancedSegments(
     group,
@@ -113,7 +165,7 @@ export function createWheel(g: BicycleGeometry, rear: boolean) {
       b: s.rim,
     })),
     0.0015,
-    alloy,
+    spokeMetal,
   );
   cylinder(
     group,
@@ -130,7 +182,10 @@ export function createWheel(g: BicycleGeometry, rear: boolean) {
     width: w.width,
     outerRadius: w.radius,
     rimDepth: w.rimDepth,
-    spokes: w.spokes,
+    spokes: rear ? w.rearBuild.count : w.frontBuild.count,
+    lacing: rear ? w.rearBuild.lacing : w.frontBuild.lacing,
+    hubDrilling: rear ? w.rearBuild.count : w.frontBuild.count,
+    rimDrilling: rear ? w.rearBuild.count : w.frontBuild.count,
     axleSpacing: spacing,
   };
   return group;

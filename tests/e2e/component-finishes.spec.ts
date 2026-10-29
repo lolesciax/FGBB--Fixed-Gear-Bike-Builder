@@ -228,6 +228,7 @@ test("component finishes and saddle choice survive a different frame diameter, s
 }) => {
   await page.goto("/builder");
   await page.getByRole("button", { name: "Wheels", exact: true }).click();
+  await page.getByRole('button',{name:'Select Studio 20 / 24',exact:true}).click();
   await page
     .getByLabel("Wheelset finish", { exact: true })
     .selectOption("polished");
@@ -267,6 +268,8 @@ test("component finishes and saddle choice survive a different frame diameter, s
   await page.getByRole("button", { name: "Save build", exact: true }).click();
   await expect(page).toHaveURL(/\/builder\/[a-f0-9]{24}/);
   await page.reload();
+  await expect(page.locator('[data-wheel="front"] [data-spoke]')).toHaveCount(20);
+  await expect(page.locator('[data-wheel="rear"] [data-spoke]')).toHaveCount(24);
   const appearance = JSON.stringify({
     wheelset: "polished",
     seatpost: "pure-black",
@@ -303,4 +306,5 @@ test("component finishes and saddle choice survive a different frame diameter, s
   const svg = await readFile((await (await download).path())!, "utf8");
   expect(svg).toContain("#b9c2cd");
   expect(svg).toContain("#202731");
+  expect(svg.match(/data-spoke=/g)).toHaveLength(44);
 });

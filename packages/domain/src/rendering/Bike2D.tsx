@@ -320,7 +320,7 @@ export function Bike2D({
         />
         <g {...interactive("wheels")} data-finish-zone="wheelset">
           {[rear, front].map((axle, i) => (
-            <g key={i} transform={"translate(" + axle.x + " 0)"}>
+            <g key={i} data-wheel={i===0?'rear':'front'} data-spoke-count={i===0?m.wheel.rearBuild.count:m.wheel.frontBuild.count} data-lacing={i===0?m.wheel.rearBuild.lacing:m.wheel.frontBuild.lacing} transform={"translate(" + axle.x + " 0)"}>
               <circle
                 r={(m.wheel.bsd / 2 + m.wheel.tireHeight / 2) * 1000}
                 fill="none"
@@ -352,6 +352,7 @@ export function Bike2D({
               {spokeEndpoints(m.wheel, i === 0).map((s, n) => (
                 <line
                   key={n}
+                  data-spoke={n}
                   x1={s.hub[0] * 1000}
                   y1={-s.hub[1] * 1000}
                   x2={s.rim[0] * 1000}

@@ -12,6 +12,11 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
 
+## Task · Additional 20F/24R wheelset — verified, 29 October 2026
+
+- Added an authored radial-front/two-cross-rear demo with 20/24 actual spokes, matching flange/rim holes, hub shoulders and clear wheel-build labels. Existing classic/deep/M9 options retain 32/32 geometry. Shared domain rules flag missing drilling/lacing and reject mismatches; no unverified manufacturer product was published.
+- Separate rim/spoke/hub materials retain coordinated finishes. SVG, 3D instances, history, saved builds, garage and exported SVG agree. TypeScript/lint, 20 targeted tests and four isolated browser workflows pass. [Details and remaining stages](modeling-refinement.md). No deployment.
+
 ## Task · Steering, head tube and axle interfaces — verified, 29 October 2026
 
 - Replaced the fixed upper-steerer extension with one shared cover/spacer/clamp/cap stack, including straight/tapered and threaded illustrative profiles. Integrated head-tube junctions, crown/blades, front slots and rear track ends in both viewers. Regenerated 39 original kits as v3 while retaining geometry anchors and technical specifications; guarded migration preserves edited registrations.

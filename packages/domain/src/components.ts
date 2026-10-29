@@ -1,5 +1,6 @@
 import { assemblyGeometry, type Point } from "./visual";
 import {steeringStack,type DropoutStyle} from './steering';
+import {wheelBuild} from './wheels';
 
 export type ComponentSpecs = Record<string, string | number | boolean>;
 export type Position = [number, number, number];
@@ -156,8 +157,7 @@ export function wheelDimensions(
     tireHeight = numberSpec(tire, "sectionHeight", width * 1000) / 1000,
     rimDepth = clamp(numberSpec(wheel, "rimDepth", 25), 10, 90) / 1000,
     rimWidth = clamp(numberSpec(wheel, "rimWidth", 20), 14, 40) / 1000,
-    spokes =
-      Math.round(clamp(numberSpec(wheel, "spokeCount", 32), 16, 48) / 4) * 4;
+    frontBuild=wheelBuild(wheel,false),rearBuild=wheelBuild(wheel,true);
   return {
     bsd,
     width,
@@ -167,7 +167,8 @@ export function wheelDimensions(
     rimInner: bsd / 2 + 0.003 - rimDepth,
     rimDepth,
     rimWidth,
-    spokes,
+    spokes:frontBuild.count,
+    frontBuild,rearBuild,
     frontSpacing: numberSpec(wheel, "frontSpacing", 100) / 1000,
     rearSpacing: numberSpec(wheel, "rearSpacing", 120) / 1000,
     frontAxle: numberSpec(wheel, "frontAxleDiameter", 10) / 1000,
@@ -182,15 +183,15 @@ export function spokeEndpoints(
   const hubRadius = rear ? 0.028 : 0.022,
     flange = rear ? 0.032 : 0.028,
     rimRadius = wheel.rimInner + 0.002;
-  const crossings = rear ? 3 : 2;
-  return Array.from({ length: wheel.spokes }, (_, i) => {
+  const {count,crossings}=rear?wheel.rearBuild:wheel.frontBuild;
+  return Array.from({ length: count }, (_, i) => {
     const side = i % 2 === 0 ? 1 : -1,
       index = Math.floor(i / 2),
       angle =
-        (index * 4 * Math.PI) / wheel.spokes +
-        (side === 1 ? 0 : (2 * Math.PI) / wheel.spokes),
+        (index * 4 * Math.PI) / count +
+        (side === 1 ? 0 : (2 * Math.PI) / count) + Math.PI/count,
       lead = index % 2 === 0 ? 1 : -1,
-      hubAngle = angle + (lead * crossings * 4 * Math.PI) / wheel.spokes;
+      hubAngle = angle + (lead * crossings * 4 * Math.PI) / count;
     return {
       hub: [
         Math.cos(hubAngle) * hubRadius,
@@ -200,7 +201,7 @@ export function spokeEndpoints(
       rim: [
         Math.cos(angle) * rimRadius,
         Math.sin(angle) * rimRadius,
-        side * wheel.rimWidth * 0.22,
+        side * wheel.rimWidth * 0.16,
       ] as Position,
       side,
     };

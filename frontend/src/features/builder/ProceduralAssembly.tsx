@@ -116,7 +116,7 @@ export function ProceduralAssembly({
       fallbackFrame,
     ),
     wheels: useOwnedModel(key("frameset", "wheels"), wheels),
-    tires: useOwnedModel(key("frameset", "wheels", "tires"), tires),
+    tires: useOwnedModel(JSON.stringify({frameset:renderFrameSpecs(get('frameset')?.specs||{}),wheels:{bsd:get('wheels')?.specs.bsd,rimWidth:get('wheels')?.specs.rimWidth},tires:get('tires')?.specs}), tires),
     cockpit: useOwnedModel(key("frameset", "cockpit"), cockpit),
     saddle: useOwnedModel(key("frameset", "saddle"), createSaddle),
     drivetrain: useOwnedModel(key("frameset", "drivetrain"), createDrivetrain),

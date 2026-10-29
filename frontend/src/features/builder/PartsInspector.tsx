@@ -4,6 +4,7 @@ import {
   visualizationInfo,
   barTypes,
   cockpitDimensions,
+  wheelBuild,
   type BarType,
   slots,
   variantById,
@@ -52,6 +53,7 @@ const specLabels: Record<string, string> = {
   frontTeeth: "Chainring teeth",
   rearTeeth: "Cog teeth",
   rimDepth: "Rim depth · mm",
+  rimWidth:'Rim width · mm',frontSpokeCount:'Front spokes',rearSpokeCount:'Rear spokes',frontLacing:'Front lacing',rearLacing:'Rear lacing',frontHubDrilling:'Front hub holes',frontRimDrilling:'Front rim holes',rearHubDrilling:'Rear hub holes',rearRimDrilling:'Rear rim holes',
   rise: "Rise · mm",
   reach: "Reach · mm",
   drop: "Drop · mm",
@@ -251,6 +253,7 @@ export function PartsInspector({
                   <div className="product-identity">
                     <span className="product-brand">{product.brand}</span>
                     <h3>{product.name}</h3>
+                    {slot==='wheels'&&<span className="render-support" data-wheel-summary>{wheelBuild(shown.specs).count}F / {wheelBuild(shown.specs,true).count}R · {shown.specs.rimDepth||25} mm rim<br/>Front: {wheelBuild(shown.specs).label} · Rear: {wheelBuild(shown.specs,true).label}<br/>{[wheelBuild(shown.specs),wheelBuild(shown.specs,true)].some(b=>b.errors.length)?'Drilling/lacing conflict': [wheelBuild(shown.specs),wheelBuild(shown.specs,true)].some(b=>b.illustrative)?'Illustrative lacing · drilling unverified':product.illustrative?'Matching authored drilling · demo':'Listed drilling matches'}</span>}
                     {slot === "cockpit" && (
                       <span className="render-support">
                         {barTypes.find(
