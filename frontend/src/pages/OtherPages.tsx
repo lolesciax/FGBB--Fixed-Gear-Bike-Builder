@@ -1,4 +1,5 @@
 import { CatalogReview } from "../components/CatalogReview";
+import {ColorwayEditor} from '../features/catalog/ColorwayEditor';
 import { PolicyEditor } from "../components/PolicyEditor";
 import { RegistryEditor } from "../features/catalog/RegistryEditor";
 import { AssetInbox } from "../features/catalog/AssetInbox";
@@ -240,6 +241,7 @@ export function AdminPage() {
           }}
         >
           <CatalogReview text={editing} />
+          <ColorwayEditor text={editing} onChange={setEditing}/>
           <label>
             Catalog record JSON
             <textarea

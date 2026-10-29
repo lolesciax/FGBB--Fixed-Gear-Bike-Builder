@@ -9,6 +9,7 @@ export function AssetInbox() {
     [evidence, setEvidence] = useState(""),
     [permission, setPermission] = useState(false),
     [message, setMessage] = useState(""),
+    [reviewNote, setReviewNote] = useState(""),
     [busy, setBusy] = useState(false);
   const inbox = useQuery({
     queryKey: ["asset-reviews"],
@@ -18,6 +19,8 @@ export function AssetInbox() {
           _id: string;
           status: string;
           bytes: number;
+          mime: string;
+          sha256?: string;
           metadata: { filename: string; productId: string; license: string };
         }[];
       }>("/admin/asset-reviews"),
@@ -49,7 +52,7 @@ export function AssetInbox() {
     }
   }
   return (
-    <details className="registry-editor">
+    <details className="registry-editor asset-inbox">
       <summary>Permitted asset review inbox</summary>
       <p>
         Upload original or permitted PNG/JPEG/WebP images and self-contained GLB
@@ -62,6 +65,14 @@ export function AssetInbox() {
         transforms, provenance and rights review through the documented asset
         workflow.
       </p>
+      <label>
+        Rights review notes for raster approval
+        <textarea
+          value={reviewNote}
+          onChange={(e) => setReviewNote(e.target.value)}
+          placeholder="Record the permission scope and model-specific usage reviewed."
+        />
+      </label>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -122,11 +133,41 @@ export function AssetInbox() {
             {item.metadata.productId} / {item.metadata.filename} /{" "}
             {item.metadata.license} / {item.status} /{" "}
             {Math.ceil(item.bytes / 1024)} KB{" "}
+            {item.sha256 && (
+              <code>
+                {item._id} / {item.sha256}
+              </code>
+            )}
             <a
               href={`${import.meta.env.VITE_API_URL || ""}/api/admin/asset-reviews/${item._id}/file`}
             >
               Download for review
             </a>
+            {item.status === "pending" && item.mime?.startsWith("image/") && (
+              <button
+                className="button"
+                disabled={busy || reviewNote.trim().length < 20}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    await api(`/admin/asset-reviews/${item._id}/approve`, {
+                      method: "POST",
+                      body: { permission: "confirmed", review: reviewNote },
+                    });
+                    setMessage(
+                      "Raster rights review approved. Only an explicitly published colorway can serve this asset.",
+                    );
+                    await inbox.refetch();
+                  } catch (error) {
+                    setMessage(errorMessage(error));
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                Approve reviewed raster rights
+              </button>
+            )}
           </li>
         ))}
       </ul>

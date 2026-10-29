@@ -3,6 +3,27 @@
   margin: auto;
   padding: 0 40px 48px;
 }
+.colorway-selector {margin:12px 0; border-top:1px solid var(--line); padding-top:12px;}
+.colorway-selector .finish-label {gap:8px;flex-wrap:wrap;}
+.colorway-options {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px;}
+.colorway-option {display:grid;justify-items:start;gap:4px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);min-height:100px;text-align:left;}
+.colorway-option svg {width:100%;height:65px;background:var(--studio-canvas);border-radius:4px;}
+.colorway-option span {font-size:14px;line-height:1.4;}
+.colorway-option small {font-size:12px;color:var(--muted);}
+.colorway-option[aria-pressed="true"] {border-color:var(--primary);background:var(--primary-soft);opacity:1;}
+.colorway-option:disabled:not([aria-pressed="true"]) {opacity:.55;}
+.colorway-status {display:grid;gap:5px;font-size:12px;line-height:1.5;margin-top:10px;color:var(--muted);}
+.colorway-status a {color:var(--primary);}
+.colorway-status details {padding-top:5px;}
+.colorway-admin {margin:20px 0;padding:16px;border:1px solid var(--line);border-radius:8px;}
+.colorway-admin summary {cursor:pointer;font-weight:600;}
+.colorway-admin-fields {display:grid;gap:12px;margin-top:16px;}
+.colorway-admin-fields textarea {font-family:monospace;font-size:12px;}
+.colorway-admin-fields fieldset {border:1px solid var(--line);padding:12px;}
+.asset-inbox code {display:block;overflow-wrap:anywhere;white-space:normal;}
+.asset-inbox li {min-width:0;overflow-wrap:anywhere;}
+.catalog-3d-review {height:350px;position:relative;margin:12px 0;}
+.catalog-3d-review .bike3d-wrapper {height:100%;}
 .cinematic-hero {
   min-height: 620px;
   position: relative;

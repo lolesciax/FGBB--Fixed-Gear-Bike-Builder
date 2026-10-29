@@ -12,6 +12,7 @@ import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import {
   variantById,
+  selectedColorway,
   type Configuration,
   type Product,
   type Slot,
@@ -61,6 +62,7 @@ export default function Bike3D(props: Props) {
     [attempt, setAttempt] = useState(0),
     [moving, setMoving] = useState(false),
     [degraded, setDegraded] = useState(false);
+  const [finishFailure,setFinishFailure]=useState(false);
   const requested = props.graphicsQuality || "auto",
     studio = props.studio || "light";
   const device = navigator as Navigator & {
@@ -122,6 +124,7 @@ export default function Bike3D(props: Props) {
       )}
       <div
         className="bike3d-wrapper"
+        data-colorway-id={(()=>{const r=variantById(props.catalog,displayed.frameset);return r&&selectedColorway(r.product,r.variant)?.id||'legacy';})()}
         data-frame-variant={displayed.frameset}
         data-cockpit-variant={displayed.cockpit}
         data-cockpit-shape={
@@ -135,6 +138,7 @@ export default function Bike3D(props: Props) {
         data-turntable={!!props.turntable && !reducedMotion}
         data-loading={pending}
       >
+        {finishFailure&&<div className="model-loading" role="status">A finish graphic could not load. Paint remains visible; graphic accuracy is unavailable.</div>}
         {!ready && (
           <div className="studio-loading-plan">
             <Bike2D
@@ -177,6 +181,7 @@ export default function Bike3D(props: Props) {
               activeSlot={props.activeSlot}
               onInteract={interact}
               onMoving={setMoving}
+              onFinishFailure={setFinishFailure}
             />
             <ModelReady onReady={sceneReady} />
             {requested === "auto" && quality !== "performance" && (

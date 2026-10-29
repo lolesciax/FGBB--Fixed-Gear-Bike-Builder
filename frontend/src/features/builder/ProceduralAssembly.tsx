@@ -2,6 +2,8 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import {
   componentGeometry,
+  renderFrameSpecs,
+  selectedColorway,
   variantById,
   type Configuration,
   type Product,
@@ -10,7 +12,9 @@ import {
 } from "@tracklab/domain";
 import { StudioCamera } from "./StudioCamera";
 import { StudioLighting } from "./StudioLighting";
-import { PartGroup, useKitPaint } from "./MaterialMotion";
+import { PartGroup } from "./MaterialMotion";
+import {useFrameFinish} from './useFrameFinish';
+import {FinishGraphics} from './FinishGraphics';
 import { FrameKit } from "./FrameKit";
 import type {
   CameraView,
@@ -68,6 +72,7 @@ export function ProceduralAssembly({
   activeSlot,
   onInteract,
   onMoving,
+  onFinishFailure,
 }: {
   configuration: Configuration;
   catalog: Product[];
@@ -81,16 +86,17 @@ export function ProceduralAssembly({
   activeSlot?: Slot;
   onInteract: () => void;
   onMoving: (moving: boolean) => void;
+  onFinishFailure:(failed:boolean)=>void;
 }) {
   const get = (slot: Slot) =>
     variantById(catalog, configuration[slot])?.variant;
-  const frame = get("frameset"),
-    paint = frame?.color || "#535963";
+  const frameRecord=variantById(catalog,configuration.frameset);
+  const frame = get("frameset");
   const geometryKey = JSON.stringify(
     Object.fromEntries(
       Object.keys(configuration).map((slot) => [
         slot,
-        get(slot as Slot)?.specs,
+        slot==='frameset'?renderFrameSpecs(get('frameset')?.specs||{}):get(slot as Slot)?.specs,
       ]),
     ),
   );
@@ -100,7 +106,7 @@ export function ProceduralAssembly({
   );
   const key = (...slots: Slot[]) =>
     JSON.stringify(
-      Object.fromEntries(slots.map((slot) => [slot, get(slot)?.specs])),
+      Object.fromEntries(slots.map((slot) => [slot, slot==='frameset'?renderFrameSpecs(get(slot)?.specs||{}):get(slot)?.specs])),
     );
   const models = {
     frame: useOwnedModel(
@@ -113,7 +119,7 @@ export function ProceduralAssembly({
     saddle: useOwnedModel(key("frameset", "saddle"), createSaddle),
     drivetrain: useOwnedModel(key("frameset", "drivetrain"), createDrivetrain),
   };
-  useKitPaint(models.frame, paint, reducedMotion);
+  useFrameFinish(models.frame,frameRecord?.product,frame,reducedMotion);
   const group = useRef<THREE.Group>(null),
     modelKey = Object.values(configuration).join("|");
   useLayoutEffect(() => {
@@ -153,6 +159,7 @@ export function ProceduralAssembly({
         >
           {frame?.asset3D ? (
             <FrameKit
+              product={frameRecord!.product}
               variant={frame}
               bb={g.frame.bb}
               reducedMotion={reducedMotion}
@@ -160,6 +167,7 @@ export function ProceduralAssembly({
           ) : (
             <primitive object={models.frame} />
           )}
+          {frameRecord&&<FinishGraphics assembly={group} specs={frameRecord.variant.specs} colorway={selectedColorway(frameRecord.product,frameRecord.variant)} geometryKey={geometryKey} onFailure={onFinishFailure}/>}
         </PartGroup>
         {(["wheels", "tires", "cockpit", "saddle", "drivetrain"] as const).map(
           (slot) => (

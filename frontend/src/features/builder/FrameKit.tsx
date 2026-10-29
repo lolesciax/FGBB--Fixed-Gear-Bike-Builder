@@ -1,15 +1,18 @@
 import { useEffect, useMemo } from "react";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
-import type { Variant } from "@tracklab/domain";
-import { useKitPaint } from "./MaterialMotion";
+import type { Variant,Product } from "@tracklab/domain";
+import { useFrameFinish } from "./useFrameFinish";
+import {physicalCopy} from './finish-materials';
 import { frameRequestUrl } from "./studio-settings";
 export function FrameKit({
   variant,
+  product,
   bb,
   reducedMotion = false,
 }: {
   variant: Variant;
+  product:Product;
   bb: { x: number; y: number };
   reducedMotion?: boolean;
 }) {
@@ -20,12 +23,12 @@ export function FrameKit({
     clone.traverse((node) => {
       if (node instanceof THREE.Mesh)
         node.material = Array.isArray(node.material)
-          ? node.material.map((material) => material.clone())
-          : node.material.clone();
+          ? node.material.map(physicalCopy)
+          : physicalCopy(node.material);
     });
     return clone;
   }, [gltf.scene]);
-  useKitPaint(scene, variant.color, reducedMotion);
+  useFrameFinish(scene, product,variant, reducedMotion);
   useEffect(
     () => () => {
       scene.traverse((node) => {

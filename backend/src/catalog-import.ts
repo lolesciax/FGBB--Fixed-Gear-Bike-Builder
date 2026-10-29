@@ -28,6 +28,14 @@ export async function importCatalog() {
     for (const variant of data.variants) if (variant.asset3D?.revision === 'frame-kit-v2') {
       await ProductModel.updateOne({_id:data.id,'data.source':data.source,'data.status':'published','data.variants':{$elemMatch:{id:variant.id,specs:variant.specs,color:variant.color,asset3D:{...variant.asset3D,revision:'frame-kit-v1'}}}},{$set:{'data.variants.$.asset3D':variant.asset3D}});
     }
+    // Append reviewed finish records/variants after exact legacy asset upgrades.
+    // Never rewrite existing variants, archived records, admin colorways or builds.
+    if(data.colorways?.length) {
+      const original=data.variants.filter(v=>!v.colorwayId);
+      const existing=await ProductModel.findById(data.id).lean();
+      if(existing&&!existing.data.colorways&&JSON.stringify(existing.data.variants)===JSON.stringify(original))
+        await ProductModel.updateOne({_id:data.id,'data.source':data.source,'data.status':data.status,'data.colorways':{$exists:false},'data.variants':{$eq:existing.data.variants}},{$set:{'data.colorways':data.colorways},$push:{'data.variants':{$each:data.variants.filter(v=>v.colorwayId)}}});
+    }
     // Upgrade only the exact untouched seed placeholder. Preserve reviewed/admin/archived data.
     if (data.id === "cinelli-vigorelli")
       await ProductModel.updateOne(

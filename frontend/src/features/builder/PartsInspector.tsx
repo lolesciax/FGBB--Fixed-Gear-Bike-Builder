@@ -12,6 +12,7 @@ import {
   type Slot,
 } from "@tracklab/domain";
 import { PartThumbnail } from "./PartThumbnail";
+import {ColorwaySelector} from './ColorwaySelector';
 
 export const categoryNames: Record<Slot, string> = {
   frameset: "Frameset",
@@ -337,6 +338,7 @@ export function PartsInspector({
                     ))}
                   </select>
                 </label>
+                {slot==='frameset'&&<ColorwaySelector product={product} variant={shown} disabled={pending||locked||!configuration} onSelect={id=>onSelect(slot,id)}/>}
                 <details className="product-specs">
                   <summary>Specifications</summary>
                   <p>{product.description}</p>

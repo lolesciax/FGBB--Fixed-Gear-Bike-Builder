@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { registeredFrameAssets, assemblyGeometry } from "@tracklab/domain";
 import { manufacturerCatalog } from "../backend/src/manufacturer-catalog";
 it("exports distinct metre-scale frame kits with verified anchor placement and no external resources", async () => {
-  expect(registeredFrameAssets).toHaveLength(manufacturerCatalog.filter(p=>p.status==='published').reduce((n,p)=>n+p.variants.length,0));
+  expect(registeredFrameAssets).toHaveLength(manufacturerCatalog.filter(p=>p.status==='published').reduce((n,p)=>n+p.variants.filter(v=>!v.colorwayId).length,0));
   const heads = new Set<string>();
   for (const asset of registeredFrameAssets) {
     const data = await readFile(

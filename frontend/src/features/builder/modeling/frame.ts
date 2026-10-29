@@ -20,7 +20,7 @@ export function createFork(g: BicycleGeometry) {
   const group = new THREE.Group();
   group.name = "fork_assembly";
   const metal = material("#444d59", 0.65, 0.35),
-    surface = material("#303945", 0.3, 0.38);
+    surface = new THREE.MeshPhysicalMaterial({color:"#303945",metalness:.3,roughness:.38});
   cylinder(group, "fork_steerer", g.crown, g.steererTop, 0.0143, metal);
   for (const [name, p] of [
     ["lower", g.lower],
@@ -31,7 +31,7 @@ export function createFork(g: BicycleGeometry) {
     cylinder(group, `fork_headset_${name}`, a, b, 0.023, metal);
   }
   // A physical transverse crown bridges both blades to the steering axis.
-  axle(group, "fork_crown", g.crown, 0.015, 0.078, surface);
+  axle(group, "fork_crown", g.crown, 0.015, 0.078, surface.clone());
   const dropoutGeometry = extrude(
     annulus(0.012, g.frontDropoutDiameter / 2 + 0.0007),
     0.005,
@@ -74,7 +74,7 @@ export function createFork(g: BicycleGeometry) {
 export function createFrame(g: BicycleGeometry, color: string) {
   const group = new THREE.Group();
   group.name = "frame_and_fork";
-  const paint = material(color, 0.35, 0.34),
+  const paint = new THREE.MeshPhysicalMaterial({color,metalness:.35,roughness:.34}),
     metal = material("#6c7583", 0.7, 0.33),
     radius = g.frame.frameWidth / 2000;
   for (const [name, a, b, r] of [
@@ -83,11 +83,11 @@ export function createFrame(g: BicycleGeometry, color: string) {
     ["seat", g.bb, g.seat, radius],
     ["head", g.head, g.lower, radius + 0.004],
   ] as const)
-    cylinder(group, `paint_${name}`, a, b, r, paint);
+    cylinder(group, `paint_${name}`, a, b, r, paint.clone());
   for (const side of [-1, 1]) {
     const rear: Position = [g.rear[0], g.rear[1], side * g.rearHalf],
       seat: Position = [g.seat[0], g.seat[1], side * 0.012];
-    cylinder(group, `paint_seatstay_${side}`, seat, rear, 0.007, paint);
+    cylinder(group, `paint_seatstay_${side}`, seat, rear, 0.007, paint.clone());
     tube(
       group,
       `paint_chainstay_${side}`,
@@ -98,7 +98,7 @@ export function createFrame(g: BicycleGeometry, color: string) {
         rear,
       ],
       0.008,
-      paint,
+      paint.clone(),
       24,
       10,
     );

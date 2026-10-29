@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import frameAssets from './frame-assets.json';
+import { colorwaySchema, selectedColorway } from './colorways';
+export * from './colorways';
 export { brandSchema, modelRecordSchema, type CatalogBrand, type ModelRecord } from './catalog-registry';
 export const frameAssetSchema=z.object({variantId:z.string(),url:z.string().regex(/^\/models\/frames\/[a-z0-9-]+\.glb$/),fidelity:z.literal('illustrative'),license:z.literal('CC0-1.0'),source:z.string(),scale:z.literal(1),rotation:z.tuple([z.number(),z.number(),z.number()]),origin:z.literal('bottom-bracket'),units:z.literal('metres'),revision:z.enum(['frame-kit-v1','frame-kit-v2'])}).strict();
 export const registeredFrameAssets=z.array(frameAssetSchema).parse(frameAssets);
@@ -27,10 +29,13 @@ export const productSchema = z.object({
   revision: z.string().max(100).optional(), year: z.number().int().min(1900).max(2100).optional(),
   visual: z.object({ assetId: z.literal('tracklab-parametric-v2'), fidelity: z.literal('measurement-schematic'), source: z.string().max(200), license: z.literal('CC0-1.0'), reviewedAt: z.iso.datetime() }).strict().optional(),
   provenance: z.object({ reviewedAt: z.iso.datetime(), fields: z.array(z.string().max(100)).max(60), limitations: z.string().max(1000) }).strict().optional(),
+  colorways:z.array(colorwaySchema).max(40).optional(),
   variants: z.array(z.object({
     id: z.string().regex(/^[a-z0-9-]{1,100}$/), label: z.string().max(100), color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
     specs: z.record(z.string(), z.union([z.string().max(200), z.number().finite(), z.boolean()])),
     status:z.enum(['draft','published','archived']).optional(),
+    colorwayId:z.string().regex(/^[a-z0-9-]{1,100}$/).optional(),
+    geometryVariantId:z.string().regex(/^[a-z0-9-]{1,100}$/).optional(),
     asset3D:frameAssetSchema.optional(),
   }).strict()).min(1).max(30),
 }).strict();
@@ -46,12 +51,18 @@ export function variantById(catalog: Product[], id: string) {
   return undefined;
 }
 export function withHistoricalCatalog(current: Product[], snapshot: Product[] = []): Product[] {
-  return [...current.map(product=>({...product,variants:[...product.variants,...(snapshot.find(p=>p.id===product.id)?.variants||[]).filter(v=>!product.variants.some(c=>c.id===v.id)).map(v=>({...v,status:'archived' as const}))]})), ...snapshot.filter(p => !current.some(c => c.id === p.id)).map(p=>({...p,status:'archived' as const}))];
+  return [...current.map(product=>{
+    const old=snapshot.find(p=>p.id===product.id);
+    if(!old)return product;
+    const pinned=new Set(old.variants.map(v=>v.colorwayId).filter(Boolean));
+    return {...product,colorways:[...(product.colorways||[]).map(c=>pinned.has(c.id)?old.colorways?.find(o=>o.id===c.id)||c:c),...(old.colorways||[]).filter(c=>!product.colorways?.some(n=>n.id===c.id))],variants:[...product.variants.map(v=>{const previous=old.variants.find(o=>o.id===v.id);return previous?{...previous,asset3D:v.asset3D||previous.asset3D,status:v.status}:v;}),...old.variants.filter(v=>!product.variants.some(c=>c.id===v.id)).map(v=>({...v,status:'archived' as const}))]};
+  }), ...snapshot.filter(p => !current.some(c => c.id === p.id)).map(p=>({...p,status:'archived' as const}))];
 }
 export function validateConfiguration(config: Configuration, catalog: Product[], allowArchived = false) {
   for (const slot of slots) {
     const record = variantById(catalog, config[slot]);
-    if (!record || record.product.slot !== slot || (record.product.status !== 'published' && !(allowArchived && record.product.status === 'archived')) || (record.variant.status && record.variant.status!=='published' && !(allowArchived&&record.variant.status==='archived')))
+    const colorway=record&&selectedColorway(record.product,record.variant);
+    if (!record || record.product.slot !== slot || (record.variant.colorwayId&&(!colorway||(colorway.status!=='published'&&!(allowArchived&&colorway.status==='archived')))) || (record.product.status !== 'published' && !(allowArchived && record.product.status === 'archived')) || (record.variant.status && record.variant.status!=='published' && !(allowArchived&&record.variant.status==='archived')))
       throw new Error(`The ${slot} selection is unavailable. Choose a published variant.`);
   }
 }

@@ -36,6 +36,7 @@ for (const product of manufacturerCatalog.filter(
   (p) => p.status === "published",
 ))
   for (const variant of product.variants) {
+    if (variant.colorwayId) continue; // Finish variants reuse reviewed geometry or the procedural fallback.
     const g = assemblyGeometry(variant.specs),
       group = new THREE.Group();
     group.name = `illustrative_${variant.id}`;

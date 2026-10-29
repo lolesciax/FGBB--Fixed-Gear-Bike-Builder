@@ -1,5 +1,6 @@
 import { registeredFrameAssets, type Product } from "@tracklab/domain";
 import { expandedFramesets, expandedDrafts } from './modules/catalog/expanded-framesets';
+import { withSeedColorways } from './modules/catalog/colorway-seeds';
 
 const reviewedAt = "2026-10-27T13:50:00.000Z";
 const visual: Product["visual"] = {
@@ -214,7 +215,7 @@ const existingManufacturerCatalog: Product[] = [
     ],
   },
 ];
-export const manufacturerCatalog:Product[]=[...existingManufacturerCatalog,...expandedFramesets,...expandedDrafts];
+export const manufacturerCatalog:Product[]=[...existingManufacturerCatalog,...expandedFramesets,...expandedDrafts].map(withSeedColorways);
 export const seedBrands = [
   {
     id: "cinelli",

@@ -1,4 +1,4 @@
-import { useId } from "react";
+import {FrameFinish2D} from '@tracklab/domain/svg';
 import { Cog, SlidersHorizontal } from "lucide-react";
 import {
   assemblyGeometry,
@@ -14,7 +14,6 @@ export function PartThumbnail({
   color?: string;
   variant?: Product["variants"][number];
 }) {
-  const uid = useId().replace(/:/g, "");
   if (product.slot === "frameset" && !product.illustrative && !product.visual)
     return <span className="unavailable-thumbnail">Preview unavailable</span>;
   if (product.slot === "frameset") {
@@ -23,35 +22,13 @@ export function PartThumbnail({
         product.variants.find((v) => v.color === color)?.specs ||
         product.variants[0].specs,
     );
-    const { rear, front, bb, seat, head, headBottom } = g;
+    const { front, seat } = g;
     return (
       <svg
         viewBox={`-40 ${seat.y - 50} ${front.x + 90} ${-seat.y + 110}`}
         aria-hidden="true"
       >
-        <defs>
-          <linearGradient id={`thumbnail-${uid}`} x1="0" y1="0" x2="0" y2="1">
-            <stop
-              stopColor={color || variant?.color || product.variants[0].color}
-            />
-            <stop offset=".5" stopColor="#848c97" />
-            <stop
-              offset="1"
-              stopColor={color || variant?.color || product.variants[0].color}
-            />
-          </linearGradient>
-        </defs>
-        <g
-          fill="none"
-          stroke={`url(#thumbnail-${uid})`}
-          strokeWidth={g.frameWidth}
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        >
-          <path
-            d={`M${rear.x} 0L${seat.x} ${seat.y}L${bb.x} ${bb.y}Z M${seat.x} ${seat.y}L${head.x} ${head.y}L${headBottom.x} ${headBottom.y}L${bb.x} ${bb.y} M${headBottom.x} ${headBottom.y}L${front.x} 0`}
-          />
-        </g>
+        <FrameFinish2D product={product} variant={variant||product.variants.find(v=>v.color===color)||product.variants[0]}/>
       </svg>
     );
   }

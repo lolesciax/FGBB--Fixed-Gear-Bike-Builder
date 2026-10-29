@@ -1,8 +1,13 @@
-import { useMemo, useState } from "react";
-import { productSchema, visualizationInfo } from "@tracklab/domain";
+import { useMemo, useState,lazy,Suspense } from "react";
+import {useQuery} from '@tanstack/react-query';
+import { productSchema, visualizationInfo,selectedColorway,slots,type Configuration } from "@tracklab/domain";
 import { PartThumbnail } from "../features/builder/PartThumbnail";
+import {loadCatalog} from '../services/api';
+const Bike3D=lazy(()=>import('../features/builder/Bike3D'));
 export function CatalogReview({ text }: { text: string }) {
   const [variantId, setVariant] = useState("");
+  const [view,setView]=useState<'2d'|'3d'>('2d'),[studio,setStudio]=useState<'light'|'dark'>('light');
+  const catalog=useQuery({queryKey:['catalog'],queryFn:loadCatalog});
   const parsed = useMemo(() => {
     try {
       return productSchema.safeParse(JSON.parse(text));
@@ -20,9 +25,13 @@ export function CatalogReview({ text }: { text: string }) {
     variant =
       product.variants.find((v) => v.id === variantId) || product.variants[0],
     info = visualizationInfo(product, variant);
+  const colorway=selectedColorway(product,variant);
+  const items=[...(catalog.data?.items||[]).filter(p=>p.id!==product.id),product];
+  const configuration=Object.fromEntries(slots.map(slot=>[slot,slot==='frameset'?variant.id:items.find(p=>p.slot===slot&&p.status==='published')?.variants[0].id||''])) as Configuration;
   return (
     <section className="catalog-review">
       <h3>Visualization review</h3>
+      <div className="dialog-actions"><button type="button" className="button" onClick={()=>setView('2d')}>Review 2D finish</button><button type="button" className="button" disabled={!info.mode3D||!Object.values(configuration).every(Boolean)} onClick={()=>setView('3d')}>Review 3D finish</button></div>
       <div className="review-image">
         <PartThumbnail
           product={product}
@@ -30,6 +39,7 @@ export function CatalogReview({ text }: { text: string }) {
           color={variant.color}
         />
       </div>
+      {view==='3d'&&<><label>Review studio<select value={studio} onChange={e=>setStudio(e.target.value as 'light'|'dark')}><option value="light">Light</option><option value="dark">Dark</option></select></label><div className="catalog-3d-review"><Suspense fallback={<p>Loading finish review…</p>}><Bike3D configuration={configuration} catalog={items} onSelect={()=>{}} resetKey={0} studio={studio} graphicsQuality="balanced"/></Suspense></div></>}
       <label>
         Review variant
         <select value={variant.id} onChange={(e) => setVariant(e.target.value)}>
@@ -44,6 +54,7 @@ export function CatalogReview({ text }: { text: string }) {
         {info.specifications}. {info.fidelity}.
       </p>
       <p>{info.limitations}</p>
+      {colorway&&<p>{colorway.name} / revision {colorway.revision} / {colorway.status}. Paint: {colorway.fidelity}. {colorway.missingGraphics.join(' ')} {colorway.limitations}</p>}
       <dl>
         <dt>Original source</dt>
         <dd>

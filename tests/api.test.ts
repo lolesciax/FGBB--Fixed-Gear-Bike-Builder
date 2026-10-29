@@ -165,7 +165,7 @@ describe('authentication and authorization', () => {
     const placeholder={id:'cinelli-vigorelli',brand:'Cinelli',name:'Vigorelli frame-kit',slot:'frameset',status:'draft',illustrative:false,description:'Manufacturer reference record. Authentic model geometry and licensed product assets are not registered, so selection is unavailable.',variants:[{id:'cinelli-vigorelli-reference',label:'Reference only',color:'#808080',specs:{}}]};
     await ProductModel.updateOne({_id:placeholder.id},{$set:{data:placeholder}});
     await importCatalog();
-    expect((await ProductModel.findById(placeholder.id))?.data.variants).toHaveLength(5);
+    expect((await ProductModel.findById(placeholder.id))?.data.variants).toHaveLength(seedCatalog.find(p=>p.id===placeholder.id)!.variants.length);
     await ProductModel.updateOne({_id:placeholder.id},{$set:{data:{...placeholder,name:'Edited research draft'}}});
     await importCatalog();
     expect((await ProductModel.findById(placeholder.id))?.data.name).toBe('Edited research draft');
@@ -311,6 +311,63 @@ describe('API boundaries', () => {
     stored = await ProductModel.findById(product.id).lean();
     expect(stored!.data.variants[0].specs.reach).toBe(123);
     expect(stored!.data.variants[0].asset3D.revision).toBe("frame-kit-v1");
+  });
+  it('appends colorways idempotently only to untouched legacy seed products',async()=>{
+    const p=structuredClone(seedCatalog.find(p=>p.id==='dosnoventa-02-la')!);
+    const legacy={...p,variants:p.variants.filter(v=>!v.colorwayId)};delete legacy.colorways;
+    await ProductModel.replaceOne({_id:p.id},{_id:p.id,data:legacy});
+    await importCatalog();await importCatalog();
+    let stored=(await ProductModel.findById(p.id))!.data;
+    expect(stored.variants).toHaveLength(p.variants.length);expect(stored.colorways).toHaveLength(2);
+    legacy.variants[0].specs.reach=123;await ProductModel.replaceOne({_id:p.id},{_id:p.id,data:legacy});
+    expect((await ProductModel.findById(p.id))!.data.colorways).toBeUndefined();
+    await importCatalog();
+    stored=(await ProductModel.findById(p.id))!.data;expect(stored.colorways).toBeUndefined();expect(stored.variants[0].specs.reach).toBe(123);
+  });
+  it('prevents used colorway edits and retains saved paint when a definition is archived',async()=>{
+    const c=await member();await User.updateOne({_id:c.userId},{$set:{role:'admin'}});
+    const p=structuredClone(seedCatalog.find(p=>p.id==='cinelli-vigorelli')!),cw=p.colorways![0];
+    const v=p.variants.find(v=>v.colorwayId===cw.id&&v.specs.size==='M')!;
+    const created=(await post(c,'/builds',{name:'Pinned blue',configuration:{...defaultConfiguration,frameset:v.id}}).expect(201)).body;
+    const put=()=>c.agent.put('/api/admin/catalog/'+p.id).set('Origin',origin).set('X-CSRF-Token',c.csrf);
+    const changed=structuredClone(p);changed.colorways![0].paint.color='#ff0000';
+    expect((await put().send(changed).expect(409)).body.error.code).toBe('REFERENCED_COLORWAY_IMMUTABLE');
+    p.colorways![0].status='archived';await put().send(p).expect(200);
+    const publicProduct=(await c.agent.get('/api/catalog/'+p.id).expect(200)).body;
+    expect(publicProduct.variants.some((n:{id:string})=>n.id===v.id)).toBe(false);
+    const picture=(await post(c,`/builds/${created._id}/export-image`).expect(200)).body.svg;
+    expect(picture).toContain(cw.id);expect(picture).toContain('#47b9d0');
+    const duplicate=(await post(c,`/builds/${created._id}/duplicate`).expect(201)).body;
+    expect(duplicate.catalogSnapshot.find((n:{id:string})=>n.id===p.id).colorways[0].status).toBe('published');
+  });
+  it('serves artwork only after admin rights review and explicit model-specific publication, and embeds exports',async()=>{
+    const c=await member(),g=await guest();await User.updateOne({_id:c.userId},{$set:{role:'admin'}});
+    const query=new URLSearchParams({productId:'studio-track',filename:'original-calibration.png',license:'CC0-1.0',evidence:'https://example.com/original-calibration',permission:'confirmed'});
+    const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jWZkAAAAASUVORK5CYII=','base64');
+    const uploaded=(await c.agent.post('/api/admin/asset-reviews?'+query).set('Origin',origin).set('X-CSRF-Token',c.csrf).set('Content-Type','image/png').send(png).expect(201)).body;
+    const item=(await AssetReview.findById(uploaded.id))!;
+    try {
+      const path=`/api/colorway-assets/${uploaded.id}/${item.sha256}`;
+      await g.agent.get(path).expect(404);await post(g,`/admin/asset-reviews/${uploaded.id}/approve`,{permission:'confirmed',review:'Original calibration artwork with no manufacturer graphics.'}).expect(401);
+      const p=structuredClone(seedCatalog.find(p=>p.id==='studio-track')!),base=p.variants[0];
+      const colorway={...structuredClone(seedCatalog.find(p=>p.id==='cinelli-vigorelli')!.colorways![0]),id:'studio-calibration-v1',productId:p.id,name:'Original calibration',sizes:['M'],regions:[],missingGraphics:[],graphics:[{id:'original-raster',zone:'down',side:'both',from:.25,to:.6,width:200,height:20,license:'CC0-1.0',evidence:'https://example.com/original-calibration',permission:'confirmed',raster:{reviewId:uploaded.id,sha256:item.sha256}}]};
+      p.colorways=[colorway as NonNullable<typeof p.colorways>[number]];p.variants.push({...base,id:'studio-calibration-m-v1',colorwayId:colorway.id,geometryVariantId:base.id,specs:{...base.specs,size:'M'}});
+      const put=()=>c.agent.put('/api/admin/catalog/'+p.id).set('Origin',origin).set('X-CSRF-Token',c.csrf).send(p);
+      expect((await put().expect(422)).body.error.code).toBe('COLORWAY_ASSET_UNAVAILABLE');
+      await post(c,`/admin/asset-reviews/${uploaded.id}/approve`,{permission:'confirmed',review:'Original calibration artwork created for the isolated test; CC0 permission reviewed.'}).expect(200);
+      await g.agent.get(path).expect(404);await put().expect(200);await g.agent.get(path).expect(200).expect('Content-Type',/image\/png/);
+      const created=(await post(c,'/builds',{name:'Raster export',configuration:{...defaultConfiguration,frameset:'studio-calibration-m-v1'}}).expect(201)).body;
+      // Layer identifiers are scoped to one colorway; another model's draft
+      // with the same layer ID must never replace this build's approved raster.
+      await ProductModel.updateOne({_id:'studio-pursuit'},{$set:{'data.colorways':[{...colorway,id:'other-model-draft',productId:'studio-pursuit',status:'draft',graphics:[{...colorway.graphics[0],raster:{reviewId:uploaded.id,sha256:'0'.repeat(64)}}]}]}});
+      const svg=(await post(c,`/builds/${created._id}/export-image`).expect(200)).body.svg;
+      expect(svg).toContain('data:image/png;base64,');expect(svg).not.toContain('/api/colorway-assets/');
+      p.colorways![0].status='archived';await put().expect(200);
+      await g.agent.get(path).expect(404);await c.agent.get(path).expect(200).expect('Cache-Control','private, no-store');
+      await Build.updateOne({_id:created._id},{$set:{visibility:'public',publicId:'original-calibration-public'}});
+      await g.agent.get(path).expect(200);
+      expect(await Audit.countDocuments({action:'asset.approve',target:uploaded.id})).toBe(1);
+    }finally{await unlink(resolve('.local/test-asset-review',item.storageKey!));}
   });
   it('bounds catalog pagination, validates JSON and limits request bodies', async () => { const c = await guest(); await c.agent.get('/api/catalog?limit=99999').expect(422); await c.agent.post('/api/workspace').set('Content-Type', 'application/json').send('{oops').expect(400); await post(c, '/workspace', { extra: 'x'.repeat(40000) }).expect(413); });
   it('returns a consistent 429 and Retry-After for sensitive operations', async () => { const c = await guest(); for (let i = 0; i < 5; i++) await post(c, '/auth/login', { email: 'none@example.com', password: 'a-long-test-passphrase' }).expect(401); const r = await post(c, '/auth/login', { email: 'none@example.com', password: 'a-long-test-passphrase' }).expect(429); expect(r.body.error.code).toBe('RATE_LIMIT_EXCEEDED'); expect(Number(r.headers['retry-after'])).toBeGreaterThan(0); });

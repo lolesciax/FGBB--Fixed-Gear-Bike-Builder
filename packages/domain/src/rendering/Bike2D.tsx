@@ -1,7 +1,7 @@
 import React, { useId, type KeyboardEvent } from "react";
 import {
   componentGeometry,
-  forkBladePoints,
+  selectedColorway,
   handlebarPoints,
   spokeEndpoints,
   variantById,
@@ -10,6 +10,8 @@ import {
   type Slot,
   type Position,
 } from "@tracklab/domain";
+import {FrameFinish2D} from './FrameFinish2D';
+export {FrameFinish2D} from './FrameFinish2D';
 type Point = { x: number; y: number };
 type Props = {
   configuration: Configuration;
@@ -18,6 +20,7 @@ type Props = {
   onSelect?: (slot: Slot) => void;
   zoom?: number;
   compact?: boolean;
+  rasterData?:Record<string,string>;
 };
 const project = (p: Position): Point => ({ x: p[0] * 1000, y: -p[1] * 1000 });
 const add = (a: Position, b: Position): Position =>
@@ -92,6 +95,7 @@ export function Bike2D({
   onSelect,
   zoom = 1,
   compact = false,
+  rasterData,
 }: Props) {
   const uid = useId().replace(/:/g, ""),
     get = (slot: Slot) => variantById(catalog, configuration[slot])?.variant;
@@ -104,7 +108,7 @@ export function Bike2D({
       ),
     ),
     g = m.frame,
-    { rear, front, bb, seat, head, headBottom } = g,
+    { rear, front, bb, seat } = g,
     saddle = project(m.saddlePost),
     bar = project(m.barClamp),
     stem = project(m.stemBase),
@@ -169,9 +173,8 @@ export function Bike2D({
       />
     </g>
   );
-  const crown = project(m.crown);
-  const [forkStart, forkA, forkB, forkEnd] = forkBladePoints(m, 1).map(project);
-  const forkPath = `M${forkStart.x} ${forkStart.y} C${forkA.x} ${forkA.y} ${forkB.x} ${forkB.y} ${forkEnd.x} ${forkEnd.y}`;
+  const frameRecord=variantById(catalog,configuration.frameset)!;
+  const colorway=selectedColorway(frameRecord.product,frameRecord.variant);
   const d = m.drivetrain,
     chain = line(d.chain.points.map(project), true),
     frontRadius = d.chain.frontRadius * 1000,
@@ -179,6 +182,8 @@ export function Bike2D({
   return (
     <svg
       className={"bike-svg " + (compact ? "compact" : "")}
+      data-colorway-id={colorway?.id||'legacy'}
+      data-colorway-revision={colorway?.revision||0}
       viewBox={[
         bounds.x - margin,
         bounds.y - margin,
@@ -304,23 +309,7 @@ export function Bike2D({
           />
         </g>
         <g {...interactive("frameset")}>
-          {tube(rear, seat, 14)}
-          {tube(rear, bb, 16)}
-          {tube(seat, head, g.frameWidth)}
-          {tube(bb, seat, g.frameWidth)}
-          {tube(bb, headBottom, g.frameWidth + 8)}
-          {tube(head, headBottom, g.frameWidth + 8)}
-          {tube(crown, project(m.steererTop), 28, metal)}
-          <path d={forkPath} fill="none" stroke={metal} strokeWidth="22" />
-          <circle cx={front.x} cy="0" r="10" fill={metal} />
-          <path
-            d={line([
-              { x: crown.x - 13, y: crown.y },
-              { x: crown.x + 13, y: crown.y },
-            ])}
-            stroke={metal}
-            strokeWidth="17"
-          />
+          <FrameFinish2D product={frameRecord.product} variant={frameRecord.variant} metal={metal} rasterData={rasterData}/>
         </g>
         <g {...interactive("saddle")}>
           {tube(seat, saddle, m.saddle.postDiameter * 1000, metal)}
