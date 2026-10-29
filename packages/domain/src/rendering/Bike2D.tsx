@@ -5,13 +5,19 @@ import {
   handlebarPoints,
   spokeEndpoints,
   variantById,
+  slots,
+  finishZones,
+  finishSlots,
+  componentPaint,
+  finishGradient,
+  type FinishZone,
   type Configuration,
   type Product,
   type Slot,
   type Position,
 } from "@tracklab/domain";
-import {FrameFinish2D} from './FrameFinish2D';
-export {FrameFinish2D} from './FrameFinish2D';
+import { FrameFinish2D } from "./FrameFinish2D";
+export { FrameFinish2D } from "./FrameFinish2D";
 type Point = { x: number; y: number };
 type Props = {
   configuration: Configuration;
@@ -20,7 +26,7 @@ type Props = {
   onSelect?: (slot: Slot) => void;
   zoom?: number;
   compact?: boolean;
-  rasterData?:Record<string,string>;
+  rasterData?: Record<string, string>;
 };
 const project = (p: Position): Point => ({ x: p[0] * 1000, y: -p[1] * 1000 });
 const add = (a: Position, b: Position): Position =>
@@ -100,12 +106,7 @@ export function Bike2D({
   const uid = useId().replace(/:/g, ""),
     get = (slot: Slot) => variantById(catalog, configuration[slot])?.variant;
   const m = componentGeometry(
-      Object.fromEntries(
-        Object.keys(configuration).map((slot) => [
-          slot,
-          get(slot as Slot)?.specs,
-        ]),
-      ),
+      Object.fromEntries(slots.map((slot) => [slot, get(slot as Slot)?.specs])),
     ),
     g = m.frame,
     { rear, front, bb, seat } = g,
@@ -152,6 +153,23 @@ export function Bike2D({
       : {};
   const metal = "url(#" + uid + "-metal)",
     framePaint = "url(#" + uid + "-paint)";
+  const componentPaints = Object.fromEntries(
+    finishZones.map((zone) => {
+      const selected = variantById(catalog, configuration[finishSlots[zone]]);
+      return [
+        zone,
+        selected &&
+          componentPaint(
+            selected.product,
+            selected.variant,
+            zone,
+            configuration.appearance?.[zone],
+          ),
+      ];
+    }),
+  );
+  const finish = (zone: FinishZone) =>
+    componentPaints[zone] ? `url(#${uid}-${zone})` : metal;
   const tube = (a: Point, b: Point, width: number, color = framePaint) => (
     <g>
       <path
@@ -173,8 +191,8 @@ export function Bike2D({
       />
     </g>
   );
-  const frameRecord=variantById(catalog,configuration.frameset)!;
-  const colorway=selectedColorway(frameRecord.product,frameRecord.variant);
+  const frameRecord = variantById(catalog, configuration.frameset)!;
+  const colorway = selectedColorway(frameRecord.product, frameRecord.variant);
   const d = m.drivetrain,
     chain = line(d.chain.points.map(project), true),
     frontRadius = d.chain.frontRadius * 1000,
@@ -182,8 +200,9 @@ export function Bike2D({
   return (
     <svg
       className={"bike-svg " + (compact ? "compact" : "")}
-      data-colorway-id={colorway?.id||'legacy'}
-      data-colorway-revision={colorway?.revision||0}
+      data-colorway-id={colorway?.id || "legacy"}
+      data-component-finishes={JSON.stringify(configuration.appearance || {})}
+      data-colorway-revision={colorway?.revision || 0}
       viewBox={[
         bounds.x - margin,
         bounds.y - margin,
@@ -199,6 +218,23 @@ export function Bike2D({
       data-geometry-revision="components-v2"
     >
       <defs>
+        {finishZones.map(
+          (zone) =>
+            componentPaints[zone] && (
+              <linearGradient
+                id={`${uid}-${zone}`}
+                key={zone}
+                x1="0"
+                y1="0"
+                x2=".2"
+                y2="1"
+              >
+                {finishGradient(componentPaints[zone]).map((stop, i) => (
+                  <stop key={i} offset={stop.at} stopColor={stop.color} />
+                ))}
+              </linearGradient>
+            ),
+        )}
         <linearGradient id={uid + "-paint"} x1="0" y1="0" x2=".2" y2="1">
           <stop stopColor={paint} />
           <stop offset=".35" stopColor={paint} />
@@ -237,7 +273,7 @@ export function Bike2D({
           fill="#171c26"
           opacity=".08"
         />
-        <g {...interactive("wheels")}>
+        <g {...interactive("wheels")} data-finish-zone="wheelset">
           {[rear, front].map((axle, i) => (
             <g key={i} transform={"translate(" + axle.x + " 0)"}>
               <circle
@@ -257,13 +293,15 @@ export function Bike2D({
               <circle
                 r={(m.wheel.rimOuter + m.wheel.rimInner) * 500}
                 fill="none"
-                stroke={metal}
+                stroke={finish("wheelset")}
                 strokeWidth={m.wheel.rimDepth * 1000}
               />
               <circle
                 r={m.wheel.rimOuter * 1000}
                 fill="none"
-                stroke="#a7afba"
+                stroke={
+                  componentPaints.wheelset ? finish("wheelset") : "#a7afba"
+                }
                 strokeWidth="1.5"
               />
               {spokeEndpoints(m.wheel, i === 0).map((s, n) => (
@@ -273,12 +311,30 @@ export function Bike2D({
                   y1={-s.hub[1] * 1000}
                   x2={s.rim[0] * 1000}
                   y2={-s.rim[1] * 1000}
-                  stroke="#858f9e"
+                  stroke={
+                    componentPaints.wheelset ? finish("wheelset") : "#858f9e"
+                  }
                   strokeWidth="1.3"
                 />
               ))}
-              <circle r={i === 0 ? 28 : 22} fill={metal} />
-              <circle r="6" fill="#c0c7d1" stroke="#353e4b" strokeWidth="2" />
+              <circle r={i === 0 ? 28 : 22} fill={finish("wheelset")} />
+              <circle
+                r="10"
+                fill="none"
+                stroke={finish("wheelset")}
+                strokeWidth="3"
+              />
+              <circle
+                r="6"
+                fill={componentPaints.wheelset ? finish("wheelset") : "#c0c7d1"}
+                stroke="#353e4b"
+                strokeWidth="2"
+              />
+              <path
+                d={`M0 ${-m.wheel.rimInner * 1000 + 3}v16`}
+                stroke={finish("wheelset")}
+                strokeWidth="4"
+              />
             </g>
           ))}
         </g>
@@ -309,10 +365,22 @@ export function Bike2D({
           />
         </g>
         <g {...interactive("frameset")}>
-          <FrameFinish2D product={frameRecord.product} variant={frameRecord.variant} metal={metal} rasterData={rasterData}/>
+          <FrameFinish2D
+            product={frameRecord.product}
+            variant={frameRecord.variant}
+            metal={metal}
+            rasterData={rasterData}
+          />
         </g>
         <g {...interactive("saddle")}>
-          {tube(seat, saddle, m.saddle.postDiameter * 1000, metal)}
+          <g data-finish-zone="seatpost">
+            {tube(
+              seat,
+              saddle,
+              m.saddle.postDiameter * 1000,
+              finish("seatpost"),
+            )}
+          </g>
           <path
             d={smooth([
               { x: saddle.x - 94, y: saddle.y - 31 },
@@ -330,8 +398,24 @@ export function Bike2D({
             width="46"
             height="18"
             rx="5"
-            fill={metal}
+            fill={finish("seatpost")}
           />
+          <path
+            d={`M${saddle.x - 13} ${saddle.y - 11}h26`}
+            stroke="#8993a0"
+            strokeWidth="3"
+          />
+          {[-10, 10].map((x) => (
+            <circle
+              key={x}
+              cx={saddle.x + x}
+              cy={saddle.y - 10}
+              r="3"
+              fill="#bbc3cd"
+              stroke="#313a46"
+              strokeWidth="1"
+            />
+          ))}
           <path
             d={
               "M" +
@@ -368,25 +452,42 @@ export function Bike2D({
             stroke="#555f6e"
             strokeWidth="2"
           />
+          <path
+            d={`M${saddle.x - m.saddle.length * 450} ${saddle.y - 46}Q${saddle.x - 45} ${saddle.y - 58} ${saddle.x + m.saddle.length * 38} ${saddle.y - 46}L${saddle.x + m.saddle.length * 420} ${saddle.y - 44}`}
+            fill="none"
+            stroke="#626b77"
+            strokeWidth="1.4"
+          />
         </g>
         <g {...interactive("cockpit")}>
-          {tube(stem, bar, 28, metal)}
-          <circle cx={stem.x} cy={stem.y} r="18" fill={metal} />
-          <circle
-            cx={bar.x}
-            cy={bar.y}
-            r={m.cockpit.clamp * 500 + 4}
-            fill={metal}
-          />
+          <g data-finish-zone="stem">
+            {tube(stem, bar, 28, finish("stem"))}
+            <circle cx={stem.x} cy={stem.y} r="18" fill={finish("stem")} />
+            <circle
+              cx={bar.x}
+              cy={bar.y}
+              r={m.cockpit.clamp * 500 + 4}
+              fill={finish("stem")}
+            />
+          </g>
           <path
             d={smooth(barPoints)}
             fill="none"
-            stroke="#242c37"
+            stroke={componentPaints.handlebar ? finish("handlebar") : "#242c37"}
+            strokeWidth={m.cockpit.tubeDiameter * 1000}
+            data-finish-zone="handlebar"
+          />
+          <path
+            d={smooth(
+              barPoints.slice(Math.max(0, Math.floor(barPoints.length * 0.55))),
+            )}
+            fill="none"
+            stroke="#202630"
             strokeWidth={m.cockpit.tubeDiameter * 1000 + 2.8}
           />
         </g>
         <g {...interactive("drivetrain")}>
-          {tube(bb, project(d.pedals[1]), 22, metal)}
+          {tube(bb, project(d.pedals[1]), 22, finish("crankArms"))}
           <rect
             x={project(d.pedals[1]).x - 43}
             y={project(d.pedals[1]).y - 6}
@@ -411,7 +512,8 @@ export function Bike2D({
           />
           <path
             d={gear(d.frontTeeth, frontRadius, frontRadius - 26, bb)}
-            fill={metal}
+            fill={finish("chainring")}
+            data-finish-zone="chainring"
             fillRule="evenodd"
             data-teeth={d.frontTeeth}
           />
@@ -423,12 +525,33 @@ export function Bike2D({
               };
             return (
               <g key={i}>
-                <path d={line([bb, p])} stroke="#4a5463" strokeWidth="14" />
+                <path
+                  d={line(
+                    [
+                      {
+                        x: bb.x + Math.cos(a) * 14 - Math.sin(a) * 14,
+                        y: bb.y - Math.sin(a) * 14 - Math.cos(a) * 14,
+                      },
+                      { x: p.x - Math.sin(a) * 7, y: p.y - Math.cos(a) * 7 },
+                      { x: p.x + Math.sin(a) * 7, y: p.y + Math.cos(a) * 7 },
+                      {
+                        x: bb.x + Math.cos(a) * 14 + Math.sin(a) * 14,
+                        y: bb.y - Math.sin(a) * 14 + Math.cos(a) * 14,
+                      },
+                    ],
+                    true,
+                  )}
+                  fill={
+                    componentPaints.crankArms ? finish("crankArms") : "#4a5463"
+                  }
+                />
                 <circle cx={p.x} cy={p.y} r="3.7" fill="#b8c1ce" />
               </g>
             );
           })}
-          {tube(bb, project(d.pedals[0]), 23, metal)}
+          <g data-finish-zone="crankArms">
+            {tube(bb, project(d.pedals[0]), 23, finish("crankArms"))}
+          </g>
           <rect
             x={project(d.pedals[0]).x - 44}
             y={project(d.pedals[0]).y - 7}

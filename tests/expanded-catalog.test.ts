@@ -33,8 +33,8 @@ it("uses distinct sourced Magnum and Ranger anchors and preserves uncertain inte
     compatibility(
       { ...defaultConfiguration, frameset: m.id },
       seedCatalog,
-    ).rules.find((r) => r.id === "seatpost")?.state,
-  ).toBe("incompatible");
+    ).rules.find((r) => r.id === "saddle-rails")?.state,
+  ).toBe("compatible");
   const repaired = compatibility(
     { ...defaultConfiguration, frameset: r.id, saddle: "studio-race-316" },
     seedCatalog,

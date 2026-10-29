@@ -124,6 +124,7 @@ export default function Bike3D(props: Props) {
       )}
       <div
         className="bike3d-wrapper"
+        data-component-finishes={JSON.stringify(displayed.appearance||{})}
         data-colorway-id={(()=>{const r=variantById(props.catalog,displayed.frameset);return r&&selectedColorway(r.product,r.variant)?.id||'legacy';})()}
         data-frame-variant={displayed.frameset}
         data-cockpit-variant={displayed.cockpit}

@@ -22,6 +22,11 @@
 .colorway-admin-fields fieldset {border:1px solid var(--line);padding:12px;}
 .asset-inbox code {display:block;overflow-wrap:anywhere;white-space:normal;}
 .asset-inbox li {min-width:0;overflow-wrap:anywhere;}
+.component-finishes {display:grid;gap:10px;margin:12px 0;padding-top:12px;border-top:1px solid var(--line);}
+.component-finishes label {display:grid;gap:5px;font-size:14px;}
+.component-finishes select {min-height:44px;width:100%;}
+.component-finishes small {font-size:12px;line-height:1.5;color:var(--muted);}
+.sheet-expand {margin-left:auto;margin-right:12px;min-height:44px;}
 .catalog-3d-review {height:350px;position:relative;margin:12px 0;}
 .catalog-3d-review .bike3d-wrapper {height:100%;}
 .cinematic-hero {

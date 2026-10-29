@@ -105,7 +105,7 @@ test("source-reviewed Cinelli and Dosnoventa variants update geometry and surviv
     "authentic assets unavailable",
   );
   await page.getByRole("button", { name: "View details", exact: true }).click();
-  await expect(page.getByRole("dialog")).toContainText("frameset.seatpost");
+  await expect(page.getByRole("dialog")).toContainText("Saddle rail/clamp interface is abstracted");
   await page.getByRole("button", { name: "Back to the build" }).click();
   await page.getByLabel("Filter by brand").selectOption("Dosnoventa");
   for (const [model, id] of [

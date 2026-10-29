@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import frameAssets from './frame-assets.json';
 import { colorwaySchema, selectedColorway } from './colorways';
+import {appearanceSchema,componentFinishSchema,appearanceIssues} from './finishes';
+export * from './finishes';
 export * from './colorways';
 export { brandSchema, modelRecordSchema, type CatalogBrand, type ModelRecord } from './catalog-registry';
 export const frameAssetSchema=z.object({variantId:z.string(),url:z.string().regex(/^\/models\/frames\/[a-z0-9-]+\.glb$/),fidelity:z.literal('illustrative'),license:z.literal('CC0-1.0'),source:z.string(),scale:z.literal(1),rotation:z.tuple([z.number(),z.number(),z.number()]),origin:z.literal('bottom-bracket'),units:z.literal('metres'),revision:z.enum(['frame-kit-v1','frame-kit-v2'])}).strict();
@@ -16,6 +18,7 @@ export type Slot = z.infer<typeof slotSchema>;
 export const configurationSchema = z.object({
   frameset: z.string().max(100), wheels: z.string().max(100), tires: z.string().max(100),
   cockpit: z.string().max(100), drivetrain: z.string().max(100), saddle: z.string().max(100),
+  appearance:appearanceSchema.optional(),
 }).strict();
 export type Configuration = z.infer<typeof configurationSchema>;
 export const buildInput = z.object({ name: z.string().trim().min(1).max(80), configuration: configurationSchema });
@@ -36,6 +39,7 @@ export const productSchema = z.object({
     status:z.enum(['draft','published','archived']).optional(),
     colorwayId:z.string().regex(/^[a-z0-9-]{1,100}$/).optional(),
     geometryVariantId:z.string().regex(/^[a-z0-9-]{1,100}$/).optional(),
+    componentFinishes:z.array(componentFinishSchema).max(6).refine(v=>new Set(v.map(r=>r.zone)).size===v.length,'Component finish regions must be unique.').optional(),
     asset3D:frameAssetSchema.optional(),
   }).strict()).min(1).max(30),
 }).strict();
@@ -59,6 +63,7 @@ export function withHistoricalCatalog(current: Product[], snapshot: Product[] = 
   }), ...snapshot.filter(p => !current.some(c => c.id === p.id)).map(p=>({...p,status:'archived' as const}))];
 }
 export function validateConfiguration(config: Configuration, catalog: Product[], allowArchived = false) {
+  const finishErrors=appearanceIssues(config,catalog);if(finishErrors.length)throw new Error(finishErrors.join(' '));
   for (const slot of slots) {
     const record = variantById(catalog, config[slot]);
     const colorway=record&&selectedColorway(record.product,record.variant);
@@ -84,7 +89,9 @@ export function compatibility(config: Configuration, catalog: Product[]) {
   check('axle', 'frameset', 'axle', 'wheels', 'axle', 'Axle and dropout interface');
   check('front-axle-diameter', 'frameset', 'frontAxleDiameter', 'wheels', 'frontAxleDiameter', 'Front axle diameter');
   check('rear-axle-diameter', 'frameset', 'rearAxleDiameter', 'wheels', 'rearAxleDiameter', 'Rear axle diameter');
-  check('seatpost', 'frameset', 'seatpost', 'saddle', 'seatpost', 'Seatpost diameter');
+  // Seatpost tube diameter belongs to the frame; saddle rails meet a separate clamp.
+  const seating=selected.saddle?.variant.specs,rail=seating?.railInterface,clamp=seating?.clampInterface;
+  rules.push({id:'saddle-rails',state:rail!==undefined&&clamp!==undefined&&rail!==clamp?'incompatible':'compatible',message:rail!==undefined&&clamp!==undefined?(rail===clamp?'Saddle rails and post clamp: listed interfaces agree.':'Saddle rails and post clamp: listed interfaces conflict.'):'Saddle rail/clamp interface is abstracted; no documented conflict. Verify physical rail fit.',slots:['saddle'],missing:[],sources:[selected.saddle?.product.source].filter((v):v is string=>!!v)});
   check('clamp', 'frameset', 'stemClamp', 'cockpit', 'stemClamp', 'Stem and handlebar clamp');
   check('bottom-bracket', 'frameset', 'bottomBracket', 'drivetrain', 'bottomBracket', 'Bottom bracket interface');
   check('chain-width', 'drivetrain', 'chainWidth', 'wheels', 'cogWidth', 'Chain and cog width');

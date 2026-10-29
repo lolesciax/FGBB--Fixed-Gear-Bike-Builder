@@ -29,7 +29,7 @@ Checked public manufacturer pages and product variant payloads on 28 October 202
 | Versioned colorway records and backend validation | Complete locally | 20 records, 16 published approximations; model/size/geometry/rights gates and append-only untouched-seed import |
 | Shared paint layers and physical materials | Complete within approximation scope | Nine shared paint zones, matching fork, physical finishes, geometry reuse, original vector/raster projection |
 | Selector and admin review | Complete locally | Exact-size colorway cards, source/fidelity feedback, structured staging, review previews and audited raster approval |
-| Saved state and regression verification | Complete locally; push CI pending | Immutable snapshots, archive/export/duplicate tests, 25 browser flows, development/PWA checks and visual evidence below |
+| Saved state and regression verification | Complete and verified | Immutable snapshots, archive/export/duplicate tests, 25 browser flows, development/PWA checks and successful [CI](https://github.com/lolesciax/FGBB--Fixed-Gear-Bike-Builder/actions/runs/40812576200) |
 
 Licensed-authentic reproduction is not claimed. The practical milestone is documented paint approximation with missing graphics, as authorized. Future licensed assets must be prepared, reviewed and versioned; no per-selection generation service or hosting/storage provisioning.
 

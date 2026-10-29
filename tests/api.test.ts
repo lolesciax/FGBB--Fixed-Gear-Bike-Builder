@@ -113,18 +113,43 @@ describe('authentication and authorization', () => {
     expect(stored?.storageKey).toMatch(/^[a-f0-9-]+\.glb$/);
     await unlink(resolve('.local/test-asset-review',stored!.storageKey!));
   });
-  it('applies dependent frame/seating changes atomically, charges per changed slot and deduplicates retries',async()=>{
+  it('authorizes and charges finish changes, preserves seating across post diameters, and persists canonical appearance everywhere',async()=>{
+    const g=await guest(),w=await workspace(g);
+    await post(g,'/workspace/change',{token:w.token,slot:'wheels',variantId:'studio-classic',replacements:{appearance:{wheelset:'brand'}}}).expect(422);
+    expect((await g.agent.get('/api/session')).body.usage.changes).toBe(0);
+    const input={token:w.token,slot:'wheels',variantId:'studio-classic',replacements:{appearance:{wheelset:'polished'}}};
+    const polished=(await post(g,'/workspace/change',input).expect(200)).body;
+    await post(g,'/workspace/change',input).expect(200);
+    expect((await g.agent.get('/api/session')).body.usage.changes).toBe(1);
+    await g.agent.post('/api/workspace/change').set('Origin',origin).send({...input,token:polished.token}).expect(403);
+    const frame=(await post(g,'/workspace/change',{token:polished.token,slot:'frameset',variantId:'skream-magnum-m'}).expect(200)).body;
+    expect(frame.configuration).toMatchObject({frameset:'skream-magnum-m',saddle:'studio-race',appearance:{wheelset:'polished'}});
+    await post(g,'/workspace/preview',{token:frame.token}).expect(200);
+    const c=await member();await User.updateOne({_id:c.userId},{$set:{verified:true}});
+    const saved=(await post(c,'/builds',{name:'Finish study',configuration:frame.configuration}).expect(201)).body;
+    expect(saved.configuration.appearance).toEqual({wheelset:'polished'});
+    const lease=(await post(c,`/builds/${saved._id}/lease`).expect(200)).body;
+    const updated=(await patch(c,`/builds/${saved._id}`,{name:'Finish study',configuration:{...frame.configuration,appearance:{wheelset:'pure-black',stem:'polished'}},revision:1,visibility:'public'},lease.editorToken).expect(200)).body;
+    expect((await g.agent.get(`/api/public/builds/${updated.publicId}`).expect(200)).body.configuration.appearance).toEqual(updated.configuration.appearance);
+    const copy=(await post(c,`/public/builds/${updated.publicId}/duplicate`).expect(201)).body;
+    expect(copy.configuration.appearance).toEqual(updated.configuration.appearance);
+    expect((await post(c,`/builds/${saved._id}/export`).expect(200)).body.build.configuration.appearance).toEqual(updated.configuration.appearance);
+    const image=(await post(c,`/builds/${saved._id}/export-image`).expect(200)).body.svg;
+    expect(image).toContain('#202731');expect(image).toContain('#b9c2cd');
+  });
+  it('applies real frame/tire clearance repairs atomically, charges per changed slot and deduplicates retries',async()=>{
     const c=await guest(),w=await workspace(c);
-    await post(c,'/workspace/change',{token:w.token,slot:'frameset',variantId:'skream-magnum-m'}).expect(422);
-    expect((await c.agent.get('/api/session')).body.usage.changes).toBe(0);
-    const input={token:w.token,slot:'frameset',variantId:'skream-magnum-m',replacements:{saddle:'studio-race-316'}};
+    const wide=await post(c,'/workspace/change',{token:w.token,slot:'tires',variantId:'studio-tire28'}).expect(200);
+    await post(c,'/workspace/change',{token:wide.body.token,slot:'frameset',variantId:'studio-pursuit-graphite'}).expect(422);
+    expect((await c.agent.get('/api/session')).body.usage.changes).toBe(1);
+    const input={token:wide.body.token,slot:'frameset',variantId:'studio-pursuit-graphite',replacements:{tires:'studio-tire25'}};
     const first=await post(c,'/workspace/change',input).expect(200);
     await post(c,'/workspace/change',input).expect(200);
-    expect(first.body.configuration).toMatchObject({frameset:'skream-magnum-m',saddle:'studio-race-316'});
-    expect((await c.agent.get('/api/session')).body.usage.changes).toBe(2);
+    expect(first.body.configuration).toMatchObject({frameset:'studio-pursuit-graphite',tires:'studio-tire25',saddle:'studio-race'});
+    expect((await c.agent.get('/api/session')).body.usage.changes).toBe(3);
     await post(c,'/workspace/preview',{token:first.body.token}).expect(200);
-    await post(c,'/workspace/change',{...input,replacements:{saddle:'studio-classic'}}).expect(422);
-    expect((await c.agent.get('/api/session')).body.usage.changes).toBe(2);
+    await post(c,'/workspace/change',{...input,replacements:{tires:'studio-classic'}}).expect(422);
+    expect((await c.agent.get('/api/session')).body.usage.changes).toBe(3);
   });
   it('rolls back an entire dependent change when only one guest change remains',async()=>{
     const c=await guest(),w=await workspace(c),subject=await Subject.findOne();
@@ -243,6 +268,16 @@ describe('guest restrictions', () => {
   });
 });
 describe('garage lifecycle and quota races', () => {
+  it('resumes a tab nonce and prevents a stale cleanup from releasing a newer editor lease',async()=>{
+    const c=await member(),created=(await post(c,'/builds',build).expect(201)).body,nonce='a'.repeat(64);
+    const acquire=(token:string)=>c.agent.post(`/api/builds/${created._id}/lease`).set('Origin',origin).set('X-CSRF-Token',c.csrf).set('X-Editor-Token',token).send({leaseNonce:token});
+    const first=(await acquire(nonce).expect(200)).body,next=(await acquire(nonce).expect(200)).body;expect(next.editorToken).toBe(nonce);expect(next.leaseVersion).not.toBe(first.leaseVersion);
+    await acquire('b'.repeat(64)).expect(409);
+    await c.agent.delete(`/api/builds/${created._id}/lease?leaseVersion=${first.leaseVersion}`).set('Origin',origin).set('X-CSRF-Token',c.csrf).set('X-Editor-Token',nonce).expect(200);
+    await patch(c,`/builds/${created._id}`,{...build,revision:1},nonce).expect(200);
+    await c.agent.delete(`/api/builds/${created._id}/lease?leaseVersion=${next.leaseVersion}`).set('Origin',origin).set('X-CSRF-Token',c.csrf).set('X-Editor-Token',nonce).expect(200);
+    await acquire('b'.repeat(64)).expect(200);
+  });
   it('does not refund daily creation history after deletion', async () => { const c = await member(); const created = []; for (let i = 0; i < 3; i++) created.push((await post(c, '/builds', build).expect(201)).body); await del(c, `/builds/${created[0]._id}`).expect(200); const denied = await post(c, '/builds', build).expect(409); expect(denied.body.error.code).toBe('BUILD_DAILY_LIMIT'); expect((await Subject.findById(`user:${c.userId}`))?.creates).toHaveLength(3); });
   it('serializes concurrent daily creations to exactly three', async () => { const c = await member(); const results = await Promise.all(Array.from({ length: 6 }, () => post(c, '/builds', build))); expect(results.filter(r => r.status === 201)).toHaveLength(3); expect(await Build.countDocuments({ owner: c.userId })).toBe(3); });
   it('protects the eighth active slot against concurrent creation and duplication', async () => { const c = await member(); const existing = await Build.create(Array.from({ length: 7 }, () => ({ ...build, owner: c.userId }))); const results = await Promise.all([post(c, '/builds', build), post(c, `/builds/${existing[0]._id}/duplicate`)]); expect(results.filter(r => r.status === 201)).toHaveLength(1); expect(results.filter(r => r.body.error?.code === 'BUILD_LIMIT_REACHED')).toHaveLength(1); expect(await Build.countDocuments({ owner: c.userId })).toBe(8); });

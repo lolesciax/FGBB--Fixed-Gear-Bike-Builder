@@ -12,6 +12,14 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
 
+## Task · Controlled component finishes and seating validation — implemented and verified locally, 29 October 2026
+
+- Added optional canonical appearance for wheelsets, crank arms/spider, chainring, handlebar, stem/spacers and seatpost. Shared presets drive actual SVG shading and WebGL material updates. Backend capability validation, per-component charging, idempotency, ownership and signed workspaces remain enforced. Frame colorways remain source-specific; Brand Color is conditional on an actual product registration and is absent for the current authored component demos.
+- Corrected saddle validation: the frame determines the illustrated post diameter; saddle selection depends on a documented rail/clamp conflict rather than legacy bundled post size. Old IDs/specs remain intact. Appearance survives history, save/update/reload, garage/share, duplicate and both exports. Added a mobile selector expansion action and retained focus/scroll behavior.
+- Refined rim edges/bearings, tapered crank spiders and stem, top-cap hardware, saddle relief/cover seam/clamp and SVG component details. Final human review of close-ups and major camera angles is the next verification dependency; this commit is not a completed release.
+- Fixed a discovered saved-editor reload race using an owner/build-scoped, short-lived tab nonce and versioned lease cleanup. Authentication, CSRF, concurrent-editor exclusion and stale-revision checks remain active. No guest configuration is persisted. This was required by the actual failing saved-build regression.
+- Checks: TypeScript, lint, both builds, 87 local unit/API/asset tests (one live Redis test skipped), all 28 normal-policy Chromium flows, the separate development flow and both PWA flows passed. Resource checks retain geometry/texture counts and camera pose during cosmetic edits. Tests used temporary MongoDB; the normal local app is connected with development quotas disabled. CI is inspected after pushing. [Detailed evidence and remaining work](builder-polish.md).
+
 ## Task · Builder polish and controlled finishes audit — completed, 29 October 2026
 
 - Archived the continuation and inspected shared configuration, backend workspace mutation, SVG/WebGL components, material ownership and seating checks. [The audit](builder-polish.md) records the six controlled appearance zones and acceptance phases. Confirmed hard-coded component finishes and a saddle/frame post-diameter comparison that can reject an otherwise supported saddle. Implementation is pending in this audit milestone.

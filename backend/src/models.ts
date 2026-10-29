@@ -8,7 +8,7 @@ subject.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 const product = new Schema({ _id: String, data: { type: Schema.Types.Mixed, required: true } }, options);
 product.index({ 'data.status': 1, 'data.slot': 1, 'data.brand': 1 });
 product.index({ 'data.variants.id': 1 }, { unique: true });
-const build = new Schema({ owner: { type: Schema.Types.ObjectId, required: true, index: true }, name: { type: String, required: true }, configuration: { type: Schema.Types.Mixed, required: true }, catalogSnapshot: { type: [Schema.Types.Mixed], default: [] }, revision: { type: Number, default: 1 }, visibility: { type: String, enum: ['private', 'public'], default: 'private' }, publicId: { type: String, sparse: true, unique: true }, leaseHash: String, leaseUntil: Date }, options);
+const build = new Schema({ owner: { type: Schema.Types.ObjectId, required: true, index: true }, name: { type: String, required: true }, configuration: { type: Schema.Types.Mixed, required: true }, catalogSnapshot: { type: [Schema.Types.Mixed], default: [] }, revision: { type: Number, default: 1 }, visibility: { type: String, enum: ['private', 'public'], default: 'private' }, publicId: { type: String, sparse: true, unique: true }, leaseHash: String, leaseVersion:String,leaseUntil: Date }, options);
 build.index({ owner: 1, updatedAt: -1 });
 const token = new Schema({ userId: { type: Schema.Types.ObjectId, required: true, index: true }, hash: { type: String, unique: true, required: true }, kind: { type: String, enum: ['verify', 'reset'], required: true }, expiresAt: { type: Date, required: true } }, options);
 token.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });

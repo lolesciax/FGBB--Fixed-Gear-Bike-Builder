@@ -23,6 +23,10 @@ export function PartsSheet({
   const dialog = useRef<HTMLDialogElement>(null),
     closeButton = useRef<HTMLButtonElement>(null);
   const [height, setHeight] = useState(380);
+  const [expanded, setExpanded] = useState(false);
+  const sheetHeight = expanded
+    ? "min(80dvh, calc(100dvh - 72px))"
+    : `${height}px`;
   const dismiss = useDialogExit(dialog, onClose);
   useEffect(() => {
     const previousFocus = document.activeElement as HTMLElement | null;
@@ -54,7 +58,9 @@ export function PartsSheet({
     <dialog
       ref={dialog}
       className="parts-sheet"
-      style={{ height, "--sheet-height": `${height}px` } as CSSProperties}
+      style={
+        { height: sheetHeight, "--sheet-height": sheetHeight } as CSSProperties
+      }
       aria-labelledby="parts-sheet-title"
       onCancel={(event) => {
         event.preventDefault();
@@ -67,6 +73,16 @@ export function PartsSheet({
       <div className="sheet-grip" aria-hidden="true" />
       <header className="sheet-heading">
         <h2 id="parts-sheet-title">{title}</h2>
+        <button
+          className="text-button sheet-expand"
+          aria-label={
+            expanded ? "Keep preview visible" : "Expand parts selector"
+          }
+          aria-expanded={expanded}
+          onClick={() => setExpanded(!expanded)}
+        >
+          {expanded ? "Compact" : "Expand"}
+        </button>
         <button
           ref={closeButton}
           className="icon-button"

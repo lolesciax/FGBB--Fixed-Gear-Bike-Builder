@@ -40,7 +40,7 @@ export function PartThumbnail({
           cy="60"
           r="47"
           fill="none"
-          stroke="#313c33"
+          stroke="#37414f"
           strokeWidth={product.id.includes("deep") ? 14 : 6}
         />
         {product.slot === "wheels" &&
@@ -51,7 +51,7 @@ export function PartThumbnail({
               y1="60"
               x2={70 + Math.cos((i * Math.PI) / 8) * 44}
               y2={60 + Math.sin((i * Math.PI) / 8) * 44}
-              stroke="#9ca498"
+              stroke="#7c8796"
               strokeWidth="1"
             />
           ))}

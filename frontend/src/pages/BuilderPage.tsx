@@ -36,12 +36,21 @@ import {
   withHistoricalCatalog,
   type Configuration,
   type Slot,
+  type FinishZone,
+  type FinishId,
+  finishSlots,
 } from "@tracklab/domain";
 import { api, loadCatalog, type SavedBuild } from "../services/api";
 import { errorMessage, useApp } from "../app/context";
 import { useBuilder } from "../features/builder/store";
 import { Bike2D } from "../features/builder/Bike2D";
 import { PartsInspector } from "../features/builder/PartsInspector";
+import {
+  editorNonce,
+  rememberLease,
+  forgetLease,
+  currentLeaseVersion,
+} from "../features/builder/editor-lease";
 import { PartsSheet } from "../features/builder/PartsSheet";
 import { FrameChangeReview } from "../features/builder/FrameChangeReview";
 import { useMediaQuery } from "../components/useMediaQuery";
@@ -178,6 +187,7 @@ export function BuilderPage() {
     session.developmentUnlimited,
   ]);
   const hasEditorLease = Boolean(b.editorToken);
+  const activeLeases = useRef(new Map<string, string>());
   useEffect(() => {
     if (!compact) setSheetOpen(false);
   }, [compact]);
@@ -201,10 +211,18 @@ export function BuilderPage() {
           editorToken = "";
         if (id) {
           saved = await api<SavedBuild>(`/builds/${id}`);
-          const lease = await api<{ editorToken: string }>(
-            `/builds/${id}/lease`,
-            { method: "POST" },
-          );
+          const nonce = editorNonce(workspaceKey, id);
+          const lease = await api<{
+            editorToken: string;
+            leaseVersion: string;
+            expiresAt: string;
+          }>(`/builds/${id}/lease`, {
+            method: "POST",
+            editorToken: nonce,
+            body: { leaseNonce: nonce },
+          });
+          rememberLease(workspaceKey, id, lease);
+          activeLeases.current.set(id, lease.leaseVersion);
           editorToken = lease.editorToken;
         }
         const current = useBuilder.getState();
@@ -253,27 +271,49 @@ export function BuilderPage() {
   useEffect(() => {
     if (!b.saved?._id || !hasEditorLease) return;
     const buildId = b.saved._id;
+    const leases = activeLeases.current;
     let leaseToken = useBuilder.getState().editorToken;
+    let leaseVersion = currentLeaseVersion(workspaceKey, buildId);
+    // Resume through the same tab nonce; each response has its own release
+    // version so a delayed cleanup cannot release a newer editor acquisition.
+    let active = true;
     const timer = setInterval(() => {
-      void api<{ editorToken: string }>(`/builds/${buildId}/lease`, {
+      void api<{
+        editorToken: string;
+        leaseVersion: string;
+        expiresAt: string;
+      }>(`/builds/${buildId}/lease`, {
         method: "POST",
         editorToken: leaseToken,
+        body: { leaseNonce: leaseToken },
       })
         .then((r) => {
+          if (!active) return;
           leaseToken = r.editorToken;
+          leaseVersion = r.leaseVersion;
+          rememberLease(workspaceKey, buildId, r);
+          leases.set(buildId, r.leaseVersion);
           if (useBuilder.getState().saved?._id === buildId)
             useBuilder.getState().set({ editorToken: r.editorToken });
         })
         .catch((e) => setActionError(errorMessage(e)));
     }, 4 * 60000);
     return () => {
+      active = false;
       clearInterval(timer);
-      void api(`/builds/${buildId}/lease`, {
-        method: "DELETE",
-        editorToken: leaseToken,
-      }).catch(() => undefined);
+      if (!leaseVersion) return;
+      const released = leases.get(buildId) || leaseVersion;
+      void api(
+        `/builds/${buildId}/lease?leaseVersion=${encodeURIComponent(released)}`,
+        {
+          method: "DELETE",
+          editorToken: leaseToken,
+        },
+      )
+        .then(() => forgetLease(workspaceKey, buildId, released))
+        .catch(() => undefined);
     };
-  }, [b.saved?._id, hasEditorLease]);
+  }, [b.saved?._id, hasEditorLease, workspaceKey]);
   useEffect(() => {
     const beforeUnload = (event: BeforeUnloadEvent) => {
       if (useBuilder.getState().dirty) {
@@ -337,7 +377,16 @@ export function BuilderPage() {
             token: current.token,
             slot,
             variantId,
-            ...(replacements ? { replacements } : {}),
+            ...(replacements
+              ? {
+                  replacements: direction
+                    ? {
+                        ...replacements,
+                        appearance: replacements.appearance || {},
+                      }
+                    : replacements,
+                }
+              : {}),
           },
         },
       );
@@ -408,6 +457,19 @@ export function BuilderPage() {
     } finally {
       b.set({ pending: false });
     }
+  }
+  function changeFinish(zone: FinishZone, value: FinishId | undefined) {
+    const configuration = useBuilder.getState().configuration;
+    if (!configuration) return;
+    const appearance = { ...configuration.appearance };
+    if (value) appearance[zone] = value;
+    else delete appearance[zone];
+    void change(
+      finishSlots[zone],
+      configuration[finishSlots[zone]],
+      undefined,
+      { appearance },
+    );
   }
   async function save() {
     if (!session.user) {
@@ -488,6 +550,7 @@ export function BuilderPage() {
       locked={selectionLocked}
       loading={catalog.isPending}
       onSelect={(slot, variant) => void change(slot, variant)}
+      onFinish={changeFinish}
       notice={
         <>
           {quotaNotice}

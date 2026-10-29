@@ -128,13 +128,7 @@ test("a two-tone size/colorway persists through save, reopen, garage and SVG exp
   await page
     .getByLabel("Ranger variant", { exact: true })
     .selectOption("skream-ranger-forest-m-v1");
-  const review = page.getByRole("dialog", { name: "Review dependent parts" });
-  await review
-    .getByLabel("Replacement seating", { exact: true })
-    .selectOption("studio-race-316");
-  await review
-    .getByRole("button", { name: "Apply 2 changes", exact: true })
-    .click();
+  await expect(page.getByRole("dialog", { name: "Review dependent parts" })).not.toBeVisible();
   await page
     .getByRole("button", { name: "Ranger Sepia colorway", exact: true })
     .click();

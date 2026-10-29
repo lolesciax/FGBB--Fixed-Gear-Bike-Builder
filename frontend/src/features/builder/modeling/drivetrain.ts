@@ -78,6 +78,9 @@ export function createDrivetrain(g: BicycleGeometry) {
     pedalMat = material("#343d48", 0.4, 0.58),
     d = g.drivetrain,
     c = d.chain;
+  crank.name = "finish_crankArms";
+  const chainring = crank.clone();
+  chainring.name = "finish_chainring";
   axle(group, "crank_spindle", g.bb, 0.011, 0.145, silver);
   for (const side of [-1, 1])
     axle(
@@ -97,7 +100,7 @@ export function createDrivetrain(g: BicycleGeometry) {
       Math.max(0.035, c.frontRadius - 0.026),
       0.0035,
     ),
-    crank,
+    chainring,
     [g.bb[0], g.bb[1], d.chainline],
   );
   ring.userData.teeth = d.frontTeeth;
@@ -115,9 +118,17 @@ export function createDrivetrain(g: BicycleGeometry) {
     [g.rear[0], g.rear[1], d.chainline + 0.004],
     0.021,
     0.004,
-    crank,
+    silver,
   );
   const boltRadius = c.frontRadius - 0.02;
+  axle(
+    group,
+    "spider_boss",
+    [g.bb[0], g.bb[1], d.chainline],
+    0.025,
+    0.008,
+    crank,
+  );
   for (let i = 0; i < 5; i++) {
     const angle = (i * Math.PI * 2) / 5 + d.crankAngle,
       p: Position = [
@@ -125,15 +136,20 @@ export function createDrivetrain(g: BicycleGeometry) {
         g.bb[1] + Math.sin(angle) * boltRadius,
         d.chainline,
       ];
-    cylinder(
+    const web = new THREE.Shape();
+    web.moveTo(0.014, -0.014);
+    web.lineTo(boltRadius + 0.006, -0.007);
+    web.quadraticCurveTo(boltRadius + 0.014, 0, boltRadius + 0.006, 0.007);
+    web.lineTo(0.014, 0.014);
+    web.closePath();
+    const spider = mesh(
       group,
       `spider_arm_${i}`,
-      [g.bb[0], g.bb[1], d.chainline],
-      p,
-      0.0065,
+      extrude(web, 0.0055, 0.001),
       crank,
-      0.0085,
+      [g.bb[0], g.bb[1], d.chainline],
     );
+    spider.rotation.z = angle;
     axle(
       group,
       `chainring_bolt_${i}`,

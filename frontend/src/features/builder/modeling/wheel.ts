@@ -19,6 +19,7 @@ export function createWheel(g: BicycleGeometry, rear: boolean) {
   const w = g.wheel,
     alloy = material("#737d89", 0.75, 0.29),
     rim = material(w.rimDepth > 0.04 ? "#343c47" : "#697482", 0.65, 0.32);
+  alloy.name = rim.name = "finish_wheelset";
   const profile: [number, number][] = [
     [w.rimInner, -w.rimWidth * 0.22],
     [w.rimInner + 0.002, -w.rimWidth * 0.35],
@@ -31,6 +32,17 @@ export function createWheel(g: BicycleGeometry, rear: boolean) {
     [w.rimInner, -w.rimWidth * 0.22],
   ];
   mesh(group, "rim_profile", revolved(profile), rim);
+  for (const side of [-1, 1])
+    mesh(
+      group,
+      `rim_bead_edge_${side}`,
+      revolved([
+        [w.rimOuter - 0.002, side * w.rimWidth * 0.505],
+        [w.rimOuter, side * w.rimWidth * 0.515],
+        [w.rimOuter + 0.0005, side * w.rimWidth * 0.46],
+      ]),
+      alloy,
+    );
   const hubRadius = rear ? 0.028 : 0.022,
     flange = rear ? 0.032 : 0.028,
     spacing = rear ? w.rearSpacing : w.frontSpacing,
@@ -64,6 +76,15 @@ export function createWheel(g: BicycleGeometry, rear: boolean) {
       0.009,
       0.012,
       alloy,
+    );
+    axle(
+      group,
+      `hub_bearing_seat_${side}`,
+      [0, 0, side * (flange - 0.004)],
+      0.017,
+      0.006,
+      alloy,
+      28,
     );
     axle(
       group,

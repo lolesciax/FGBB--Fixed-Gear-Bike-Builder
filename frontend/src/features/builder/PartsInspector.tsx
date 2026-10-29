@@ -10,9 +10,11 @@ import {
   type Configuration,
   type Product,
   type Slot,
+  type FinishZone,type FinishId,
 } from "@tracklab/domain";
 import { PartThumbnail } from "./PartThumbnail";
 import {ColorwaySelector} from './ColorwaySelector';
+import {ComponentFinishSelector} from './ComponentFinishSelector';
 
 export const categoryNames: Record<Slot, string> = {
   frameset: "Frameset",
@@ -30,6 +32,7 @@ type Props = {
   locked: boolean;
   loading: boolean;
   onSelect: (slot: Slot, variant: string) => void;
+  onFinish?:(zone:FinishZone,value:FinishId|undefined)=>void;
   onCategory?: (slot: Slot) => void;
   notice?: ReactNode;
 };
@@ -64,6 +67,7 @@ export function PartsInspector({
   locked,
   loading,
   onSelect,
+  onFinish,
   onCategory,
   notice,
 }: Props) {
@@ -339,6 +343,7 @@ export function PartsInspector({
                   </select>
                 </label>
                 {slot==='frameset'&&<ColorwaySelector product={product} variant={shown} disabled={pending||locked||!configuration} onSelect={id=>onSelect(slot,id)}/>}
+                {isSelected&&configuration&&onFinish&&<ComponentFinishSelector product={product} variant={shown} configuration={configuration} disabled={pending||locked} onChange={onFinish}/>}
                 <details className="product-specs">
                   <summary>Specifications</summary>
                   <p>{product.description}</p>
@@ -364,7 +369,7 @@ export function PartsInspector({
                           <dt>
                             {slot === "cockpit" && key === "width"
                               ? "Handlebar width · mm"
-                              : specLabels[key] || key}
+                              : slot==='saddle'&&key==='seatpost'?'Legacy post reference · mm (not saddle fit)':specLabels[key] || key}
                           </dt>
                           <dd>{String(value)}</dd>
                         </div>

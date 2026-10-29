@@ -3,6 +3,7 @@ import * as THREE from "three";
 import {
   componentGeometry,
   renderFrameSpecs,
+  slots,
   selectedColorway,
   variantById,
   type Configuration,
@@ -15,6 +16,7 @@ import { StudioLighting } from "./StudioLighting";
 import { PartGroup } from "./MaterialMotion";
 import {useFrameFinish} from './useFrameFinish';
 import {FinishGraphics} from './FinishGraphics';
+import {useComponentFinishes} from './useComponentFinishes';
 import { FrameKit } from "./FrameKit";
 import type {
   CameraView,
@@ -94,7 +96,7 @@ export function ProceduralAssembly({
   const frame = get("frameset");
   const geometryKey = JSON.stringify(
     Object.fromEntries(
-      Object.keys(configuration).map((slot) => [
+      slots.map((slot) => [
         slot,
         slot==='frameset'?renderFrameSpecs(get('frameset')?.specs||{}):get(slot as Slot)?.specs,
       ]),
@@ -120,8 +122,12 @@ export function ProceduralAssembly({
     drivetrain: useOwnedModel(key("frameset", "drivetrain"), createDrivetrain),
   };
   useFrameFinish(models.frame,frameRecord?.product,frame,reducedMotion);
+  useComponentFinishes(models.wheels,configuration,catalog,reducedMotion);
+  useComponentFinishes(models.drivetrain,configuration,catalog,reducedMotion);
+  useComponentFinishes(models.cockpit,configuration,catalog,reducedMotion);
+  useComponentFinishes(models.saddle,configuration,catalog,reducedMotion);
   const group = useRef<THREE.Group>(null),
-    modelKey = Object.values(configuration).join("|");
+    modelKey = slots.map(slot=>configuration[slot]).join("|");
   useLayoutEffect(() => {
     // Layer 0 is the visible scene. Layer 1 contains only bicycle shadow casters,
     // excluding the near-coplanar studio floor from the contact depth texture.

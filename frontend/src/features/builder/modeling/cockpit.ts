@@ -25,6 +25,9 @@ export function createCockpit(
     tape = material("#202630", 0, 0.88),
     hardware = material("#8a929d", 0.8, 0.3),
     d = g.cockpit;
+  metal.name = "finish_stem";
+  const barMetal = metal.clone();
+  barMetal.name = "finish_handlebar";
   const baseA = g.stemBase.map((v, i) => v - g.axis[i] * 0.018) as Position,
     baseB = g.stemBase.map((v, i) => v + g.axis[i] * 0.018) as Position;
   cylinder(group, "stem_steerer_clamp", baseA, baseB, 0.0195, metal);
@@ -39,14 +42,38 @@ export function createCockpit(
       metal,
     );
   }
-  cylinder(
+  const stemLength = Math.hypot(
+      g.barClamp[0] - g.stemBase[0],
+      g.barClamp[1] - g.stemBase[1],
+    ),
+    body = new THREE.Shape();
+  body.moveTo(0, -0.014);
+  body.lineTo(stemLength, -0.017);
+  body.lineTo(stemLength, 0.017);
+  body.lineTo(0, 0.014);
+  body.closePath();
+  const extension = mesh(
     group,
     "stem_extension",
-    g.stemBase,
-    g.barClamp,
-    0.014,
+    extrude(body, 0.032, 0.002),
     metal,
-    0.017,
+    g.stemBase,
+  );
+  extension.rotation.z = Math.atan2(
+    g.barClamp[1] - g.stemBase[1],
+    g.barClamp[0] - g.stemBase[0],
+  );
+  const capA = g.steererTop.map((v, i) => v - g.axis[i] * 0.005) as Position;
+  cylinder(group, "stem_top_cap", capA, g.steererTop, 0.016, metal);
+  cylinder(
+    group,
+    "stem_top_bolt",
+    g.steererTop,
+    g.steererTop.map((v, i) => v + g.axis[i] * 0.0015) as Position,
+    0.003,
+    hardware,
+    0.003,
+    6,
   );
   mesh(
     group,
@@ -83,7 +110,7 @@ export function createCockpit(
       r = THREE.MathUtils.lerp(d.clamp / 2, d.tubeDiameter / 2, blend);
     return [r, r];
   });
-  mesh(group, "continuous_handlebar", geometry, metal, g.barClamp);
+  mesh(group, "continuous_handlebar", geometry, barMetal, g.barClamp);
   const wrap = Math.min(
     0.28,
     (d.type === "flat" || d.type === "riser" ? 0.12 : 0.23) / path.getLength(),
@@ -118,7 +145,7 @@ export function createCockpit(
       a.toArray() as Position,
       b.toArray() as Position,
       d.tubeDiameter / 2 + 0.0005,
-      metal,
+      barMetal,
     );
   }
   group.userData = {

@@ -1,6 +1,6 @@
 import { useMemo, useState,lazy,Suspense } from "react";
 import {useQuery} from '@tanstack/react-query';
-import { productSchema, visualizationInfo,selectedColorway,slots,type Configuration } from "@tracklab/domain";
+import { productSchema, visualizationInfo,selectedColorway,slots,configurationSchema } from "@tracklab/domain";
 import { PartThumbnail } from "../features/builder/PartThumbnail";
 import {loadCatalog} from '../services/api';
 const Bike3D=lazy(()=>import('../features/builder/Bike3D'));
@@ -27,7 +27,7 @@ export function CatalogReview({ text }: { text: string }) {
     info = visualizationInfo(product, variant);
   const colorway=selectedColorway(product,variant);
   const items=[...(catalog.data?.items||[]).filter(p=>p.id!==product.id),product];
-  const configuration=Object.fromEntries(slots.map(slot=>[slot,slot==='frameset'?variant.id:items.find(p=>p.slot===slot&&p.status==='published')?.variants[0].id||''])) as Configuration;
+  const configuration=configurationSchema.parse(Object.fromEntries(slots.map(slot=>[slot,slot==='frameset'?variant.id:items.find(p=>p.slot===slot&&p.status==='published')?.variants[0].id||''])));
   return (
     <section className="catalog-review">
       <h3>Visualization review</h3>

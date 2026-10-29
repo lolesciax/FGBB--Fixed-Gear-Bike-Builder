@@ -10,11 +10,9 @@ test("brand/model research is separate from selectable variants and remains resp
   await page.getByLabel("Research manufacturer").selectOption("tsunami");
   await expect(page.locator(".model-record")).toHaveCount(3);
   await expect(
-    page
-      .locator(".model-record")
-      .filter({
-        has: page.getByRole("heading", { name: "SNM200", exact: true }),
-      }),
+    page.locator(".model-record").filter({
+      has: page.getByRole("heading", { name: "SNM200", exact: true }),
+    }),
   ).toContainText("Visualization unavailable");
   await page.getByLabel("Research manufacturer").selectOption("skream");
   await expect(page.locator(".model-record")).toHaveCount(2);
@@ -41,65 +39,40 @@ test("dependent frame changes preserve state, geometry, usage and undo across th
   page,
 }) => {
   const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/builder");
-  await page.getByLabel("Filter by brand").selectOption("Skream");
+  await page.getByRole("button", { name: "Tires", exact: true }).click();
   await page
-    .getByLabel("Magnum variant", { exact: true })
-    .selectOption("skream-magnum-m");
+    .getByRole("button", { name: "Select Road 28 · tan wall", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Frameset", exact: true }).click();
+  await page
+    .getByLabel("Studio Pursuit variant", { exact: true })
+    .selectOption("studio-pursuit-graphite");
   const dialog = page.getByRole("dialog", { name: "Review dependent parts" });
   await expect(dialog).toBeVisible();
   await expect(
-    dialog.getByRole("button", { name: "Apply 1 changes" }),
+    dialog.getByRole("button", { name: "Apply 1 changes", exact: true }),
   ).toBeDisabled();
-  await dialog.getByRole("button", { name: "Cancel frame change" }).click();
+  await dialog
+    .getByRole("button", { name: "Cancel frame change", exact: true })
+    .click();
   await expect(page.locator(".bike-svg")).toHaveAttribute(
     "data-frame-variant",
     "studio-track-graphite",
   );
   await page
-    .getByLabel("Magnum variant", { exact: true })
-    .selectOption("skream-magnum-m");
+    .getByLabel("Studio Pursuit variant", { exact: true })
+    .selectOption("studio-pursuit-graphite");
   await dialog
-    .getByLabel("Replacement seating")
-    .selectOption("studio-race-316");
-  await dialog.getByRole("button", { name: "Apply 2 changes" }).click();
-  await expect(dialog).not.toBeVisible();
-  await expect(page.locator(".bike-svg")).toHaveAttribute(
-    "data-frame-variant",
-    "skream-magnum-m",
-  );
-  await expect(page.locator(".quota-menu summary")).toContainText(
-    "22 changes remaining",
-  );
-  const before = await page.locator(".bike-svg").getAttribute("viewBox");
-  const asset = page.waitForResponse((r) =>
-    r.url().split("?")[0].endsWith("/models/frames/skream-magnum-m.glb"),
-  );
-  await page.getByRole("button", { name: "3D", exact: true }).click();
-  expect((await asset).status()).toBe(200);
-  await expect(page.locator("canvas")).toBeVisible();
-  const rangerAsset = page.waitForResponse((r) =>
-    r.url().split("?")[0].endsWith("/models/frames/skream-ranger-m.glb"),
-  );
-  await page
-    .getByLabel("Ranger variant", { exact: true })
-    .selectOption("skream-ranger-m");
-  expect((await rangerAsset).status()).toBe(200);
-  await page.getByRole("button", { name: "2D", exact: true }).click();
-  await expect(page.locator(".bike-svg")).toHaveAttribute(
-    "data-frame-variant",
-    "skream-ranger-m",
-  );
-  expect(await page.locator(".bike-svg").getAttribute("viewBox")).not.toBe(
-    before,
-  );
-  await page
-    .getByRole("button", { name: "Undo last selection", exact: true })
+    .getByLabel("Replacement tires", { exact: true })
+    .selectOption("studio-tire25");
+  await dialog
+    .getByRole("button", { name: "Apply 2 changes", exact: true })
     .click();
-  await expect(page.locator(".bike-svg")).toHaveAttribute(
-    "data-frame-variant",
-    "skream-magnum-m",
+  await expect(dialog).not.toBeVisible();
+  await expect(page.locator(".quota-menu summary")).toContainText(
+    "21 changes remaining",
   );
   await page
     .getByRole("button", { name: "Undo last selection", exact: true })
@@ -113,24 +86,50 @@ test("dependent frame changes preserve state, geometry, usage and undo across th
     .click();
   await expect(page.locator(".bike-svg")).toHaveAttribute(
     "data-frame-variant",
-    "skream-magnum-m",
+    "studio-pursuit-graphite",
   );
-  await page.getByLabel("Filter by brand").selectOption("State Bicycle Co.");
+  await page.getByLabel("Filter by brand").selectOption("Skream");
   await page
-    .getByLabel("6061 Black Label v3 variant")
-    .selectOption("state-black-label-v3-55");
-  await dialog.getByLabel("Replacement seating").selectOption("studio-race");
-  await dialog.getByRole("button", { name: "Apply 2 changes" }).click();
+    .getByLabel("Magnum variant", { exact: true })
+    .selectOption("skream-magnum-m");
+  await expect(dialog).not.toBeVisible();
   await expect(page.locator(".bike-svg")).toHaveAttribute(
     "data-frame-variant",
-    "state-black-label-v3-55",
+    "skream-magnum-m",
+  );
+  const before = await page.locator(".bike-svg").getAttribute("viewBox"),
+    asset = page.waitForResponse((r) =>
+      r.url().split("?")[0].endsWith("/models/frames/skream-magnum-m.glb"),
+    );
+  await page.getByRole("button", { name: "3D", exact: true }).click();
+  expect((await asset).status()).toBe(200);
+  await expect(page.locator("canvas")).toBeVisible();
+  const rangerAsset = page.waitForResponse((r) =>
+    r.url().split("?")[0].endsWith("/models/frames/skream-ranger-m.glb"),
+  );
+  await page
+    .getByLabel("Ranger variant", { exact: true })
+    .selectOption("skream-ranger-m");
+  expect((await rangerAsset).status()).toBe(200);
+  await page.getByRole("button", { name: "2D", exact: true }).click();
+  expect(await page.locator(".bike-svg").getAttribute("viewBox")).not.toBe(
+    before,
+  );
+  await page
+    .getByRole("button", { name: "Undo last selection", exact: true })
+    .click();
+  await expect(page.locator(".bike-svg")).toHaveAttribute(
+    "data-frame-variant",
+    "skream-magnum-m",
   );
   for (const [brand, model, id] of [
+    ["State Bicycle Co.", "6061 Black Label v3", "state-black-label-v3-55"],
     ["8bar", "KRZBERG V8", "8bar-krzberg-v8-m"],
     ["Wabi Cycles", "Prism", "wabi-prism-54"],
   ]) {
     await page.getByLabel("Filter by brand").selectOption(brand);
-    await page.getByLabel(`${model} variant`, { exact: true }).selectOption(id);
+    await page.getByLabel(model + " variant", { exact: true }).selectOption(id);
+    await expect(dialog).not.toBeVisible();
     await expect(page.locator(".bike-svg")).toHaveAttribute(
       "data-frame-variant",
       id,
@@ -138,6 +137,7 @@ test("dependent frame changes preserve state, geometry, usage and undo across th
   }
   expect(errors).toEqual([]);
 });
+
 test("an isolated admin can maintain manufacturers and review permitted uploads without publishing them", async ({
   page,
 }) => {

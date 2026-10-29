@@ -13,7 +13,7 @@ import argon2 from 'argon2';
 import mongoose from 'mongoose';
 import { z, ZodError } from 'zod';
 import { randomUUID } from 'node:crypto';
-import { withHistoricalCatalog, colorwayIssues, selectedColorway, registeredFrameAssets, quotaPolicySchema, type QuotaPolicy, assetRegistry, configurationSchema, buildInput, productSchema, compatibility, validateConfiguration, variantById, slotSchema, slots, brandDisclaimer, technicalDisclaimer, type Configuration, type Product } from '@tracklab/domain';
+import { appearanceForSlot,pruneAppearance,withHistoricalCatalog, colorwayIssues, selectedColorway, registeredFrameAssets, quotaPolicySchema, type QuotaPolicy, assetRegistry, configurationSchema, buildInput, productSchema, compatibility, validateConfiguration, variantById, slotSchema, slots, brandDisclaimer, technicalDisclaimer, type Configuration, type Product } from '@tracklab/domain';
 import type { Config } from './config';
 import { AccessPolicy, RequestReceipt, Audit, Build, ProductModel, RecoveryToken, Session, Subject, User } from './models';
 import { ApiError, hash, privateKey, randomToken, sign, unsign, type RateStore } from './security';
@@ -31,8 +31,8 @@ const publicUser = (u: { _id: unknown; email: string; name: string; role: string
 const guard = (req: Request) => { if (!req.identity.user) throw new ApiError(401, 'AUTH_REQUIRED', 'Create an account or sign in to save and manage builds.'); return req.identity.user; };
 const requireAdmin = (req: Request) => { const u = guard(req); if (u.role !== 'admin') throw new ApiError(403, 'FORBIDDEN', 'Administrator access is required.'); return u; };
 async function catalog(includeArchived = false): Promise<Product[]> { const items=(await ProductModel.find(includeArchived ? {} : { 'data.status': 'published' }).lean()).map(p => p.data as Product); return includeArchived?items:items.map(p=>({...p,colorways:p.colorways?.filter(c=>c.status==='published'),variants:p.variants.filter(v=>(!v.status||v.status==='published')&&(!v.colorwayId||selectedColorway(p,v)?.status==='published'))})).filter(p=>p.variants.length); }
-async function catalogSnapshot(configuration: Configuration, previous: Product[] = []) { const selected = new Set(Object.values(configuration)); return withHistoricalCatalog(await catalog(true),previous).filter(p => p.variants.some(v => selected.has(v.id))).map(p => ({ ...p, variants: p.variants.filter(v => selected.has(v.id)), colorways:p.colorways?.filter(c=>p.variants.some(v=>selected.has(v.id)&&v.colorwayId===c.id)) })); }
-function initialConfiguration(products: Product[]): Configuration { return Object.fromEntries(slots.map(slot => { const original = variantById(products, defaultConfiguration[slot]); const id = original?.product.status === 'published' ? original.variant.id : (products.find(p => p.slot === slot && p.status === 'published' && p.illustrative) || products.find(p => p.slot === slot && p.status === 'published'))?.variants[0].id; if (!id) throw new ApiError(503, 'CATALOG_INCOMPLETE', `No published ${slot} is available. Please try again later.`); return [slot, id]; })) as Configuration; }
+async function catalogSnapshot(configuration: Configuration, previous: Product[] = []) { const selected = new Set(slots.map(slot=>configuration[slot])); return withHistoricalCatalog(await catalog(true),previous).filter(p => p.variants.some(v => selected.has(v.id))).map(p => ({ ...p, variants: p.variants.filter(v => selected.has(v.id)), colorways:p.colorways?.filter(c=>p.variants.some(v=>selected.has(v.id)&&v.colorwayId===c.id)) })); }
+function initialConfiguration(products: Product[]): Configuration { return configurationSchema.parse(Object.fromEntries(slots.map(slot => { const original = variantById(products, defaultConfiguration[slot]); const id = original?.product.status === 'published' ? original.variant.id : (products.find(p => p.slot === slot && p.status === 'published' && p.illustrative) || products.find(p => p.slot === slot && p.status === 'published'))?.variants[0].id; if (!id) throw new ApiError(503, 'CATALOG_INCOMPLETE', `No published ${slot} is available. Please try again later.`); return [slot, id]; }))); }
 async function validated(config: Configuration, includeArchived = false) { const products = await catalog(includeArchived); try { validateConfiguration(config, products, includeArchived); } catch (e) { throw new ApiError(422, 'VARIANT_UNAVAILABLE', (e as Error).message); } const result = compatibility(config, products); if (result.state === 'incompatible') throw new ApiError(422, 'INCOMPATIBLE_SELECTION', 'This selection conflicts with your current parts. Review the affected interfaces.', result); return result; }
 
 export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
@@ -189,10 +189,12 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
     await rate.consume(`workspace:${req.identity.subject}`, 60, 60000);
     const input = z.object({ token: z.string().max(4096), slot: slotSchema, variantId: z.string().max(100), replacements: configurationSchema.partial().optional() }).strict().parse(req.body);
     const current = readWorkspace(req, input.token);
-    const next = { ...current, ...input.replacements, [input.slot]: input.variantId };
-    const changedSlots=slots.filter(slot=>current[slot]!==next[slot]);
+    const published=await catalog();
+    const proposed = { ...current, ...input.replacements, [input.slot]: input.variantId };
+    const next=Object.hasOwn(input.replacements||{},'appearance')?proposed:pruneAppearance(proposed,await catalog(true));
+    const changedSlots=slots.filter(slot=>current[slot]!==next[slot]||appearanceForSlot(current,slot)!==appearanceForSlot(next,slot));
     if (!changedSlots.length) { res.json({ configuration: current, token: input.token, changed: false }); return; }
-    const published=await catalog();for(const slot of changedSlots){const record=variantById(published,next[slot]);if(!record||record.product.slot!==slot)throw new ApiError(422,'VARIANT_UNAVAILABLE',`The ${slot} selection is unavailable. Choose a published variant.`);}
+    for(const slot of changedSlots)if(current[slot]!==next[slot]){const record=variantById(published,next[slot]);if(!record||record.product.slot!==slot)throw new ApiError(422,'VARIANT_UNAVAILABLE',`The ${slot} selection is unavailable. Choose a published variant.`);}
     const result = await validated(next,true);
     if (!req.identity.user) await withSubject(req.identity.subject, async (subject,session) => {
       const key=privateKey(JSON.stringify([req.identity.subject,input.token,next]),config.SESSION_SECRET);
@@ -206,7 +208,7 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
     await rate.consume(`preview:${req.identity.subject}`, 10, 60000);
     const { token } = z.object({ token: z.string().max(4096) }).parse(req.body); const configuration = readWorkspace(req, token);
     const products = await catalog();
-    if (!Object.values(configuration).every(id => { const product=variantById(products,id)?.product; return product?.illustrative || (product?.visual?.fidelity === 'measurement-schematic' && product.visual.assetId in assetRegistry && product.provenance?.reviewedAt); })) throw new ApiError(422, 'ASSET_UNAVAILABLE', 'A reviewed illustrative 3D representation is not registered for this assembly.');
+    if (!slots.every(slot => { const product=variantById(products,configuration[slot])?.product; return product?.illustrative || (product?.visual?.fidelity === 'measurement-schematic' && product.visual.assetId in assetRegistry && product.provenance?.reviewedAt); })) throw new ApiError(422, 'ASSET_UNAVAILABLE', 'A reviewed illustrative 3D representation is not registered for this assembly.');
     const active=await withSubject(req.identity.subject,async subject=>{
       if(subject.previewId && subject.previewUntil && subject.previewUntil.getTime()>Date.now()) return {id:subject.previewId,expires:subject.previewUntil.getTime()};
       if(!req.identity.user) chargeBusiness(req,subject as unknown as Record<string,unknown>,'previews',req.policy.guestPreviews,DAY,'GUEST_PREVIEW_LIMIT');
@@ -240,12 +242,12 @@ export function createApp(config: Config, rate: RateStore, sendMail: SendMail) {
   app.post('/api/builds', async (req, res) => { guard(req); res.status(201).json(await createBuild(req, buildInput.strict().parse(req.body))); });
   app.post('/api/builds/:id/duplicate', async (req, res) => { const user = guard(req); const source = await Build.findOne({ _id: idSchema.parse(req.params.id), owner: user.id }); if (!source) throw new ApiError(404, 'NOT_FOUND', 'Build not found.'); res.status(201).json(await createBuild(req, { name: `${source.name.slice(0, 73)} (copy)`, configuration: source.configuration as Configuration }, (source.catalogSnapshot||[]) as Product[])); });
   app.post('/api/builds/:id/lease', async (req, res) => {
-    const user = guard(req), id = idSchema.parse(req.params.id), token = randomToken();
-    const build = await Build.findOneAndUpdate({ _id: id, owner: user.id, $or: [{ leaseUntil: { $lt: new Date() } }, { leaseUntil: null }, ...(req.get('X-Editor-Token') ? [{ leaseHash: hash(req.get('X-Editor-Token')!) }] : [])] }, { $set: { leaseHash: hash(token), leaseUntil: new Date(Date.now() + 5 * 60000) } }, { returnDocument: 'after' });
+    const user = guard(req), id = idSchema.parse(req.params.id),input=z.object({leaseNonce:z.string().regex(/^[a-f0-9]{64}$/).optional()}).strict().parse(req.body||{}),token=input.leaseNonce||randomToken(),leaseVersion=randomToken();
+    const build = await Build.findOneAndUpdate({ _id: id, owner: user.id, $or: [{ leaseUntil: { $lt: new Date() } }, { leaseUntil: null }, ...(req.get('X-Editor-Token') ? [{ leaseHash: hash(req.get('X-Editor-Token')!) }] : [])] }, { $set: { leaseHash: hash(token),leaseVersion, leaseUntil: new Date(Date.now() + 5 * 60000) } }, { returnDocument: 'after' });
     if (!build) throw new ApiError(409, 'EDITOR_LOCKED', 'This build is open in another editor. Wait up to five minutes or close that editor.');
-    res.json({ editorToken: token, expiresAt: build.leaseUntil, revision: build.revision });
+    res.json({ editorToken: token,leaseVersion, expiresAt: build.leaseUntil, revision: build.revision });
   });
-  app.delete('/api/builds/:id/lease', async (req, res) => { const user = guard(req); await Build.updateOne({ _id: idSchema.parse(req.params.id), owner: user.id, leaseHash: hash(req.get('X-Editor-Token') || '') }, { $unset: { leaseHash: '', leaseUntil: '' } }); res.json({ success: true }); });
+  app.delete('/api/builds/:id/lease', async (req, res) => { const user = guard(req),version=z.string().max(100).optional().parse(req.query.leaseVersion);await Build.updateOne({ _id: idSchema.parse(req.params.id), owner: user.id, leaseHash: hash(req.get('X-Editor-Token') || ''),...(version?{leaseVersion:version}:{}) }, { $unset: { leaseHash: '', leaseUntil: '',leaseVersion:'' } }); res.json({ success: true }); });
   app.patch('/api/builds/:id', async (req, res) => {
     const user = guard(req), id = idSchema.parse(req.params.id);
     const input = buildInput.extend({ revision: z.number().int().positive(), visibility: z.enum(['private', 'public']).default('private') }).strict().parse(req.body);

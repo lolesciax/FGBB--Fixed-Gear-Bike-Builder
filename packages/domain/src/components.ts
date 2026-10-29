@@ -371,7 +371,7 @@ export function componentGeometry(
     saddle: {
       length: numberSpec(s, "length", s.shape === "comfort" ? 265 : 275) / 1000,
       width: numberSpec(s, "width", s.shape === "comfort" ? 175 : 142) / 1000,
-      postDiameter: numberSpec(s, "seatpost", 27.2) / 1000,
+      postDiameter: numberSpec(f, "seatpost", 27.2) / 1000,
     },
     drivetrain: {
       chainline,
