@@ -1,42 +1,87 @@
 import * as THREE from "three";
 import {
   forkBladePoints,
+  dropoutOutline,
+  type DropoutStyle,
   type BicycleGeometry,
   type Position,
 } from "@tracklab/domain";
 import {
   axle,
+  axialProfile,
   cylinder,
   extrude,
-  annulus,
   material,
   mesh,
   sweptSection,
   tube,
   vector,
 } from "./primitives";
+function dropout(style: DropoutStyle, diameter: number) {
+  const shape = new THREE.Shape(
+    dropoutOutline(style, diameter).map(([x, y]) => new THREE.Vector2(x, y)),
+  );
+  if (style === "through") {
+    const hole = new THREE.Path();
+    hole.absarc(0, 0, diameter / 2 + 0.0006, 0, Math.PI * 2, true);
+    shape.holes.push(hole);
+  }
+  return extrude(shape, 0.005, 0.0005);
+}
 
 export function createFork(g: BicycleGeometry) {
   const group = new THREE.Group();
   group.name = "fork_assembly";
   const metal = material("#444d59", 0.65, 0.35),
-    surface = new THREE.MeshPhysicalMaterial({color:"#303945",metalness:.3,roughness:.38});
-  cylinder(group, "fork_steerer", g.crown, g.steererTop, 0.0143, metal);
-  for (const [name, p] of [
-    ["lower", g.lower],
-    ["upper", g.head],
-  ] as const) {
-    const a = p.map((v, i) => v - g.axis[i] * 0.003) as Position,
-      b = p.map((v, i) => v + g.axis[i] * 0.003) as Position;
-    cylinder(group, `fork_headset_${name}`, a, b, 0.023, metal);
-  }
-  // A physical transverse crown bridges both blades to the steering axis.
-  axle(group, "fork_crown", g.crown, 0.015, 0.078, surface.clone());
-  const dropoutGeometry = extrude(
-    annulus(0.012, g.frontDropoutDiameter / 2 + 0.0007),
-    0.005,
-    0.0006,
+    surface = new THREE.MeshPhysicalMaterial({
+      color: "#303945",
+      metalness: 0.3,
+      roughness: 0.38,
+    });
+  // The cockpit owns the visible upper stack; kits never bake an exposed stem extension.
+  cylinder(
+    group,
+    "fork_steerer",
+    g.crown,
+    g.head,
+    g.steering.lowerDiameter / 2,
+    metal,
+    g.steering.upperDiameter / 2,
   );
+  const bore = g.steering.lowerDiameter / 2 + 0.0004,
+    race = g.steering.headLowerRadius + 0.001;
+  axialProfile(
+    group,
+    "fork_headset_lower",
+    g.lower,
+    g.axis,
+    [
+      [bore, -0.011],
+      [race - 0.002, -0.008],
+      [race, -0.003],
+      [race, 0],
+      [bore, 0],
+      [bore, -0.011],
+    ],
+    metal,
+  );
+  const roots = [-1, 1].map((side) => forkBladePoints(g, side)[0]),
+    crownPath = new THREE.CubicBezierCurve3(
+      vector(roots[0]),
+      new THREE.Vector3(g.crown[0], g.crown[1] + 0.006, -0.012),
+      new THREE.Vector3(g.crown[0], g.crown[1] + 0.006, 0.012),
+      vector(roots[1]),
+    );
+  mesh(
+    group,
+    "fork_crown",
+    sweptSection(crownPath, 24, 16, (t) => [
+      0.011,
+      0.008 - Math.sin(t * Math.PI) * 0.003,
+    ]),
+    surface.clone(),
+  );
+  const dropoutGeometry = dropout(g.frontDropoutStyle, g.frontDropoutDiameter);
   for (const side of [-1, 1]) {
     const [start, control1, control2, end] = forkBladePoints(g, side).map(
       vector,
@@ -74,20 +119,51 @@ export function createFork(g: BicycleGeometry) {
 export function createFrame(g: BicycleGeometry, color: string) {
   const group = new THREE.Group();
   group.name = "frame_and_fork";
-  const paint = new THREE.MeshPhysicalMaterial({color,metalness:.35,roughness:.34}),
+  const paint = new THREE.MeshPhysicalMaterial({
+      color,
+      metalness: 0.35,
+      roughness: 0.34,
+    }),
     metal = material("#6c7583", 0.7, 0.33),
     radius = g.frame.frameWidth / 2000;
   for (const [name, a, b, r] of [
-    ["top", g.seat, g.head, radius],
-    ["down", g.bb, g.lower, radius + 0.004],
+    ["top", g.seat, g.topJunction, radius],
+    ["down", g.bb, g.downJunction, radius + 0.004],
     ["seat", g.bb, g.seat, radius],
-    ["head", g.head, g.lower, radius + 0.004],
   ] as const)
     cylinder(group, `paint_${name}`, a, b, r, paint.clone());
+  const headLength = vector(g.head).distanceTo(vector(g.lower)),
+    upper = g.steering.headUpperRadius,
+    lower = g.steering.headLowerRadius;
+  axialProfile(
+    group,
+    "paint_head",
+    g.lower,
+    g.axis,
+    [
+      [lower, 0],
+      [lower, 0.003],
+      [upper, headLength - 0.004],
+      [upper, headLength],
+      [g.steering.upperDiameter / 2 + 0.001, headLength],
+      [g.steering.lowerDiameter / 2 + 0.001, 0],
+      [lower, 0],
+    ],
+    paint.clone(),
+  );
   for (const side of [-1, 1]) {
     const rear: Position = [g.rear[0], g.rear[1], side * g.rearHalf],
-      seat: Position = [g.seat[0], g.seat[1], side * 0.012];
-    cylinder(group, `paint_seatstay_${side}`, seat, rear, 0.007, paint.clone());
+      seat: Position = [g.seat[0], g.seat[1], side * 0.012],
+      upperEnd: Position = [rear[0] + 0.012, rear[1] + 0.01, rear[2]],
+      lowerEnd: Position = [rear[0] + 0.012, rear[1] - 0.01, rear[2]];
+    cylinder(
+      group,
+      `paint_seatstay_${side}`,
+      seat,
+      upperEnd,
+      0.007,
+      paint.clone(),
+    );
     tube(
       group,
       `paint_chainstay_${side}`,
@@ -95,7 +171,7 @@ export function createFrame(g: BicycleGeometry, color: string) {
         [g.bb[0], g.bb[1], side * 0.024],
         [g.bb[0] - 0.12, g.bb[1] + 0.01, side * 0.026],
         [g.rear[0] + 0.12, g.rear[1] - 0.012, side * g.rearHalf],
-        rear,
+        lowerEnd,
       ],
       0.008,
       paint.clone(),
@@ -105,11 +181,7 @@ export function createFrame(g: BicycleGeometry, color: string) {
     mesh(
       group,
       `rear_dropout_${side}`,
-      extrude(
-        annulus(0.012, g.rearDropoutDiameter / 2 + 0.0007),
-        0.005,
-        0.0005,
-      ),
+      dropout(g.rearDropoutStyle, g.rearDropoutDiameter),
       metal,
       rear,
     );

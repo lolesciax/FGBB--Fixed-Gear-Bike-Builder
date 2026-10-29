@@ -11,7 +11,7 @@ Actual code gaps: `wheelDimensions` exposes one spoke count for both wheels; `sp
 | Stage | Status | Evidence required |
 | --- | --- | --- |
 | 1 Audit | Complete | Code, prior renders and new requirements compared |
-| 2 Structural assembly | Pending | One steering axis/stack, integrated head tube/crown, appropriate dropout interfaces, updated original kits and both viewers |
+| 2 Structural assembly | Complete | Shared steering stack, profiled head tube/crown, open dropout slots, v3 kits and synchronized SVG; checks below |
 | 3 Wheelsets | Pending | Existing configurations plus actual 20-front/24-rear geometry, flange/rim drilling and lacing validation, persistence |
 | 4 Drivetrain | Pending | Arm/spider/pedal/cog/chain proportions and attachments inspected/refined |
 | 5 Seating | Pending | Supported shell/rails/clamp; separate frame/post and rail/clamp checks, unknown => unverified |
@@ -24,3 +24,11 @@ Actual code gaps: `wheelDimensions` exposes one spoke count for both wheels; `sp
 | 12 Documentation | In progress | Per-stage checks, assumptions, missing brand assets and remaining external dependencies |
 
 Preserve existing IDs, technical measurements, saved appearances, six slots, backend policy and local development bypass. Add an authored neutral wheelset with documented demo dimensions/lacing; do not claim an unreviewed branded 20/24 product. Generic geometry and unknown manufacturer interfaces remain explicitly illustrative. Source-reviewed asset revisions may update original renderer geometry without rewriting saved product specifications. No new independent component-purchasing system, custom paint editor, deployment or hosting.
+
+## Stage 2 — structural assembly
+
+One shared axis now places the headset cover, consecutive spacers, stem clamp, concealed upper steerer and top cap. Fork kits end their steerer inside the head tube; they no longer bake in a cockpit-independent extension. Known straight/tapered dimensions and threaded headsets select the appropriate illustrative profile; generic cockpit geometry does not certify physical fit. Head-tube bores and tube junctions, a swept crown, tapered blades and axle-centered slotted plates replace the previous closed rings and transverse crown cylinder. Stays attach to the forward solid plate region. Through-axle plates remain a distinct supported profile when explicitly specified. Unknown dropout styles use documented illustrative defaults; no manufacturer tension hardware is invented.
+
+All 39 original frame kits regenerated as `frame-kit-v3`, retaining anchors and specifications. The largest is 187,232 bytes (previous maximum 214,732). The catalog importer upgrades only an exact original v1/v2 asset registration with unchanged specifications; edited transforms/specifications and archived variants remain untouched.
+
+Verification: TypeScript and ESLint pass; 54 targeted tests pass across structural steering, complete assembly geometry, GLB anchors and isolated API integration. Tests cover zero/fractional/tall spacer stacks, straight/tapered/quill construction, actual open slots, all published fork/tire envelopes and exact asset migration guards. Live isolated-browser review captured SVG, both sides, front/rear and quarter views plus head/fork/rear-dropout close-ups without page errors. Crown clearance on the large BCN failed the first geometry check and was corrected in the mesh profile. All other stages remain explicitly pending. Audit commit CI [40817961008](https://github.com/lolesciax/FGBB--Fixed-Gear-Bike-Builder/actions/runs/40817961008) passed.

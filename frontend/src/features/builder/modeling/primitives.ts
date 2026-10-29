@@ -132,6 +132,9 @@ export function revolved(profile: [number, number][], segments = 64) {
   geometry.rotateX(Math.PI / 2);
   return geometry;
 }
+export function axialProfile(group:THREE.Group,name:string,origin:Position,axis:Position,profile:[number,number][],mat:THREE.Material,segments=40){
+ const item=mesh(group,name,revolved(profile,segments),mat,origin);item.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),vector(axis));return item;
+}
 export function instancedSegments(
   group: THREE.Group,
   name: string,

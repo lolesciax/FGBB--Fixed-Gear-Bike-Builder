@@ -12,6 +12,11 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
 
+## Task · Steering, head tube and axle interfaces — verified, 29 October 2026
+
+- Replaced the fixed upper-steerer extension with one shared cover/spacer/clamp/cap stack, including straight/tapered and threaded illustrative profiles. Integrated head-tube junctions, crown/blades, front slots and rear track ends in both viewers. Regenerated 39 original kits as v3 while retaining geometry anchors and technical specifications; guarded migration preserves edited registrations.
+- TypeScript, lint and 54 targeted structural/geometry/GLB/API tests pass. Reviewed ten isolated-browser views/close-ups with no page errors. [Stage evidence and remaining work](modeling-refinement.md) distinguish completed structure from pending wheelsets, drivetrain, seating, materials and final acceptance. No deployment.
+
 ## Task · Structural assembly and 20F/24R audit — completed, 29 October 2026
 
 - Archived the new continuation and inspected the shared steering/spoke geometry, original GLBs, both renderers, camera fitting, finish zones and compatibility paths. [The audit](modeling-refinement.md) identifies fixed/baked steering-stack dimensions, uniform annular dropouts, one shared spoke count and fixed lacing, and the changed saddle acceptance rule. Implementation is pending in this audit milestone.

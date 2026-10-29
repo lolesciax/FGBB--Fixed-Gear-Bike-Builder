@@ -6,6 +6,7 @@ import {
 } from "@tracklab/domain";
 import {
   annulus,
+  axialProfile,
   curve,
   cylinder,
   extrude,
@@ -28,19 +29,111 @@ export function createCockpit(
   metal.name = "finish_stem";
   const barMetal = metal.clone();
   barMetal.name = "finish_handlebar";
-  const baseA = g.stemBase.map((v, i) => v - g.axis[i] * 0.018) as Position,
-    baseB = g.stemBase.map((v, i) => v + g.axis[i] * 0.018) as Position;
-  cylinder(group, "stem_steerer_clamp", baseA, baseB, 0.0195, metal);
-  for (const height of [0.012, 0.022]) {
-    const p = g.head.map((v, i) => v + g.axis[i] * height) as Position;
+  const at = (height: number) =>
+      g.head.map((v, i) => v + g.axis[i] * height) as Position,
+    s = g.steering,
+    bore = s.upperDiameter / 2 + 0.0003;
+  axialProfile(
+    group,
+    "headset_upper_cover",
+    g.head,
+    g.axis,
+    [
+      [bore, 0],
+      [s.headUpperRadius + 0.001, 0],
+      [s.headUpperRadius + 0.001, 0.002],
+      [bore + 0.0045, s.coverHeight],
+      [bore, s.coverHeight],
+      [bore, 0],
+    ],
+    metal,
+  );
+  if (s.quill) {
     cylinder(
       group,
-      `headset_spacer_${height}`,
-      p,
-      p.map((v, i) => v + g.axis[i] * 0.004) as Position,
-      0.018,
+      "threaded_headset_locknut",
+      at(s.coverHeight - 0.004),
+      at(s.coverHeight),
+      bore + 0.0055,
+      metal,
+      bore + 0.0055,
+      6,
+    );
+    cylinder(
+      group,
+      "quill_stem_shaft",
+      at(s.coverHeight),
+      at(s.stemCenter + 0.012),
+      (s.upperDiameter - 0.0032) / 2,
       metal,
     );
+  } else {
+    cylinder(
+      group,
+      "cockpit_internal_steerer",
+      g.head,
+      g.steererTop,
+      s.upperDiameter / 2,
+      hardware,
+    );
+    for (
+      let offset = 0, index = 0;
+      offset < s.spacerHeight - 0.00001;
+      index++
+    ) {
+      const h = Math.min(0.005, s.spacerHeight - offset),
+        bottom = s.coverHeight + offset,
+        bevel = Math.min(0.0005, h * 0.2);
+      axialProfile(
+        group,
+        `headset_spacer_${index}`,
+        at(bottom),
+        g.axis,
+        [
+          [bore, 0],
+          [bore + 0.0032, 0],
+          [bore + 0.0036, bevel],
+          [bore + 0.0036, h - bevel],
+          [bore + 0.0032, h],
+          [bore, h],
+          [bore, 0],
+        ],
+        metal,
+      );
+      offset += h;
+    }
+    axialProfile(
+      group,
+      "stem_steerer_clamp",
+      at(s.stemBottom),
+      g.axis,
+      [
+        [bore, 0],
+        [bore + 0.0045, 0],
+        [bore + 0.0045, s.clampHeight],
+        [bore, s.clampHeight],
+        [bore, 0],
+      ],
+      metal,
+    );
+    for (const offset of [0.011, s.clampHeight - 0.011]) {
+      const center = at(s.stemBottom + offset),
+        r = bore + 0.0045,
+        back = r * 0.88,
+        half = Math.sqrt(r * r - back * back) + 0.002,
+        x = center[0] - g.axis[1] * back,
+        y = center[1] + g.axis[0] * back;
+      cylinder(
+        group,
+        `stem_pinch_bolt_${offset}`,
+        [x, y, -half],
+        [x, y, half],
+        0.0025,
+        hardware,
+        0.0025,
+        6,
+      );
+    }
   }
   const stemLength = Math.hypot(
       g.barClamp[0] - g.stemBase[0],
@@ -63,13 +156,13 @@ export function createCockpit(
     g.barClamp[1] - g.stemBase[1],
     g.barClamp[0] - g.stemBase[0],
   );
-  const capA = g.steererTop.map((v, i) => v - g.axis[i] * 0.005) as Position;
-  cylinder(group, "stem_top_cap", capA, g.steererTop, 0.016, metal);
+  if (!s.quill)
+    cylinder(group, "stem_top_cap", g.stemTop, g.capTop, bore + 0.0035, metal);
   cylinder(
     group,
     "stem_top_bolt",
-    g.steererTop,
-    g.steererTop.map((v, i) => v + g.axis[i] * 0.0015) as Position,
+    g.capTop,
+    g.capTop.map((v, i) => v + g.axis[i] * 0.0015) as Position,
     0.003,
     hardware,
     0.003,
@@ -156,6 +249,7 @@ export function createCockpit(
     stem: g.stemBase,
     handlebarClamp: g.barClamp,
     assumedDimensions: d.illustrative,
+    steering: s,
   };
   return group;
 }

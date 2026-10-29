@@ -215,8 +215,8 @@ export function stopsFor(
 export function finishAnchors(specs: Variant["specs"]) {
   const g = componentGeometry({ frameset: specs });
   return {
-    top: [g.seat, g.head],
-    down: [g.bb, g.lower],
+    top: [g.seat, g.topJunction],
+    down: [g.bb, g.downJunction],
     seat: [g.bb, g.seat],
     head: [g.lower, g.head],
     seatstay: [g.rear, g.seat],
@@ -258,6 +258,7 @@ export function renderFrameSpecs(specs: Variant["specs"]) {
     "rearSpacing",
     "frontAxleDiameter",
     "rearAxleDiameter",
+    "steerer","headset","upperSteererDiameter","lowerSteererDiameter","frontDropoutType","rearDropoutType",
   ];
   return Object.fromEntries(
     keys.filter((k) => specs[k] !== undefined).map((k) => [k, specs[k]]),

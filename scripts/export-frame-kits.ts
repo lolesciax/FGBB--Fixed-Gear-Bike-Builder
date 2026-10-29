@@ -108,7 +108,7 @@ for (const product of manufacturerCatalog.filter(
         rotation: [0, 0, 0],
         origin: "bottom-bracket",
         units: "metres",
-        revision: "frame-kit-v2",
+        revision: "frame-kit-v3",
       }),
     );
     disposeModel(group);

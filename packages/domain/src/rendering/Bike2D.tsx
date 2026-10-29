@@ -192,6 +192,37 @@ export function Bike2D({
     </g>
   );
   const frameRecord = variantById(catalog, configuration.frameset)!;
+  const stack = m.steering,
+    stackAt = (height: number) =>
+      project(m.head.map((v, i) => v + m.axis[i] * height) as Position);
+  const stackTube = (
+    from: number,
+    to: number,
+    r1: number,
+    r2: number,
+    color: string,
+  ) => {
+    const a = stackAt(from),
+      b = stackAt(to),
+      nx = m.axis[1],
+      ny = m.axis[0];
+    return (
+      <path
+        d={line(
+          [
+            { x: a.x + nx * r1 * 1000, y: a.y + ny * r1 * 1000 },
+            { x: b.x + nx * r2 * 1000, y: b.y + ny * r2 * 1000 },
+            { x: b.x - nx * r2 * 1000, y: b.y - ny * r2 * 1000 },
+            { x: a.x - nx * r1 * 1000, y: a.y - ny * r1 * 1000 },
+          ],
+          true,
+        )}
+        fill={color}
+        stroke="#39424f"
+        strokeWidth=".7"
+      />
+    );
+  };
   const colorway = selectedColorway(frameRecord.product, frameRecord.variant);
   const d = m.drivetrain,
     chain = line(d.chain.points.map(project), true),
@@ -227,6 +258,8 @@ export function Bike2D({
       data-cockpit-variant={configuration.cockpit}
       data-cockpit-shape={m.cockpit.type}
       data-geometry-revision="components-v2"
+      data-steering-profile={stack.profile}
+      data-stem-style={stack.quill ? "quill" : "ahead"}
     >
       <defs>
         {finishZones.map(
@@ -472,9 +505,76 @@ export function Bike2D({
           />
         </g>
         <g {...interactive("cockpit")}>
+          <g data-steering-assembly="upper">
+            {stackTube(
+              0,
+              stack.steererEnd,
+              stack.upperDiameter / 2,
+              stack.upperDiameter / 2,
+              metal,
+            )}
+            {stackTube(
+              0,
+              stack.coverHeight,
+              stack.headUpperRadius + 0.001,
+              stack.upperDiameter / 2 + 0.0048,
+              finish("stem"),
+            )}
+            {stack.quill ? (
+              <>
+                {stackTube(
+                  stack.coverHeight - 0.004,
+                  stack.coverHeight,
+                  stack.upperDiameter / 2 + 0.0055,
+                  stack.upperDiameter / 2 + 0.0055,
+                  finish("stem"),
+                )}
+                {stackTube(
+                  stack.coverHeight,
+                  stack.stemCenter + 0.012,
+                  (stack.upperDiameter - 0.0032) / 2,
+                  (stack.upperDiameter - 0.0032) / 2,
+                  finish("stem"),
+                )}
+              </>
+            ) : (
+              <>
+                {Array.from(
+                  { length: Math.ceil(stack.spacerHeight / 0.005) },
+                  (_, i) =>
+                    stackTube(
+                      stack.coverHeight + i * 0.005,
+                      stack.coverHeight +
+                        Math.min(stack.spacerHeight, (i + 1) * 0.005),
+                      stack.upperDiameter / 2 + 0.0039,
+                      stack.upperDiameter / 2 + 0.0039,
+                      finish("stem"),
+                    ),
+                ).map((part, i) => (
+                  <React.Fragment key={i}>{part}</React.Fragment>
+                ))}
+                {stackTube(
+                  stack.stemBottom,
+                  stack.stemTop,
+                  stack.upperDiameter / 2 + 0.0048,
+                  stack.upperDiameter / 2 + 0.0048,
+                  finish("stem"),
+                )}
+                {stackTube(
+                  stack.stemTop,
+                  stack.capTop,
+                  stack.upperDiameter / 2 + 0.0038,
+                  stack.upperDiameter / 2 + 0.0038,
+                  finish("stem"),
+                )}
+              </>
+            )}
+          </g>
           <g data-finish-zone="stem">
             {tube(stem, bar, 28, finish("stem"))}
-            <circle cx={stem.x} cy={stem.y} r="18" fill={finish("stem")} />
+            {stack.quill && (
+              <circle cx={stem.x} cy={stem.y} r="14" fill={finish("stem")} />
+            )}
             <circle
               cx={bar.x}
               cy={bar.y}
@@ -575,6 +675,19 @@ export function Bike2D({
             strokeWidth="2"
           />
           <circle cx={bb.x} cy={bb.y} r="8" fill="#a9b3c0" />
+        </g>
+        <g data-layer="outer-axle-hardware">
+          {[rear, front].map((p, i) => (
+            <circle
+              key={i}
+              cx={p.x}
+              cy={p.y}
+              r="7.5"
+              fill={finish("wheelset")}
+              stroke="#323b47"
+              strokeWidth="1"
+            />
+          ))}
         </g>
       </g>
     </svg>

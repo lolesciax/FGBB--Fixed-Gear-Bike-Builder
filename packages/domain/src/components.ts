@@ -1,4 +1,5 @@
 import { assemblyGeometry, type Point } from "./visual";
+import {steeringStack,type DropoutStyle} from './steering';
 
 export type ComponentSpecs = Record<string, string | number | boolean>;
 export type Position = [number, number, number];
@@ -305,7 +306,8 @@ export function componentGeometry(
     seatAxis = scale(add(seat, scale(bb, -1)), 1 / distance(seat, bb)),
     cockpit = cockpitDimensions(c),
     wheel = wheelDimensions(parts.wheels, parts.tires),
-    stemBase = add(head, scale(axis, 0.044)),
+    steering=steeringStack(f,c,frame.frameWidth),
+    stemBase = add(head, scale(axis, steering.stemCenter)),
     barClamp = add(stemBase, [
       Math.cos(cockpit.stemAngle) * cockpit.stemLength,
       Math.sin(cockpit.stemAngle) * cockpit.stemLength,
@@ -355,14 +357,21 @@ export function componentGeometry(
     seatAxis,
     wheel,
     cockpit,
+    steering,
     stemBase,
     barClamp,
-    steererTop: add(stemBase, scale(axis, 0.022)),
+    steererTop: add(head, scale(axis, steering.steererEnd)),
+    stemTop:add(head,scale(axis,steering.stemTop)),
+    capTop:add(head,scale(axis,steering.capTop)),
+    topJunction:add(head,scale(axis,-Math.min(frame.frameWidth*.0004,distance(head,lower)*.16))),
+    downJunction:add(lower,scale(axis,Math.min((frame.frameWidth+8)*.0004,distance(head,lower)*.2))),
     crown,
     forkHalf,
     rearHalf: numberSpec(f, "rearSpacing", 120) / 2000,
     frontDropoutDiameter: numberSpec(f, "frontAxleDiameter", 10) / 1000,
     rearDropoutDiameter: numberSpec(f, "rearAxleDiameter", 10) / 1000,
+    frontDropoutStyle:(f.frontDropoutType==='through'||numberSpec(f,'frontAxleDiameter',10)>=12?'through':'open-vertical') as DropoutStyle,
+    rearDropoutStyle:(f.rearDropoutType==='through'?'through':'rearward-track') as DropoutStyle,
     forkProfile: String(f.forkProfile || "illustrative curved blades"),
     forkLength,
     renderedForkLength: distance(crown, front),
@@ -392,7 +401,7 @@ export type BicycleGeometry = ReturnType<typeof componentGeometry>;
 
 export function forkBladePoints(g: BicycleGeometry, side: number): Position[] {
   const start: Position = [g.crown[0], g.crown[1] - 0.007, side * 0.035];
-  const end: Position = [g.front[0], g.front[1] + 0.006, side * g.forkHalf];
+  const end: Position = [g.front[0], g.front[1] + 0.014, side * g.forkHalf];
   const blend = (t: number): Position =>
     start.map((v, i) => v + (end[i] - v) * t) as Position;
   const a = blend(0.32),
