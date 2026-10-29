@@ -12,11 +12,24 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
 
+## Task · Advanced geometry and wheel acceptance — verified locally, 29 October 2026
+
+- Completed the supported implementation stages in the [advanced geometry review](advanced-geometry.md): differentiated frame/post/fork/rear-end construction, rim-independent 20/24, 32/32 and 36/36 variants, open deep rims, shared SVG/3D geometry and complete preset framing. Reviewed 29 final captures; ten curated original-renderer images document the result.
+- TypeScript/lint and both builds pass. The local suite passed 106 tests with one live-Redis skip; final focused checks cover 43 API tests and four wheel geometry tests. All 35 normal Chromium workflows, the development bypass workflow and both production-preview PWA workflows pass. Separate temporary member/admin fixtures preserve real authentication limits. GitHub CI is inspected after the milestone push.
+- A read of the connected local app caught legacy optional-field/key-order differences in catalog imports. The guarded append now recognizes only unchanged original records; all four wheel designs expose the expected options. The local API/frontend are healthy and development quotas remain disabled. No other database or hosting configuration was changed.
+- Exact proprietary sections, licensed graphics, unreviewed model generations and physical-device verification remain external dependencies. Leader/Tsunami stay draft; the individual-component purchasing overhaul remains postponed. No deployment.
+
+## Task · Registered spoke options within each rim design — verified locally, 29 October 2026
+
+- All four demo wheel designs offer 20 front / 24 rear, 32/32 and 36/36 through registered variants with matching drilling/lacing. The selected rim dimensions, finishes and unrelated components stay intact. Existing IDs/specifications and edited catalog records survive the guarded append-only import. Manufacturer variants are never fabricated.
+- Added an accessible mobile/desktop selector, preserved backend authorization/quota validation and corrected bent rim normals for smooth radial surfaces with crisp holes. Geometry checks cover all counts/depths, actual holes/open centers, spoke instances and SVG counts. Persistence covers history, save/reload, garage/export, public snapshots and duplication.
+- TypeScript/lint and both builds pass; 106 local unit/API tests pass with one live-Redis skip. Six focused browser workflows pass, including ten source sizes/eight camera presets. [Stage evidence and remaining final regression](advanced-geometry.md). No deployment.
+
 ## Task · Source-associated tube, post, fork and rear-end morphology — verified locally, 29 October 2026
 
 - Added shared variable-section surfaces/silhouettes for four published source families, a distinct Cinelli aero post/collar, continuous carbon fork crowns and double-sided 8bar inserts. Preserved original size anchors, saved variant IDs and custom legacy asset registrations. Corrected normalization that rendered a listed 31.6 mm post as 27.2 mm.
 - TypeScript/lint, 15 focused geometry/asset checks and 42 isolated API tests pass. Browser coverage verifies actual mesh construction, saddle visibility/identity, source finishes and persistence; 20 private inspection captures were reviewed. All 39 regenerated v4 kits stay below 300 KB, largest 281,320 bytes. [Evidence and limits](advanced-geometry.md).
-- Proprietary sections remain labeled illustrative; unsupported generations remain draft and protected graphics are absent. Registered spoke selectors and final acceptance remain separate pending work. No deployment.
+- Proprietary sections remain labeled illustrative; unsupported generations remain draft and protected graphics are absent. Registered spoke selectors and final acceptance are recorded in the subsequent milestones above. No deployment.
 
 ## Task · Advanced morphology and rim-independent spoke audit — completed, 29 October 2026
 

@@ -26,6 +26,10 @@
 .component-finishes label {display:grid;gap:5px;font-size:14px;}
 .component-finishes select {min-height:44px;width:100%;}
 .component-finishes small {font-size:12px;line-height:1.5;color:var(--muted);}
+.wheel-spoke-control {display:grid;gap:6px;margin-top:12px;}
+.wheel-spoke-control label {display:grid;gap:6px;font-size:14px;}
+.wheel-spoke-control select {min-height:44px;width:100%;}
+.wheel-spoke-control small {font-size:12px;line-height:1.5;color:var(--muted);}
 .sheet-expand {margin-left:auto;margin-right:12px;min-height:44px;}
 .catalog-3d-review {height:350px;position:relative;margin:12px 0;}
 .catalog-3d-review .bike3d-wrapper {height:100%;}

@@ -40,7 +40,9 @@ function drilledBridge(g: BicycleGeometry, rear: boolean) {
   // Subdivide the developed strip before bending it. Long triangles otherwise
   // cross the wheel's center even though every vertex lies on the rim radius.
   const source = flat.getAttribute("position"),
+    sourceNormals = flat.getAttribute("normal"),
     vertices: number[] = [],
+    normals: number[] = [],
     step = circumference / Math.ceil(circumference / 0.009);
   type Vertex = [number, number, number];
   const clip = (poly: Vertex[], boundary: number, greater: boolean) => {
@@ -78,8 +80,14 @@ function drilledBridge(g: BicycleGeometry, rear: boolean) {
         false,
       );
       for (let j = 1; j < polygon.length - 1; j++)
-        for (const v of [polygon[0], polygon[j], polygon[j + 1]])
+        for (const v of [polygon[0], polygon[j], polygon[j + 1]]) {
           vertices.push(...v);
+          normals.push(
+            sourceNormals.getX(i),
+            sourceNormals.getY(i),
+            sourceNormals.getZ(i),
+          );
+        }
     }
   }
   const geometry = new THREE.BufferGeometry();
@@ -87,15 +95,29 @@ function drilledBridge(g: BicycleGeometry, rear: boolean) {
     "position",
     new THREE.Float32BufferAttribute(vertices, 3),
   );
+  geometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
   flat.dispose();
-  const p = geometry.getAttribute("position");
+  const p = geometry.getAttribute("position"),
+    n = geometry.getAttribute("normal"),
+    normal = new THREE.Vector3();
   for (let i = 0; i < p.count; i++) {
     const a = p.getX(i) / w.rimInner,
       z = p.getY(i),
       r = w.rimInner + p.getZ(i);
     p.setXYZ(i, Math.cos(a) * r, Math.sin(a) * r, z);
+    // Transform the extrusion normal through the bend's inverse transpose.
+    // Radial caps stay smooth across angular bands; hole/side edges stay crisp.
+    const tangent = (n.getX(i) * w.rimInner) / r,
+      radial = n.getZ(i);
+    normal
+      .set(
+        Math.cos(a) * radial - Math.sin(a) * tangent,
+        Math.sin(a) * radial + Math.cos(a) * tangent,
+        n.getY(i),
+      )
+      .normalize();
+    n.setXYZ(i, normal.x, normal.y, normal.z);
   }
-  geometry.computeVertexNormals();
   return geometry;
 }
 

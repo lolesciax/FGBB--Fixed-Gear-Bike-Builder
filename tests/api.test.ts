@@ -9,8 +9,9 @@ import { createApp } from '../backend/src/app';
 import { parseConfig } from '../backend/src/config';
 import { DevelopmentRateStore, sign } from '../backend/src/security';
 import { Build, ProductModel, Subject, User, initializeModels, Session, Audit } from '../backend/src/models';
-import { seedCatalog, defaultConfiguration } from '../backend/src/catalog';
+import { seedCatalog, defaultConfiguration,demoWheelBaselines } from '../backend/src/catalog';
 import { importCatalog } from '../backend/src/catalog-import';
+import {productSchema} from '@tracklab/domain';
 import { Brand, ModelRecordModel, AssetReview } from '../backend/src/models';
 const origin = 'http://localhost:5173';
 const config = parseConfig({ NODE_ENV: 'test', FRONTEND_URL: origin });
@@ -125,6 +126,8 @@ describe('authentication and authorization', () => {
     expect((await g.agent.get('/api/session')).body.usage.changes).toBe(1);
     await g.agent.post('/api/workspace/change').set('Origin',origin).send({...input,token:polished.token}).expect(403);
     const frame=(await post(g,'/workspace/change',{token:polished.token,slot:'frameset',variantId:'skream-magnum-m'}).expect(200)).body;
+    const wheelConfiguration=(await post(g,'/workspace/change',{token:frame.token,slot:'wheels',variantId:'studio-deep-36-36'}).expect(200)).body;
+    Object.assign(frame,wheelConfiguration);
     expect(frame.configuration).toMatchObject({frameset:'skream-magnum-m',saddle:'studio-race',appearance:{wheelset:'polished'}});
     await post(g,'/workspace/preview',{token:frame.token}).expect(200);
     const c=await member();await User.updateOne({_id:c.userId},{$set:{verified:true}});
@@ -134,9 +137,12 @@ describe('authentication and authorization', () => {
     const updated=(await patch(c,`/builds/${saved._id}`,{name:'Finish study',configuration:{...frame.configuration,appearance:{wheelset:'pure-black',stem:'polished'}},revision:1,visibility:'public'},lease.editorToken).expect(200)).body;
     expect((await g.agent.get(`/api/public/builds/${updated.publicId}`).expect(200)).body.configuration.appearance).toEqual(updated.configuration.appearance);
     const copy=(await post(c,`/public/builds/${updated.publicId}/duplicate`).expect(201)).body;
+    expect(updated.configuration.wheels).toBe('studio-deep-36-36');expect(copy.configuration.wheels).toBe('studio-deep-36-36');
+    expect((await g.agent.get(`/api/public/builds/${updated.publicId}`).expect(200)).body.configuration.wheels).toBe('studio-deep-36-36');
     expect(copy.configuration.appearance).toEqual(updated.configuration.appearance);
     expect((await post(c,`/builds/${saved._id}/export`).expect(200)).body.build.configuration.appearance).toEqual(updated.configuration.appearance);
     const image=(await post(c,`/builds/${saved._id}/export-image`).expect(200)).body.svg;
+    expect(image.match(/data-spoke=/g)).toHaveLength(72);
     expect(image).toContain('#202731');expect(image).toContain('#b9c2cd');
   });
   it('rejects documented rail or post conflicts without charging and keeps unknown seating unverified',async()=>{
@@ -221,6 +227,21 @@ describe('authentication and authorization', () => {
     await post(c,'/workspace/preview',{token:changed.body.token}).expect(200);
     await ProductModel.updateOne({_id:'dosnoventa-02-la'},{$unset:{'data.visual':1}});
     await post(c,'/workspace/preview',{token:changed.body.token}).expect(422);
+  });
+  it('appends spoke options to exact original demos once while preserving legacy IDs and edited records',async()=>{
+    // Schema parsing reorders keys; the oldest seeds also omit catalogKind.
+    const originals=demoWheelBaselines.map(p=>productSchema.parse(p));delete originals[0].catalogKind;
+    for(const original of originals){
+      await ProductModel.updateOne({_id:original.id},{$set:{data:original}});
+    }
+    const edited=structuredClone(demoWheelBaselines.find(p=>p.id==='studio-classic-m9')!);edited.description='Reviewed custom wheel record';
+    await ProductModel.updateOne({_id:edited.id},{$set:{data:edited}});
+    await importCatalog();await importCatalog();
+    for(const original of originals){
+      const data=(await ProductModel.findById(original.id).lean())!.data;
+      expect(data.variants[0]).toEqual(original.variants[0]);
+      expect(data).toEqual(original.id===edited.id?edited:{...original,variants:seedCatalog.find(p=>p.id===original.id)!.variants});
+    }
   });
   it('uses HttpOnly same-site cookies and requires CSRF plus an allowed Origin', async () => { const c = await guest(); const s = await request(app).get('/api/session'); expect(s.headers['set-cookie'][0]).toMatch(/HttpOnly/); expect(s.headers['set-cookie'][0]).toMatch(/SameSite=Lax/); await c.agent.post('/api/workspace').set('Origin', origin).send({}).expect(403); await c.agent.post('/api/workspace').set('Origin', 'https://attacker.example').set('X-CSRF-Token', c.csrf).send({}).expect(403); });
   it('rotates sessions, hides hashes and prevents role assignment', async () => { const c = await guest(); const prior = c.csrf; await post(c, '/auth/register', { name: 'Rider', email: 'rider@example.com', password: 'a-long-test-passphrase', role: 'admin' }).expect(422); const r = await post(c, '/auth/register', { name: 'Rider', email: 'rider@example.com', password: 'a-long-test-passphrase' }).expect(201); expect(r.body.user.role).toBe('user'); expect(r.body.user.passwordHash).toBeUndefined(); expect(r.body.csrf).not.toBe(prior); expect(await Session.countDocuments()).toBe(1); });

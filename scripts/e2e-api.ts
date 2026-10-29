@@ -9,21 +9,38 @@ if (
   process.env.PORT !== "4010"
 )
   throw new Error(
-    "Admin browser fixtures require the isolated ephemeral test environment.",
+    "Browser account fixtures require the isolated ephemeral test environment.",
   );
 await import("../backend/src/server");
 const { User } = await import("../backend/src/models");
 const { default: argon2 } = await import("argon2");
-const email = "admin-browser@example.test",
-  password = randomBytes(32).toString("base64url");
-await User.create({
-  email,
-  name: "Isolated Browser Admin",
-  passwordHash: await argon2.hash(password),
-  role: "admin",
-  verified: true,
-});
 await mkdir(".local", { recursive: true });
-await writeFile(".local/e2e-admin.json", JSON.stringify({ email, password }), {
-  mode: 0o600,
-});
+for (const fixture of [
+  {
+    id: "admin",
+    email: "admin-browser@example.test",
+    name: "Isolated Browser Admin",
+    role: "admin",
+  },
+  {
+    id: "rider",
+    email: "rider-browser@example.test",
+    name: "Isolated Browser Rider",
+    role: "user",
+  },
+] as const) {
+  const { email, name, role } = fixture,
+    password = randomBytes(32).toString("base64url");
+  await User.create({
+    email,
+    name,
+    role,
+    passwordHash: await argon2.hash(password),
+    verified: true,
+  });
+  await writeFile(
+    `.local/e2e-${fixture.id}.json`,
+    JSON.stringify({ email, password }),
+    { mode: 0o600 },
+  );
+}

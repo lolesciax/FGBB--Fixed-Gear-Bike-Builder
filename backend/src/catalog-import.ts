@@ -1,7 +1,8 @@
 import { productSchema } from "@tracklab/domain";
+import {isDeepStrictEqual} from 'node:util';
 import { ProductModel, Brand, ModelRecordModel } from "./models";
 import { expansionBrands, researchModels } from './modules/catalog/research-records';
-import { seedCatalog } from "./catalog";
+import { seedCatalog,demoWheelBaselines } from "./catalog";
 import { seedBrands } from "./manufacturer-catalog";
 
 export async function importCatalog() {
@@ -21,6 +22,20 @@ export async function importCatalog() {
       { $setOnInsert: { data } },
       { upsert: true },
     );
+    const baseline = demoWheelBaselines.find(p => p.id === data.id);
+    if (baseline) {
+      // Append only to the exact original demo. Existing/saved variants and any
+      // administrator edits are never rewritten by this development migration.
+      const existing = await ProductModel.findById(data.id).lean();
+      const legacyBaseline={...baseline};delete legacyBaseline.catalogKind;
+      if (existing && [baseline,legacyBaseline].some(original=>isDeepStrictEqual(existing.data,original))) {
+        const additions = data.variants.filter(v => !baseline.variants.some(old => old.id === v.id));
+        await ProductModel.updateOne(
+          { _id: data.id, data: existing.data },
+          { $push: { 'data.variants': { $each: additions } } },
+        );
+      }
+    }
     if(data.visual?.morphologyId){
       const {morphologyId,...originalVisual}=data.visual;
       await ProductModel.updateOne({_id:data.id,'data.source':data.source,'data.status':'published','data.visual':originalVisual},{$set:{'data.visual.morphologyId':morphologyId}});

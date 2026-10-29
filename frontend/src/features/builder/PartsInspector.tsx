@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Check, Search } from "lucide-react";
+import {WheelSpokeSelector} from './WheelSpokeSelector';
 import {
   visualizationInfo,
   barTypes,
@@ -288,7 +289,7 @@ export function PartsInspector({
                     </span>
                   )}
                 </button>
-                {product.illustrative && product.variants.length > 1 && (
+                {slot==='frameset' && product.illustrative && product.variants.length > 1 && (
                   <div className="finish-controls">
                     <div className="finish-label">
                       <span>Finish</span>
@@ -345,6 +346,7 @@ export function PartsInspector({
                     ))}
                   </select>
                 </label>
+                {slot==='wheels'&&isSelected&&<WheelSpokeSelector product={product} variant={shown} disabled={pending||locked||!configuration} onSelect={id=>onSelect(slot,id)}/>}
                 {slot==='frameset'&&<ColorwaySelector product={product} variant={shown} disabled={pending||locked||!configuration} onSelect={id=>onSelect(slot,id)}/>}
                 {isSelected&&configuration&&onFinish&&<ComponentFinishSelector product={product} variant={shown} configuration={configuration} disabled={pending||locked} onChange={onFinish}/>}
                 <details className="product-specs">

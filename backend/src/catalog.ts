@@ -1,5 +1,5 @@
 import { manufacturerCatalog } from './manufacturer-catalog';
-import type { Product, Configuration, Slot } from '@tracklab/domain';
+import {spokeConfigurations,wheelBuild,type Product,type Configuration,type Slot} from '@tracklab/domain';
 
 const colors = [{ name: 'Forest', hex: '#294f40' }, { name: 'Graphite', hex: '#303432' }, { name: 'Silver', hex: '#b7b9b5' }, { name: 'Chalk', hex: '#e9e8df' }, { name: 'Acid', hex: '#d9ed85' }];
 const demo = (id: string, name: string, slot: Slot, description: string, specs: Record<string, string | number | boolean>, finishes = false): Product => ({
@@ -7,7 +7,7 @@ const demo = (id: string, name: string, slot: Slot, description: string, specs: 
   acknowledgment: 'An independently created illustrative demo, not a product for sale. Dimensions are demonstration data, not verified manufacturer specifications.',
   variants: finishes ? colors.map(c => ({ id: `${id}-${c.name.toLowerCase()}`, label: c.name, color: c.hex, specs })) : [{ id, label: 'Standard', color: '#303432', specs }],
 });
-export const seedCatalog: Product[] = [
+const baseCatalog: Product[] = [
   demo('studio-track', 'Studio Track', 'frameset', 'Classic track proportions. A clean starting point for your next idea.', { rearSpacing: 120, frontSpacing: 100, axle: 'solid-10', tireClearance: 28, seatpost: 27.2, stemClamp: 31.8, bottomBracket: 'BSA-68', brakeMount: 'caliper', geometry: 'track' }, true),
   demo('studio-pursuit', 'Studio Pursuit', 'frameset', 'A sloping top tube and a more assertive silhouette. Illustrative geometry.', { rearSpacing: 120, frontSpacing: 100, axle: 'solid-10', tireClearance: 25, seatpost: 27.2, stemClamp: 31.8, bottomBracket: 'BSA-68', brakeMount: 'caliper', geometry: 'pursuit' }, true),
   demo('studio-classic', 'Classic spokes', 'wheels', 'A traditional spoked profile with shallow rims.', { bsd: 622, rearSpacing: 120, frontSpacing: 100, axle: 'solid-10', cogWidth: '1/8', chainline: 42, rimDepth: 25 }),
@@ -27,4 +27,23 @@ export const seedCatalog: Product[] = [
   demo('studio-classic-m9', 'Classic spokes / M9 front', 'wheels', 'Independent wheel demo with 9 mm front and 10 mm rear axle dimensions. Hardware and full physical fit are unverified.', {bsd:622,rearSpacing:120,frontSpacing:100,frontAxleDiameter:9,rearAxleDiameter:10,cogWidth:'1/8',chainline:42,rimDepth:25}),
   ...manufacturerCatalog,
 ];
+export const demoWheelBaselines = baseCatalog.filter(p => p.slot === 'wheels' && p.illustrative);
+export const seedCatalog: Product[] = baseCatalog.map(product => {
+  if (!demoWheelBaselines.includes(product)) return product;
+  const original = product.variants[0], frontBuild = wheelBuild(original.specs), rearBuild = wheelBuild(original.specs, true);
+  const complete = [frontBuild, rearBuild].every(b => !b.errors.length && !b.missing.length);
+  const variants = spokeConfigurations.flatMap(([front, rear]) => {
+    if (complete && frontBuild.count === front && rearBuild.count === rear) return [];
+    return [{
+      ...original, id: `${product.id}-${front}-${rear}`, label: `${front} front / ${rear} rear`,
+      specs: {
+        ...original.specs, frontSpokeCount: front, rearSpokeCount: rear,
+        frontLacing: front === 20 ? 'radial' : front === 32 ? 'two-cross' : 'three-cross',
+        rearLacing: rear === 24 ? 'two-cross' : 'three-cross',
+        frontHubDrilling: front, frontRimDrilling: front, rearHubDrilling: rear, rearRimDrilling: rear,
+      },
+    }];
+  });
+  return { ...product, variants: [...product.variants, ...variants] };
+});
 export const defaultConfiguration: Configuration = { frameset: 'studio-track-graphite', wheels: 'studio-classic', tires: 'studio-tire25', cockpit: 'studio-drop', drivetrain: 'studio-46', saddle: 'studio-race' };

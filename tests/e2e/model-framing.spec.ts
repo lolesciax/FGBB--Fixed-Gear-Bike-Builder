@@ -72,6 +72,9 @@ test("actual vertices and instances fit source frames at every preset, phone, ta
       "Vigorelli",
       ["cinelli-vigorelli-rainbow-xs", "cinelli-vigorelli-rainbow-xl"],
     ],
+    ['Skream','Magnum',['skream-magnum-xs','skream-magnum-xl']],
+    ['Skream','Ranger',['skream-ranger-xs','skream-ranger-xl']],
+    ['8bar','KRZBERG V8',['8bar-krzberg-v8-s','8bar-krzberg-v8-xl']],
   ] as const) {
     await page.getByLabel("Filter by brand").selectOption(brand);
     for (const id of ids) {
