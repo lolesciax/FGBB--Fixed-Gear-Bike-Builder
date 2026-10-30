@@ -84,6 +84,7 @@ export function assemblyAnchors(g: BicycleGeometry) {
   };
   return {
     units: "mm" as const,
+    origin: 'rear-axle' as const,
     axes: { forward: "x", up: "y", lateral: "z" },
     points: Object.fromEntries(
       Object.entries(metres).map(([name, p]) => [

@@ -104,7 +104,7 @@ export function StudioCamera({
         0.12,
         fit.box.getSize(new THREE.Vector3()).length() * 0.35,
       ),
-      floor: fit.box.min.y + 0.04,
+      floor: inspection?.startsWith('dev-') ? fit.box.min.y-.005 : fit.box.min.y + 0.04,
     };
     camera.near = inspection?.startsWith('dev-') ? .002 : 0.025;
     camera.far = 50;

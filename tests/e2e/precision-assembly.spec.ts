@@ -37,6 +37,29 @@ test("structural closeups and optional diagnostics inspect the current assembly 
   ]) {
     await page.getByLabel("Structural close-up").selectOption(target);
     await expect(viewer).toHaveAttribute("data-camera-moving", "false");
+    await expect
+      .poll(() =>
+        page.evaluate(async (target) => {
+          const url = performance
+              .getEntriesByType("resource")
+              .find((e) => e.name.includes("/@react-three_fiber.js?"))!.name,
+            { _roots } = await import(url),
+            s = _roots.get(document.querySelector("canvas")).store.getState(),
+            root = s.scene.getObjectByName("bicycle_assembly");
+          const base = "/src/features/builder/";
+          const { inspectionObject } = await import(base + "inspection.ts"),
+            { fitAssembly } = await import(base + "studio-math.ts");
+          const fit = fitAssembly(
+            inspectionObject(root, target),
+            "studio",
+            s.size.width / s.size.height,
+            s.camera.fov,
+            0.06,
+          );
+          return s.controls.target.distanceTo(fit.center);
+        }, target),
+      )
+      .toBeLessThan(0.0001);
     await expect(viewer).toHaveAttribute(
       "data-frame-variant",
       "cinelli-vigorelli-80s-national-blu-m-v1",
@@ -83,5 +106,45 @@ test("structural closeups and optional diagnostics inspect the current assembly 
       );
     }),
   ).toBe(true);
+  const originalCanvas = await page.locator("canvas").elementHandle();
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.getByRole("button", { name: "3D", exact: true }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(async () => {
+        const url = performance
+            .getEntriesByType("resource")
+            .find((e) => e.name.includes("/@react-three_fiber.js?"))!.name,
+          { _roots } = await import(url),
+          s = _roots.get(document.querySelector("canvas")).store.getState();
+        const base = "/src/features/builder/",
+          { fitAssembly } = await import(base + "studio-math.ts"),
+          fit = fitAssembly(
+            s.scene.getObjectByName("bicycle_assembly"),
+            "studio",
+            s.size.width / s.size.height,
+            s.camera.fov,
+          ),
+          rect = document.querySelector("canvas")!.getBoundingClientRect();
+        return Math.max(
+          s.controls.target.distanceTo(fit.center),
+          Math.abs(
+            s.camera.position.distanceTo(s.controls.target) - fit.distance,
+          ),
+          Math.abs(s.size.width - rect.width),
+          Math.abs(s.size.height - rect.height),
+        );
+      }),
+    )
+    .toBeLessThan(0.003);
+  expect(
+    await originalCanvas!.evaluate(
+      (node) => node === document.querySelector("canvas"),
+    ),
+  ).toBe(true);
+  await expect(viewer).toHaveAttribute(
+    "data-frame-variant",
+    "cinelli-vigorelli-80s-national-blu-m-v1",
+  );
   expect(errors).toEqual([]);
 });

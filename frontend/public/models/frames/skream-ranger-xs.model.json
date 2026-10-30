@@ -32,6 +32,7 @@
   },
   "assembly": {
     "units": "mm",
+    "origin": "rear-axle",
     "axes": {
       "forward": "x",
       "up": "y",

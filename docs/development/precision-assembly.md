@@ -54,20 +54,52 @@ Leader, Engine11 and other incomplete records keep their existing draft gates. N
 
 ## Phase evidence
 
+### Nominal-width stress limits — unresolved
+
+A separate stress audit used each frame's published maximum tire width as both width **and an assumed section height**, across all 39 kits. Fourteen kits report triangle intersections. This is a renderer limitation with incomplete tire and tube/crown surface data, not evidence that the manufacturer's real frame cannot fit its stated tire size. The default 25 mm illustration passes all 14 critical pairs for all 39 kits. The diagnostics must continue to expose these failures; do not resize the tire or rewrite published anchors to make a test green.
+
+| Authored stress case | Actual reported mesh pairs |
+| --- | --- |
+| Dosnoventa 02 LA S/M/L, 32 mm | Rear tire/seat tube; S also front tire/crown |
+| Skream Magnum XS–XL, 35 mm | Rear tire/seat tube |
+| Wabi Prism 47–62, 38 mm | Both rear chainstays/tire; 60/62 also seat tube/tire |
+
+The [Magnum page](https://skreambikes.com/products/magnum-shade-frameset) and [Prism page](https://wabicycles.com/products/wabi-prism-frameset) retain their published 35/38 mm limits; those values are not altered. The positive default-width matrix and a negative nominal-envelope regression verify that the diagnostics distinguish these cases. Required next inputs: mounted tire section height/profile on the selected rim, verified tube sections, crown geometry and clearance-oriented stay shapes. Maximum-width and exact manufacturer fidelity therefore remain unfinished; this task is not an overlap-free certification of every combination.
+
 | Phase | Status | Evidence / dependency |
 | --- | --- | --- |
 | 1 Audit | Completed and verified | Baseline captures and source-code/contact-plane audit above |
 | 2 Shared anchors | Completed and verified locally | Shared technical anchors, contact-stack and source/fallback checks |
 | 3 Head/steerer | Completed and verified locally | Open head bore, source-specific steering, coped clamp joins |
-| 4 Fork/front dropout | Completed and verified locally | Crown seam, mirrored blades, flattened tongues and retention variants |
+| 4 Fork/front dropout | Partially implemented | Default-width seam/contact/retention checks pass; LA S nominal-width crown case remains unresolved |
 | 5 Rear track ends | Completed and verified locally | Rearward slots, contiguous inserts, washer/nut face contacts |
-| 6 Frame junctions | Completed and verified locally | Head/seat/BB and stay coping, flattened plate joints |
+| 6 Frame junctions | Partially implemented | Coped attachment tests pass; the nominal-width stress cases above require verified sections |
 | 7 SVG synchronization | Completed and verified locally | Shared silhouettes and canonical geometry, explicit layer order |
-| 8 Mesh quality | Completed and verified locally | Detailed critical-pair checks, bore rays and seam normals |
+| 8 Mesh quality | Partially implemented | Detailed diagnostics, bore rays and baseline clearances verified; maximum-width intersections remain explicit failures |
 | 9 Manufacturer fidelity | Partially implemented | Supported qualitative source review above; exact proprietary surfaces/interfaces and rights remain unavailable |
-| 10 Visual testing | Partially implemented | Baseline and intermediate views reviewed; final multi-family matrix pending |
-| 11 Regression | In progress | Full final checks, browser/build and post-push CI pending |
+| 10 Visual testing | Completed and verified for documented baseline | Fifty four-family views plus a settled mobile recapture reviewed; nominal-width limits remain outside this baseline |
+| 11 Regression | Verified locally; CI pending | Final 121 unit/API passes (one Redis skip), 43 normal + one development + two PWA browser checks and both builds pass; final CI is inspected after pushing |
 
 Initial verification found and corrected an obsolete midplane assertion, excessive stay tessellation, a genuine steel-fork/tire collision from missing stack, and stem cap triangles crossing the bores. The focused tests now exercise corrected geometry; final results are recorded here and in the roadmap after execution.
 
 Core milestone checks: TypeScript, lint, both builds, 120 unit/API passes (one live Redis skip), eight isolated browser workflows and production debug-code exclusion pass. Detailed checks exercise 14 pairs across all 39 base frame kits. Final visual matrix/full browser and CI evidence remain pending.
+
+## Final visual evidence
+
+The isolated Chromium matrix captured 50 views: six whole-bike directions, head/crown/front/rear dropout details and SVG for Cinelli Vigorelli M / 80s National Blu, Skream Ranger M / Forest, 8bar KRZBERG V8 M and Dosnoventa DET M. Cinelli adds headset/stem, front/rear hardware, stay and BB inspections. No page errors were recorded. A separate settled 375×812 recapture waits for real canvas dimensions and camera-fit convergence, retaining the same selected model. Inspection images include the existing subtle selected-mesh highlight.
+
+- [Cinelli matrix](../design/precision-assembly/after-cinelli-gallery.png), [Skream matrix](../design/precision-assembly/after-skream-gallery.png), [8bar matrix](../design/precision-assembly/after-8bar-gallery.png), [Dosnoventa matrix](../design/precision-assembly/after-dosnoventa-gallery.png).
+- [Head tube](../design/precision-assembly/after-cinelli-head.png), [headset/stem](../design/precision-assembly/after-cinelli-headset.png), [crown](../design/precision-assembly/after-cinelli-crown.png), [front dropout](../design/precision-assembly/after-cinelli-front-dropout.png), [rear track end](../design/precision-assembly/after-cinelli-rear-dropout.png).
+- [Front hardware](../design/precision-assembly/after-cinelli-front-hardware.png), [rear hardware](../design/precision-assembly/after-cinelli-rear-hardware.png), [BB junction](../design/precision-assembly/after-cinelli-bb.png), [8bar insert](../design/precision-assembly/after-8bar-rear-dropout.png), [SVG](../design/precision-assembly/after-cinelli-svg.png), [mobile](../design/precision-assembly/after-mobile.png).
+
+Visual review exposed a real closeup-camera issue: the normal 40 mm pan-floor margin displaced the target of a tiny nut or dropout. Development closeups now put the floor below the mesh; all nine presets assert the actual target centre within 0.1 mm. A retained 2D→mobile→3D regression also checks the real camera fit, canvas size, canvas identity and current frame. Normal camera behavior is unchanged. This camera correction does not alter source geometry.
+
+## Regression findings
+
+The first full local run passed 42/43; the initial core CI [41031176711](https://github.com/lolesciax/FGBB--Fixed-Gear-Bike-Builder/actions/runs/41031176711) failed on the same saved-build handoff. Network evidence showed the PATCH arrived without a preceding lease acquisition. Follow-up commit 7b4f555 locks the handoff and requires the saved route's lease. Its regression holds the lease response, proves zero premature PATCH requests and disabled edit/save controls, then completes save/autosave/retry/garage/export. Backend lease/ownership rules were retained.
+
+The final clean normal browser run passes all 43 workflows in 5.4 minutes. TypeScript/lint, both builds and all 121 local unit/API tests pass (one live Redis skip); the final explicit-anchor-origin/asset subset passes all ten checks. The existing lazy-3D bundle warning remains. CI includes its own Redis service. These software checks do not resolve the nominal-width stress cases or proprietary asset/physical-device dependencies.
+
+The unlimited-development workflow and both production-preview PWA workflows also pass. The production browser opens Inspect and verifies development geometry tools are absent. No test database or browser runtime data is included in the committed evidence. Final CI is checked after the QA milestone push.
+
+GitHub verification: [7b4f555 / run 41032528849](https://github.com/lolesciax/FGBB--Fixed-Gear-Bike-Builder/actions/runs/41032528849) completed successfully, including Redis, the full browser suite and development/PWA checks. The final QA commit includes the additional centering/origin/known-envelope evidence and is checked separately after pushing.

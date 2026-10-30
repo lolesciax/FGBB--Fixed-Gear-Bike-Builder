@@ -12,6 +12,15 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
 
+## Task · Precision assembly QA and explicit fit limits — verified locally, 30 October 2026
+
+- Reviewed 50 four-family whole-bike/detail/SVG views and a settled 375×812 mobile recapture. Curated original-renderer images are linked in the [precision assembly review](precision-assembly.md). Fixed development closeup centering: the normal 40 mm pan-floor margin displaced tiny hardware targets. All nine presets now check the actual mesh centre; returning through 2D to a resized mobile canvas checks camera fit, canvas size/identity and canonical selection.
+- Final local results: 121 unit/API tests pass, one live Redis test skipped locally; all 43 normal browser workflows, the unlimited-development workflow and both production-preview PWA workflows pass. TypeScript/lint and both builds pass. The explicit-origin/asset subset passes ten checks after technical anchors gained a rear-axle origin field. Production omits debug controls/overlays. Existing lazy-3D bundle warnings remain.
+- The 25 mm baseline passes 14 critical pairs across all 39 original frame kits. A separate nominal-width/assumed-height stress audit reports intersections for 14 kits (LA 32 mm, Magnum 35 mm, Prism 38 mm). Added a negative regression so diagnostics cannot silently pass or resize these envelopes. Actual tire profiles and verified tube/crown/stay sections remain required; maximum-width geometry and exact manufacturer fidelity are unfinished. The phase table marks these limits explicitly, without changing manufacturer claims or promoting drafts.
+- Core CI failed on the same editor-lease race as the local full run. The verified handoff follow-up is pushed as 7b4f555. Final milestone CI is inspected after pushing. Development remains local; no deployment, release, external messages or destructive Atlas operations occurred.
+
+- GitHub verification: [7b4f555 / run 41032528849](https://github.com/lolesciax/FGBB--Fixed-Gear-Bike-Builder/actions/runs/41032528849) completed successfully, including Redis, the full browser suite and development/PWA checks. The final QA commit includes the additional centering/origin/known-envelope evidence and is checked separately after pushing.
+
 ## Task · Saved-build editor handoff — verified locally, 30 October 2026
 
 - The complete geometry regression run passed 42/43 workflows and exposed an existing creation-to-editor race: the browser URL changed while the new saved build still had no editor lease, permitting an immediate PATCH that correctly received EDITOR_LOCKED. The saved route now owns the pending handoff, and Save requires the current saved route and a real lease. Backend lease and ownership checks remain enforced.

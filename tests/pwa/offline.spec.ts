@@ -6,6 +6,10 @@ async function activateServiceWorker(page: import('@playwright/test').Page) {
 }
 test('controlled online deep links remain online and fall back only when offline', async ({ page, context }) => {
   await page.goto('/builder'); await expect(page.getByRole('button', { name: 'Studio Track Forest finish' })).toBeEnabled();
+  await page.getByRole('button',{name:'3D',exact:true}).click();
+  await expect(page.locator('.bike3d-wrapper')).toHaveAttribute('data-loading','false');
+  await page.getByRole('button',{name:'Inspect',exact:true}).click();
+  await expect(page.getByText('Development geometry tools',{exact:true})).toHaveCount(0);
   await activateServiceWorker(page);
   await page.reload(); await expect(page.getByRole('heading', { name: 'Bike Builder' })).toBeVisible();
   await page.goto('/catalog'); await expect(page.getByRole('heading', { name: 'The parts make the ride.' })).toBeVisible();

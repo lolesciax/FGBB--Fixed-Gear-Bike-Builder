@@ -85,6 +85,7 @@ it("uses millimetre technical anchors with centred axles and contiguous hardware
     expect(assemblyAnchors(g).points.frontAxle).toEqual(
       g.front.map((v) => v * 1000),
     );
+    expect(assemblyAnchors(g).origin).toBe('rear-axle');
     for (const rear of [false, true]) {
       const mount = rear ? g.rearInterface : g.frontInterface,
         wheel = createWheel(g, rear),
@@ -258,4 +259,32 @@ it("keeps the head and stem bores open and the hardware holes concentric", () =>
       ray(name, wheel, [g.front[0], g.front[1], 1], [0, 0, -1]),
     ).toHaveLength(0);
   for (const root of [frame, cockpit, wheel]) disposeModel(root);
+});
+
+it("reports an unresolved nominal-width envelope instead of silently resizing it to fit", () => {
+  const product = manufacturerCatalog.find((p) => p.id === "skream-magnum")!,
+    variant = product.variants[0];
+  const g = componentGeometry({
+      frameset: renderFrameSpecs(variant.specs, product.visual?.morphologyId),
+      tires: { width: 35, sectionHeight: 35 },
+    }),
+    root = new THREE.Group();
+  root.add(
+    createFrame(g, "#888888"),
+    createCockpit(g, {}),
+    createDrivetrain(g),
+  );
+  for (const axle of [g.front, g.rear]) {
+    const tire = createTire(g);
+    tire.position.set(...axle);
+    root.add(tire);
+  }
+  expect(g.wheel.radius).toBeCloseTo(0.346, 8);
+  expect(
+    validateAssembly(root, g).diagnostics.find(
+      (d) => d.id === "rear-tire/seat-tube",
+    ),
+  ).toMatchObject({ classification: "penetration", severity: "error" });
+  expect(g.frame).toEqual(assemblyGeometry(variant.specs));
+  disposeModel(root);
 });
