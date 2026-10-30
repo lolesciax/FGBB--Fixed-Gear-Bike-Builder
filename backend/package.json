@@ -1,0 +1,12 @@
+{
+  "name": "@tracklab/backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "npm run dev",
+    "dev": "npm --prefix .. run dev:api",
+    "build": "npm --prefix .. run build:api",
+    "start:built": "npm --prefix .. start"
+  }
+}

@@ -4,6 +4,7 @@ import { parseConfig } from '../backend/src/config';
 import { assertPortAvailable, waitForApi } from './dev-startup';
 
 const config = parseConfig(process.env);
+const webOnly = process.argv.includes('--web-only');
 const webPort = Number(process.env.TRACKLAB_WEB_PORT || 5180);
 const apiUrl = `http://127.0.0.1:${config.PORT}`;
 const children: ChildProcess[] = [];
@@ -37,7 +38,7 @@ function launch(path: string, args: string[]) {
   child.once('error', error => { console.error(`Unable to start development process: ${error.message}`); void stop(1); });
   child.once('exit', code => {
     if (!stopping) {
-      console.error(`A development process exited (${code ?? 'signal'}). Both servers are stopping; restart npm run dev after resolving the error above.`);
+      console.error(`A development process exited (${code ?? 'signal'}). ${webOnly ? 'The frontend is stopping; restart its command' : 'Both servers are stopping; restart npm run dev'} after resolving the error above.`);
       void stop(code || 1);
     }
   });
@@ -53,14 +54,16 @@ try {
     throw new Error('Local development requires FRONTEND_URL to use http://localhost or http://127.0.0.1.');
   if (Number(new URL(config.FRONTEND_URL).port || 80) !== webPort)
     throw new Error(`FRONTEND_URL must use Vite's port ${webPort}. Correct the local .env before starting.`);
-  await Promise.all([assertPortAvailable(config.PORT), assertPortAvailable(webPort)]);
-  console.info('Starting the API. Waiting for the database and catalog before opening the frontend...');
-  launch('../node_modules/tsx/dist/cli.mjs', ['watch', 'backend/src/server.ts']);
-  await waitForApi(apiUrl, startup.signal);
+  await Promise.all((webOnly ? [webPort] : [config.PORT, webPort]).map(assertPortAvailable));
+  if (!webOnly) {
+    console.info('Starting the API. Waiting for the database and catalog before opening the frontend...');
+    launch('../node_modules/tsx/dist/cli.mjs', ['watch', 'backend/src/server.ts']);
+    await waitForApi(apiUrl, startup.signal);
+  } else console.info(`Starting the frontend. Run npm start in backend/ separately; API proxy: ${apiUrl}`);
   if (!stopping) {
     launch('../node_modules/vite/bin/vite.js', ['--config', 'frontend/vite.config.ts', '--host', frontend.hostname, '--clearScreen', 'false']);
-    console.info(`API ready. TrackLab: ${new URL(config.FRONTEND_URL).origin}`);
-    console.info('Keep this terminal open while using TrackLab. Ctrl+C stops both servers.');
+    console.info(`${webOnly ? 'Frontend starting' : 'API ready'}. TrackLab: ${new URL(config.FRONTEND_URL).origin}`);
+    console.info(`Keep this terminal open while using TrackLab. Ctrl+C stops ${webOnly ? 'the frontend' : 'both servers'}.`);
   }
 } catch (error) {
   if (!stopping) { console.error((error as Error).message); await stop(1); }

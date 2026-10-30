@@ -1,0 +1,10 @@
+{
+  "name": "@tracklab/frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npm --prefix .. run dev:web",
+    "build": "npm --prefix .. run build:web"
+  }
+}

@@ -12,7 +12,7 @@
   "scripts": {
     "dev": "tsx scripts/dev-server.ts",
     "dev:api": "tsx watch backend/src/server.ts",
-    "dev:web": "vite --config frontend/vite.config.ts",
+    "dev:web": "tsx scripts/dev-server.ts --web-only",
     "dev:test": "tsx scripts/e2e-server.ts",
     "preview:test": "tsx scripts/e2e-server.ts --preview",
     "build": "npm run typecheck && npm run build:web && npm run build:api",

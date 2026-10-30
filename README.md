@@ -26,6 +26,26 @@ The current development configuration uses persistent Atlas storage and explicit
 
 See [Atlas configuration](docs/development/mongodb-atlas.md) for connection setup and troubleshooting.
 
+## Run the frontend and backend separately
+
+Install dependencies once with `npm ci` in the repository root and configure the root `.env` as above. Then use two terminals, starting the backend first:
+
+```sh
+# Terminal 1, from the repository root
+cd backend
+npm start
+```
+
+```sh
+# Terminal 2, from the repository root
+cd frontend
+npm run dev
+```
+
+In `backend/`, `npm start` and `npm run dev` both run the development API with automatic reload. The frontend prints the URL configured by `FRONTEND_URL` and proxies `/api` to the configured API port. Keep both terminals open; stopping either folder command stops only that server.
+
+Each folder also supports `npm run build`. To run the compiled backend, use `npm run build` then `npm run start:built` in `backend/`. The root `npm start` still runs the compiled backend. The root `npm run dev` remains the single-terminal option that starts and stops both servers together.
+
 ## Useful commands
 
 | Command | Purpose |
@@ -61,7 +81,7 @@ tests/             Shared unit/API, renderer and browser regression suites
 docs/              Requirements, design references and development evidence
 ```
 
-Run npm commands from the repository root. The root `package.json`, lockfile and ignored `.env` serve both applications; `npm run dev` starts the API and frontend together. `npm run dev:web` / `npm run dev:api` and `npm run build:web` / `npm run build:api` remain available for either side. Generated output belongs in `frontend/dist/` and `backend/dist/` and stays ignored by Git.
+The root package, lockfile and ignored `.env` serve both applications. The folder packages provide commands that use these shared dependencies and configuration; no separate install or `.env` copy is needed. Root `npm run dev` starts the API and frontend together. `npm run dev:web` / `npm run dev:api` and `npm run build:web` / `npm run build:api` remain available for either side. Generated output belongs in `frontend/dist/` and `backend/dist/` and stays ignored by Git.
 
 ## Current development status
 
