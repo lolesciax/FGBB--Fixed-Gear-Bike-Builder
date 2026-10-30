@@ -26,6 +26,7 @@ import {
 import type { TransitionCoordinator } from "./transitions";
 import type { InspectionTarget, CameraCommand } from "./inspection";
 import { InspectionHighlight } from "./InspectionHighlight";
+import {GeometryOverlay} from './GeometryOverlay';
 import type {
   CameraView,
   StudioEnvironment,
@@ -173,7 +174,7 @@ export function ProceduralAssembly({
   const group = useRef<THREE.Group>(null),
     modelKey = slots.map((slot) => configuration[slot]).join("|");
   const rootData = useMemo(
-    () => ({ geometryRevision: "components-v4", cockpit: g.cockpit.type }),
+    () => ({ geometryRevision: "components-v5", cockpit: g.cockpit.type }),
     [g.cockpit.type],
   );
   const settledShadow=useRef(0),transition=coordinator.getSnapshot();
@@ -262,6 +263,7 @@ export function ProceduralAssembly({
           revision={modelKey}
         />
       </group>
+      {import.meta.env.DEV && <GeometryOverlay assembly={group} g={g} revision={modelKey} coordinator={coordinator}/>}
       <StudioLighting
         studio={studio}
         quality={quality}

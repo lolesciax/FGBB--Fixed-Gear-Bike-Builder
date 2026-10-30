@@ -96,7 +96,7 @@ describe("mechanical assembly geometry", () => {
         const dropout = fork.getObjectByName(`fork_dropout_${side}`)!;
         expect(dropout.position.x).toBeCloseTo(g.front[0], 10);
         expect(dropout.position.y).toBeCloseTo(0,10);
-        expect(dropout.position.z).toBeCloseTo(side * g.forkHalf, 10);
+        expect(Math.abs(dropout.position.z)-g.frontInterface.bodyThickness/2).toBeCloseTo(g.forkHalf, 10);
       }
       vertices(fork, (p) => {
         const r = Math.hypot(p.x - g.front[0], p.y - g.front[1]);

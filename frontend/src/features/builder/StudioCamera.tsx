@@ -79,6 +79,7 @@ export function StudioCamera({
       view,
       size.width / size.height,
       camera.fov,
+      inspection?.startsWith('dev-') ? .06 : .6,
     );
     const signature = JSON.stringify([
       view,
@@ -92,7 +93,7 @@ export function StudioCamera({
     if (initialized.current && signature === fitSignature.current) return;
     fitSignature.current = signature;
     limits.current = {
-      min: inspection ? 0.14 : fit.minDistance,
+      min: inspection?.startsWith('dev-') ? .06 : inspection ? 0.14 : fit.minDistance,
       max: Math.max(5, fit.distance * 2.5),
     };
     controls.current.minDistance = limits.current.min;
@@ -105,7 +106,7 @@ export function StudioCamera({
       ),
       floor: fit.box.min.y + 0.04,
     };
-    camera.near = 0.025;
+    camera.near = inspection?.startsWith('dev-') ? .002 : 0.025;
     camera.far = 50;
     camera.updateProjectionMatrix();
     const target = fit.center,

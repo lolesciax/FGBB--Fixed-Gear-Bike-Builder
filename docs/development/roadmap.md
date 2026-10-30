@@ -12,6 +12,13 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
 
+## Task · Precision assembly core — verified locally, 30 October 2026
+
+- Corrected shared dropout/hub/insert/hardware contact planes, hollow retention hardware, source-specific steering, coped head/seat/BB/stem/stay junctions and flattened dropout tongues. Both viewers share the same surfaces and canonical state. Fixed a real large-steel-frame clearance failure caused by an underdetermined fixed stack fallback; published anchors remain unchanged and derived anchors are labeled illustrative.
+- Added optional development closeups, anchor/axis/bounds/intersection overlays and classified diagnostics. Fourteen critical pairs use detailed triangle tests after spatial pruning, including coplanar separation; designed mating contacts are explicit exclusions. Production excludes these tools. Updated 39 original frame kits to v5, retaining variant IDs, historical builds and exact guarded rendering-metadata migration.
+- TypeScript, lint and both builds pass. All 120 local unit/API tests pass; one live Redis integration test is skipped locally and configured in CI. Eight isolated browser workflows pass, including all cockpit types, current construction, diagnostics, source-family changes, safe size morphs, interrupted/offline asset recovery and canonical state. The production bundle contains no debug-control/overlay strings. Largest frame kit remains below the existing 300 KB budget.
+- [Audit, source comparisons and phase evidence](precision-assembly.md). Baseline and intermediate structural images were inspected. Final multi-family visual matrix, complete browser/development/PWA runs and post-push CI remain pending. Exact manufacturer surfaces/hardware and missing asset rights remain dependencies; incomplete models stay draft. No deployment, Atlas cleanup or policy change.
+
 ## Task · Preserve the paused camera without resumed momentum — verified locally, 29 October 2026
 
 - Corrected a remaining slow-renderer mode-switch drift by clearing queued OrbitControls motion through its public update API while preserving the current camera and target. No private control fields, new canvas, configuration change or quota operation is involved.

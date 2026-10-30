@@ -14,26 +14,21 @@ export function forkCrownDefinition(g: BicycleGeometry) {
       length = Math.hypot(...delta);
     return points[0].map((v, i) => v + (delta[i] / length) * 0.045) as Position;
   };
-  const b = modern
-      ? control(left)
-      : ([g.crown[0], g.crown[1] + 0.006, -0.012] as Position),
-    c = modern
-      ? control(right)
-      : ([g.crown[0], g.crown[1] + 0.006, 0.012] as Position);
+  const b = control(left),
+    c = control(right);
   const midpoint = a.map(
     (v, i) => (v + d[i]) * 0.125 + (b[i] + c[i]) * 0.375,
   ) as Position;
-  const correction = modern
-    ? g.crown[0] +
-      (g.axis[0] / g.axis[1]) * (midpoint[1] - g.crown[1]) -
-      midpoint[0]
-    : 0;
+  const correction = g.crown.map(
+    (v, i) => v - g.axis[i] * 0.005 - midpoint[i],
+  ) as Position;
   return {
     points: [a, b, c, d] as [Position, Position, Position, Position],
     correction,
     modern,
-    rootDepth: (g.morphology?.fork.rootDepth || 22) / 2000,
-    rootWidth: (g.morphology?.fork.rootWidth || 16) / 2000,
+    axis: g.axis,
+    rootDepth: (g.morphology?.fork.rootDepth || 32) / 2000,
+    rootWidth: (g.morphology?.fork.rootWidth || 18) / 2000,
     neck: g.steering.lowerDiameter / 2 + 0.001,
   };
 }
@@ -48,18 +43,26 @@ export function forkCrownSample(def: ForkCrownDefinition, t: number) {
       3 * c[i] * u * t * t +
       d[i] * t * t * t,
   ) as Position;
-  point[0] += Math.sin(Math.PI * t) ** 2 * def.correction;
+  for (let i = 0; i < 3; i++)
+    point[i] += Math.sin(Math.PI * t) ** 2 * def.correction[i];
   return point;
 }
 export function forkCrownSection(
   def: ForkCrownDefinition,
   t: number,
 ): [number, number] {
-  if (!def.modern) return [0.011, 0.008 - 0.003 * Math.sin(t * Math.PI)];
   const blend = Math.sin(t * Math.PI) ** 2;
   return [
-    def.rootDepth + (def.neck - def.rootDepth) * blend,
-    def.rootWidth + (0.005 - def.rootWidth) * blend,
+    def.rootWidth + (def.neck - def.rootWidth) * blend,
+    def.rootDepth + (0.005 - def.rootDepth) * blend,
+  ];
+}
+export function forkCrownNormal(def: ForkCrownDefinition, t: number): Position {
+  const blend = Math.sin(Math.PI * t) ** 2;
+  return [
+    def.axis[1] * blend,
+    -def.axis[0] * blend,
+    Math.cos(Math.PI * t) * (blend - 1),
   ];
 }
 export function forkCrownSilhouette(g: BicycleGeometry): Position[] {
@@ -73,11 +76,9 @@ export function forkCrownSilhouette(g: BicycleGeometry): Position[] {
       delta = b.map((v, k) => v - a[k]),
       len = Math.hypot(...delta),
       tangent = delta.map((v) => v / len),
-      n = [
-        1 - tangent[0] ** 2,
-        -tangent[0] * tangent[1],
-        -tangent[0] * tangent[2],
-      ],
+      reference = forkCrownNormal(def, t),
+      dot = reference.reduce((sum, v, k) => sum + v * tangent[k], 0),
+      n = reference.map((v, k) => v - dot * tangent[k]),
       nl = Math.hypot(...n),
       normal = n.map((v) => v / nl),
       binormal = [

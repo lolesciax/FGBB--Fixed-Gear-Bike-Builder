@@ -11,6 +11,7 @@ import {
   type InspectionTarget,
   type CameraCommand,
 } from "./inspection";
+import {GeometryTools} from './GeometryTools';
 export function AssemblyInspector({
   configuration,
   catalog,
@@ -32,7 +33,7 @@ export function AssemblyInspector({
       target && variantById(catalog, configuration[inspectionSlot(target)]),
     v = selected && selected.variant,
     info = selected && visualizationInfo(selected.product, selected.variant);
-  const fields: Record<InspectionTarget, string[]> = {
+  const fields: Record<string, string[]> = {
     frameset: [
       "size",
       "material",
@@ -98,6 +99,7 @@ export function AssemblyInspector({
           }
         >
           <option value="">Full bicycle</option>
+          {target?.startsWith('dev-') && <option value={target}>Structural close-up</option>}
           {inspectionTargets.map(([id, label]) => (
             <option key={id} value={id}>
               {label}
@@ -112,7 +114,7 @@ export function AssemblyInspector({
           </h3>
           <p>{v.label}</p>
           <dl>
-            {fields[target].map((key) => (
+            {(fields[target]||fields[inspectionSlot(target)]||[]).map((key) => (
               <div key={key}>
                 <dt>{labels[key]}</dt>
                 <dd>{String(v.specs[key] ?? "Needs verification")}</dd>
@@ -157,6 +159,7 @@ export function AssemblyInspector({
           ))}
         </div>
       </fieldset>
+      {import.meta.env.DEV && <GeometryTools target={target} onTarget={onTarget}/>}
       <button className="button" onClick={onReset}>
         Reset assembly
       </button>

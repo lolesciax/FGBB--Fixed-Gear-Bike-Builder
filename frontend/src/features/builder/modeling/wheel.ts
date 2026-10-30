@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import {
   spokeEndpoints,
+  axleInterface,
   type BicycleGeometry,
   type Position,
 } from "@tracklab/domain";
@@ -156,7 +157,12 @@ export function createWheel(g: BicycleGeometry, rear: boolean) {
   const hubRadius = rear ? 0.028 : 0.022,
     flange = rear ? 0.032 : 0.028,
     spacing = rear ? w.rearSpacing : w.frontSpacing,
-    axleRadius = (rear ? w.rearAxle : w.frontAxle) / 2;
+    axleRadius = (rear ? w.rearAxle : w.frontAxle) / 2,
+    retention = rear ? g.rearRetention : g.frontRetention,
+    frameInterface = rear ? g.rearInterface : g.frontInterface,
+    mount = axleInterface(spacing, frameInterface.outerFace-frameInterface.bodyInner>.0051 ? (frameInterface.bodyInner-frameInterface.innerFace>.001 ? 'both' : 'outer') : 'none'),
+    hardware = material('#a1aab5',.82,.28);
+  hardware.name = 'axle_hardware';
   mesh(
     group,
     "hub_shell",
@@ -210,9 +216,9 @@ export function createWheel(g: BicycleGeometry, rear: boolean) {
     axle(
       group,
       `hub_endcap_${side}`,
-      [0, 0, side * (spacing / 2 - 0.005)],
+      [0, 0, side * (spacing / 2 - 0.003)],
       0.009,
-      0.012,
+      0.006,
       alloy,
     );
     axle(
@@ -224,17 +230,17 @@ export function createWheel(g: BicycleGeometry, rear: boolean) {
       alloy,
       28,
     );
-    axle(
-      group,
-      `axle_nut_${side}`,
-      [0, 0, side * (spacing / 2 + 0.006)],
-      0.008,
-      0.007,
-      alloy,
-      6,
-    );
+    if(retention === 'nutted') {
+      mesh(group,`axle_washer_${side}`,extrude(annulus(.009,axleRadius+.00025),mount.washerThickness,0),hardware,[0,0,side*mount.washerCenter]);
+      const nut = new THREE.Shape(Array.from({length:6},(_,i)=>new THREE.Vector2(Math.cos(i*Math.PI/3)*.0085,Math.sin(i*Math.PI/3)*.0085)));
+      const hole = new THREE.Path();hole.absarc(0,0,axleRadius+.00015,0,Math.PI*2,true);nut.holes.push(hole);
+      mesh(group,`axle_nut_${side}`,extrude(nut,mount.nutThickness,0),hardware,[0,0,side*mount.nutCenter]);
+    } else {
+      mesh(group,`${retention}_head_${side}`,extrude(annulus(.008,retention==='through' ? .0025 : .002),.003,0),hardware,[0,0,side*(mount.outerFace+.0015)]);
+      if(side===1) cylinder(group,`${retention}_lever`,[0,0,mount.outerFace+.004],[.024,.012,mount.outerFace+.004],.0025,hardware);
+    }
   }
-  axle(group, "axle", [0, 0, 0], axleRadius, spacing + 0.025, alloy);
+  axle(group, "axle", [0, 0, 0], retention==='quick-release' ? .0025 : axleRadius, retention==='nutted' ? mount.axleEnd*2 : (mount.outerFace+.003)*2, hardware);
   const spokes = spokeEndpoints(w, rear);
   instancedSegments(
     group,
@@ -273,6 +279,8 @@ export function createWheel(g: BicycleGeometry, rear: boolean) {
     hubDrilling: rear ? w.rearBuild.count : w.frontBuild.count,
     rimDrilling: rear ? w.rearBuild.count : w.frontBuild.count,
     axleSpacing: spacing,
+    retention,
+    hardwareFidelity: 'Illustrative retention geometry; unspecified dimensions are not manufacturer verified.',
   };
   return group;
 }

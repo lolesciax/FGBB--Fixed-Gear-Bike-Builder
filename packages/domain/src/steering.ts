@@ -26,11 +26,11 @@ export function steeringStack(
         22,
         45,
       ) / 1000;
-  const bearings = [...headset.matchAll(/IS([\d.]+)/g)].map(
+  const bearings = [...headset.matchAll(/(?:IS|ZS|EC)([\d.]+)/g)].map(
     (m) => Number(m[1]) / 1000,
   );
   if (bearings.length === 1) {
-    const second = headset.match(/^IS[\d.]+\/([\d.]+)$/);
+    const second = headset.match(/^(?:IS|ZS|EC)[\d.]+\/([\d.]+)$/);
     if (second) bearings.push(Number(second[1]) / 1000);
   }
   const upperRadius = bearings.length
@@ -50,6 +50,10 @@ export function steeringStack(
       : stemBottom + clampHeight / 2,
     stemTop = quill ? stemCenter + 0.016 : stemBottom + clampHeight;
   return {
+    headsetType: /^IS/.test(headset) ? 'integrated' : /^ZS/.test(headset) ? 'zero-stack' : /^EC/.test(headset) ? 'external-cup' : threaded ? 'threaded' : 'unspecified',
+    upperBearingRadius: bearings[0] ? bearings[0]/2 : upper/2+.001,
+    lowerBearingRadius: bearings[1] ? bearings[1]/2 : lower/2+.001,
+    lowerDiameterVerified: typeof frame.lowerSteererDiameter === 'number' || steerer.includes('38.1'),
     upperDiameter: upper,
     lowerDiameter: lower,
     headUpperRadius: upperRadius,
@@ -65,7 +69,7 @@ export function steeringStack(
     quill,
     threaded,
     profile: lower > upper ? "tapered" : "straight",
-    sourceDefined: !!frame.steerer || bearings.length > 0,
+    sourceDefined: !!frame.steerer || bearings.length > 0 || typeof frame.lowerSteererDiameter==='number',
     assumptions:
       "Covers, spacers, tube walls and unspecified stem dimensions are illustrative; verify actual headset/stem interfaces.",
   };

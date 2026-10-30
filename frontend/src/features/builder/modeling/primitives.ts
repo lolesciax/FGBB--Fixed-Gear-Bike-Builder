@@ -89,7 +89,7 @@ export function sweptSection(
   lateral = false,
   options: {
     caps?: boolean | "start" | "end";
-    normal?: THREE.Vector3;
+    normal?: THREE.Vector3 | ((t: number) => THREE.Vector3);
     exponent?: number;
   } = {},
 ) {
@@ -102,12 +102,11 @@ export function sweptSection(
       [ra, rb] = radius(t),
       tangent = path.getTangentAt(t),
       normal = options.normal
-        ? options.normal
-            .clone()
-            .addScaledVector(tangent, -options.normal.dot(tangent))
+        ? (typeof options.normal === 'function' ? options.normal(t) : options.normal).clone()
+            .addScaledVector(tangent, -(typeof options.normal === 'function' ? options.normal(t) : options.normal).dot(tangent))
             .normalize()
         : lateral
-          ? new THREE.Vector3(0, 0, 1)
+          ? new THREE.Vector3(0, 0, 1).addScaledVector(tangent,-tangent.z).normalize()
           : frames.normals[i],
       binormal =
         lateral || options.normal
@@ -165,6 +164,13 @@ export function sweptSection(
   );
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
+  // The duplicated UV seam is one physical surface, so its normals must agree.
+  const normals=geometry.getAttribute('normal');
+  for(let i=0;i<=segments;i++) {
+    const first=i*(radial+1),last=first+radial;
+    const average=new THREE.Vector3().fromBufferAttribute(normals,first).add(new THREE.Vector3().fromBufferAttribute(normals,last)).normalize();
+    normals.setXYZ(first,average.x,average.y,average.z);normals.setXYZ(last,average.x,average.y,average.z);
+  }
   geometry.computeBoundingBox();
   return geometry;
 }

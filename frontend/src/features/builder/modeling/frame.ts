@@ -1,12 +1,12 @@
 import * as THREE from "three";
-import { frameTubeGeometry, seatCollarGeometry } from "./sections";
-import { chainstayPoints } from "@tracklab/domain";
+import { frameTubeGeometry, seatCollarGeometry, stayGeometry } from "./sections";
 import {
   forkBladePoints,
   forkSection,
   forkCrownDefinition,
   forkCrownSample,
   forkCrownSection,
+  forkCrownNormal,
   rearDropoutOutline,
   dropoutOutline,
   type DropoutStyle,
@@ -14,14 +14,13 @@ import {
   type Position,
 } from "@tracklab/domain";
 import {
-  axle,
+  annulus,
   axialProfile,
   cylinder,
   extrude,
   material,
   mesh,
   sweptSection,
-  tube,
   vector,
 } from "./primitives";
 function dropout(style: DropoutStyle, diameter: number) {
@@ -33,7 +32,7 @@ function dropout(style: DropoutStyle, diameter: number) {
     hole.absarc(0, 0, diameter / 2 + 0.0006, 0, Math.PI * 2, true);
     shape.holes.push(hole);
   }
-  return extrude(shape, 0.005, 0.0005);
+  return extrude(shape, 0.004, 0.0005);
 }
 
 export function createFork(g: BicycleGeometry) {
@@ -63,22 +62,15 @@ export function createFork(g: BicycleGeometry) {
     g.lower,
     g.axis,
     [
-      [bore, -0.011],
-      [race - 0.002, -0.008],
-      [race, -0.003],
+      [bore, -g.crownStack],
+      [race - 0.002, -g.crownStack*.75],
+      [race, -Math.min(.003,g.crownStack*.25)],
       [race, 0],
       [bore, 0],
-      [bore, -0.011],
+      [bore, -g.crownStack],
     ],
     metal,
   );
-  const roots = [-1, 1].map((side) => forkBladePoints(g, side)[0]),
-    legacyCrown = new THREE.CubicBezierCurve3(
-      vector(roots[0]),
-      new THREE.Vector3(g.crown[0], g.crown[1] + 0.006, -0.012),
-      new THREE.Vector3(g.crown[0], g.crown[1] + 0.006, 0.012),
-      vector(roots[1]),
-    );
   const def = forkCrownDefinition(g);
   class CrownCurve extends THREE.Curve<THREE.Vector3> {
     constructor(){super();}
@@ -86,7 +78,7 @@ export function createFork(g: BicycleGeometry) {
       return target.fromArray(forkCrownSample(def, t));
     }
   }
-  const crownPath = def.modern ? new CrownCurve() : legacyCrown;
+  const crownPath = new CrownCurve();
   mesh(
     group,
     "fork_crown",
@@ -97,10 +89,10 @@ export function createFork(g: BicycleGeometry) {
       (t) =>
         forkCrownSection(
           def,
-          def.modern ? crownPath.getUtoTmapping(t, 0) : t,
+          crownPath.getUtoTmapping(t, 0),
         ),
       false,
-      def.modern ? { normal: new THREE.Vector3(1, 0, 0) } : {},
+      {normal: t=>vector(forkCrownNormal(def,crownPath.getUtoTmapping(t,0)))},
     ),
     surface.clone(),
   );
@@ -116,7 +108,7 @@ export function createFork(g: BicycleGeometry) {
         path,
         28,
         def.modern ? 16 : 12,
-        (t) => forkSection(g, t),
+        (t) => forkSection(g, path.getUtoTmapping(t,0)),
         true,
         { caps: "end" },
       )),
@@ -126,8 +118,22 @@ export function createFork(g: BicycleGeometry) {
     mesh(group, `fork_dropout_${side}`, dropoutGeometry, metal, [
       g.front[0],
       g.front[1],
-      side * g.forkHalf,
+      side * g.frontInterface.bodyCenter,
     ]);
+  }
+  const crownMesh=group.getObjectByName('fork_crown') as THREE.Mesh,
+    crownPositions=crownMesh.geometry.getAttribute('position'), crownNormals=crownMesh.geometry.getAttribute('normal'),
+    bladePositions=bladeGeometry!.getAttribute('position'),bladeNormals=bladeGeometry!.getAttribute('normal');
+  // Weld the shading across the coincident open root rings, while retaining
+  // named meshes and shared blade buffers for selection and size morphing.
+  for(let j=0;j<= (def.modern?16:12);j++) {
+    const point=new THREE.Vector3().fromBufferAttribute(bladePositions,j);
+    for(let k=24*17;k<25*17;k++)if(new THREE.Vector3().fromBufferAttribute(crownPositions,k).distanceTo(point)<1e-6) {
+      const normal=new THREE.Vector3().fromBufferAttribute(bladeNormals,j).add(new THREE.Vector3().fromBufferAttribute(crownNormals,k)).normalize();
+      bladeNormals.setXYZ(j,normal.x,normal.y,normal.z);crownNormals.setXYZ(k,normal.x,normal.y,normal.z);
+      const mirror=point.clone();mirror.z*=-1;
+      for(let i=0;i<17;i++)if(new THREE.Vector3().fromBufferAttribute(crownPositions,i).distanceTo(mirror)<1e-6)crownNormals.setXYZ(i,normal.x,normal.y,-normal.z);
+    }
   }
   group.userData = {
     fidelity: "illustrative",
@@ -150,20 +156,16 @@ export function createFrame(g: BicycleGeometry, color: string) {
     }),
     metal = material("#6c7583", 0.7, 0.33),
     radius = g.frame.frameWidth / 2000;
-  for (const [name, a, b, r] of [
-    ["top", g.seatJunction, g.topJunction, radius],
-    ["down", g.bb, g.downJunction, radius + 0.004],
-    ["seat", g.bb, g.seat, radius],
-  ] as const)
-    if (g.morphology) {
+  for (const name of ['top','down','seat'] as const)
+    {
       const part = mesh(
         group,
         `paint_${name}`,
         frameTubeGeometry(g, name),
         paint.clone(),
       );
-      part.userData.sectionProfile = g.morphology.tubes[name].kind;
-    } else cylinder(group, `paint_${name}`, a, b, r, paint.clone());
+      part.userData.sectionProfile = g.morphology?.tubes[name].kind || 'circular';
+    }
   const headLength = vector(g.head).distanceTo(vector(g.lower)),
     upper = g.steering.headUpperRadius,
     lower = g.steering.headLowerRadius;
@@ -177,8 +179,10 @@ export function createFrame(g: BicycleGeometry, color: string) {
       [lower, 0.003],
       [upper, headLength - 0.004],
       [upper, headLength],
-      [g.steering.upperDiameter / 2 + 0.001, headLength],
-      [g.steering.lowerDiameter / 2 + 0.001, 0],
+      [g.steering.upperBearingRadius, headLength],
+      [g.steering.upperDiameter / 2 + 0.001, headLength-.006],
+      [g.steering.lowerDiameter / 2 + 0.001, .006],
+      [g.steering.lowerBearingRadius, 0],
       [lower, 0],
     ],
     paint.clone(),
@@ -189,7 +193,7 @@ export function createFrame(g: BicycleGeometry, color: string) {
           new THREE.Shape(
             rearDropoutOutline(g).map((p) => new THREE.Vector2(...p)),
           ),
-          0.005,
+          0.004,
           0.0005,
         )
       : dropout(g.rearDropoutStyle, g.rearDropoutDiameter);
@@ -198,31 +202,24 @@ export function createFrame(g: BicycleGeometry, color: string) {
           new THREE.Shape(
             rearDropoutOutline(g, true).map((p) => new THREE.Vector2(...p)),
           ),
-          0.0012,
+          0.0008,
           0.0002,
         )
       : undefined,
     steel = inserted ? material("#b1bac5", 0.85, 0.3) : undefined;
   for (const side of [-1, 1]) {
-    const rear: Position = [g.rear[0], g.rear[1], side * g.rearHalf],
-      seat: Position = [g.stayJunction[0], g.stayJunction[1], side * 0.012],
-      upperEnd: Position = [rear[0] + 0.012, rear[1] + 0.01, rear[2]];
-    cylinder(
+    const rear: Position = [g.rear[0], g.rear[1], side * g.rearInterface.bodyCenter];
+    mesh(
       group,
       `paint_seatstay_${side}`,
-      seat,
-      upperEnd,
-      0.007,
+      stayGeometry(g,'seatstay',side),
       paint.clone(),
     );
-    tube(
+    mesh(
       group,
       `paint_chainstay_${side}`,
-      chainstayPoints(g, side),
-      0.008,
+      stayGeometry(g,'chainstay',side),
       paint.clone(),
-      24,
-      10,
     );
     mesh(group, `rear_dropout_${side}`, rearGeometry, metal, rear);
     if (g.morphology && g.morphology.rearPlate !== "integrated") {
@@ -232,11 +229,11 @@ export function createFrame(g: BicycleGeometry, color: string) {
         mesh(group, `rear_insert_${side}_${face}`, insertGeometry!, steel!, [
           rear[0],
           rear[1],
-          rear[2] + side * face * 0.0034,
+          side*(face===1 ? g.rearInterface.outerInsertCenter : g.rearInterface.innerInsertCenter),
         ]);
     }
   }
-  axle(group, "paint_bottom_bracket", g.bb, 0.023, 0.068, paint);
+  mesh(group, "paint_bottom_bracket", extrude(annulus(.023,.017),.068,0), paint,g.bb);
   if (g.morphology)
     mesh(group, "seat_collar", seatCollarGeometry(g), metal, g.seat);
   else {

@@ -13,6 +13,10 @@
 .assembly-inspector dl>div {display:flex;justify-content:space-between;gap:12px;}
 .assembly-inspector dt {color:var(--muted);}
 .assembly-inspector dd {margin:0;text-align:right;}
+.geometry-tools {border-top:1px solid var(--line);padding-top:12px;min-width:0;}
+.geometry-tools summary {min-height:44px;padding:12px 0;cursor:pointer;}
+.assembly-inspector .geometry-toggle {display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer;}
+.geometry-tools ul {padding-left:18px;overflow-wrap:anywhere;font-size:12px;}
 .transition-feedback {display:flex;align-items:center;gap:10px;}
 .transition-feedback button {min-height:36px;flex-shrink:0;}
 .compact-workshop .viewer-top .segmented button,.compact-workshop .inspection-trigger,.compact-workshop .viewer-top>.icon-button {min-height:44px;min-width:44px;}

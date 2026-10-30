@@ -1,5 +1,5 @@
 import React, { useId } from "react";
-import { componentGeometry, forkBladePoints } from "../components";
+import { componentGeometry, forkBladePoints, type BicycleGeometry } from "../components";
 import {
   tubeSilhouette,
   sectionDimensions,
@@ -7,7 +7,6 @@ import {
   forkSection,
   rearDropoutOutline,
   renderMorphologyId,
-  type TubeRegion,
 } from "../morphology";
 import {
   finishAnchors,
@@ -18,21 +17,25 @@ import {
 } from "../colorways";
 import type { Product, Variant } from "../index";
 import { dropoutOutline, type DropoutStyle } from "../steering";
-import { chainstayPoints, catmullRomSegments } from "../paths";
+import { staySilhouette } from "../paths";
 import { forkCrownSilhouette } from "../forks";
 export function FrameFinish2D({
   product,
   variant,
   metal = "#697482",
   rasterData = {},
+  geometry,
+  layer = 'near',
 }: {
   product: Product;
   variant: Variant;
   metal?: string;
   rasterData?: Record<string, string>;
+  geometry?: BicycleGeometry;
+  layer?: 'far'|'near';
 }) {
   const uid = useId().replace(/:/g, ""),
-    g = componentGeometry({
+    g = geometry || componentGeometry({
       frameset: {
         ...variant.specs,
         ...(renderMorphologyId(product, variant)
@@ -96,57 +99,26 @@ export function FrameFinish2D({
       }),
     );
   const forkShape = polygon([...bladeEdges[0], ...bladeEdges[1].reverse()]);
-  const crownShape =
-    g.morphology?.fork.kind === "carbon-blade"
-      ? polygon(forkCrownSilhouette(g))
-      : polygon(
-          [
-            [-0.011, -0.014],
-            [0.011, -0.014],
-            [0.011, 0.005],
-            [0.007, 0.01],
-            [-0.007, 0.01],
-            [-0.011, 0.005],
-          ].map(([x, y]) => [g.crown[0] + x, g.crown[1] + y, 0]),
-        );
-  const rearTop = [g.rear[0] + 0.012, g.rear[1] + 0.01, 0];
-  const stayPath = catmullRomSegments(chainstayPoints(g, 1))
-    .map(
-      ([a, b, c, d], i) =>
-        `${i ? "" : `M${p(a).x} ${p(a).y}`}C${p(b).x} ${p(b).y} ${p(c).x} ${p(c).y} ${p(d).x} ${p(d).y}`,
-    )
-    .join(" ");
+  const crownShape = polygon(forkCrownSilhouette(g));
   const paths: {
     zone: PaintZone;
     d: string;
     width: number;
     filled?: boolean;
   }[] = [
-    { zone: "seatstay", d: segment(rearTop, g.stayJunction), width: 14 },
-    { zone: "chainstay", d: stayPath, width: 16 },
+    { zone: "seatstay", d: polygon(staySilhouette(g,'seatstay')), width: 0, filled:true },
+    { zone: "chainstay", d: polygon(staySilhouette(g,'chainstay')), width: 0, filled:true },
     {
       zone: "top",
-      d: g.morphology
-        ? polygon(tubeSilhouette(g, "top"))
-        : segment(g.seatJunction, g.topJunction),
-      width: g.morphology ? 0 : g.frame.frameWidth,
-      filled: !!g.morphology,
+      d: polygon(tubeSilhouette(g, "top")), width: 0, filled: true,
     },
     {
       zone: "seat",
-      d: g.morphology
-        ? polygon(tubeSilhouette(g, "seat"))
-        : segment(g.bb, g.seat),
-      width: g.morphology ? 0 : g.frame.frameWidth,
-      filled: !!g.morphology,
+      d: polygon(tubeSilhouette(g, "seat")), width: 0, filled: true,
     },
     {
       zone: "down",
-      d: g.morphology
-        ? polygon(tubeSilhouette(g, "down"))
-        : segment(g.bb, g.downJunction),
-      width: g.morphology ? 0 : g.frame.frameWidth + 8,
-      filled: !!g.morphology,
+      d: polygon(tubeSilhouette(g, "down")), width: 0, filled: true,
     },
     {
       zone: "head",
@@ -167,6 +139,9 @@ export function FrameFinish2D({
     !c && (zone === "fork" || zone === "crown")
       ? metal
       : `url(#${uid}-${zone})`;
+  if(layer==='far')return <g data-layer="far-frame-fork" aria-hidden="true" pointerEvents="none">
+    {paths.filter(p=>['seatstay','chainstay','fork','crown'].includes(p.zone)).map(({zone,d,width,filled})=><path key={zone} d={d} fill={filled ? stopsFor(c,zone,variant.color)[0].color : 'none'} stroke={filled ? '#242b35' : stopsFor(c,zone,variant.color)[0].color} strokeWidth={filled ? 1 : width} strokeLinecap="round"/>)}
+  </g>;
   return (
     <g
       data-colorway-id={c?.id || "legacy"}
@@ -242,6 +217,7 @@ export function FrameFinish2D({
         fill="none"
         stroke={metal}
         strokeWidth={28}
+        strokeLinecap="butt"
       />
       <g
         data-layer="base-geometry"
@@ -264,36 +240,20 @@ export function FrameFinish2D({
         strokeLinejoin="round"
       >
         {paths.map(({ zone, d, width, filled }) => (
-          <path
+          <React.Fragment key={zone}><path
             key={zone}
             data-paint-zone={zone}
             d={d}
             fill={filled ? paint(zone) : "none"}
             stroke={filled ? "none" : paint(zone)}
             strokeWidth={width}
-          />
+          />{g.morphology && ['top','down','seat'].includes(zone) && <path data-layer="surface-shading" d={d} fill={`url(#${uid}-surface-${zone})`}/>}</React.Fragment>
         ))}
       </g>
-      {g.morphology && (
-        <g data-layer="surface-shading">
-          {paths
-            .filter((p) => ["top", "down", "seat"].includes(p.zone))
-            .map((path) => (
-              <path
-                key={path.zone}
-                d={path.d}
-                fill={`url(#${uid}-surface-${path.zone as TubeRegion})`}
-              />
-            ))}
-        </g>
-      )}
       <path
-        d={segment(
-          g.lower,
-          g.lower.map((v, i) => v - g.axis[i] * 0.009),
-        )}
-        stroke={metal}
-        strokeWidth={g.steering.headLowerRadius * 2000 + 2}
+        data-lower-headset
+        d={polygon([side(g.lower,g.steering.headLowerRadius+.001),side(g.crown,g.steering.headLowerRadius-.001),side(g.crown,-g.steering.headLowerRadius+.001),side(g.lower,-g.steering.headLowerRadius-.001)])}
+        fill={metal}
       />
       {g.morphology &&
         (() => {

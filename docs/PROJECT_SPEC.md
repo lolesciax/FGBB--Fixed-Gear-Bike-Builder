@@ -62,6 +62,8 @@ The [modeling refinement brief](requirements/modeling-refinement.md) prioritizes
 
 ## Verification and milestone acceptance
 
+The [precision assembly continuation](requirements/precision-assembly.md) requires common technical anchors, source-aware steering/fork/dropout construction, coherent hardware contact stacks, coped junctions, shared SVG silhouettes and detailed critical-pair mesh validation. Development inspection tools remain optional and absent from production. Preserve existing variants, finishes, transitions and backend policy. [Phase evidence and source limitations](development/precision-assembly.md) distinguish implemented corrections from unverified proprietary detail; the modular purchasing overhaul and deployment remain on hold.
+
 The [advanced geometry continuation](requirements/advanced-geometry.md) adds source-associated tube/seatpost/fork/dropout morphology and three registered demo spoke options (20F/24R, 32F/32R, 36F/36R) within each retained rim design. Keep precise proprietary shapes unclaimed, model generations distinct and incomplete manufacturer records draft. [Audit and acceptance](development/advanced-geometry.md) extend the current work; the complete individual-component purchasing overhaul remains postponed.
 
 Each phase must have an explicit status: completed and verified; implemented but not fully verified; partially implemented; not started; or blocked. File existence alone is not completion evidence.

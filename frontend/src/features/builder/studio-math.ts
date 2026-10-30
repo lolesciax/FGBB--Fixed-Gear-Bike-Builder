@@ -44,6 +44,7 @@ export function fitAssembly(
   view: CameraView,
   aspect: number,
   fov: number,
+  minimumDistance = .6,
 ) {
   root.updateWorldMatrix(true, true);
   const box = new THREE.Box3().setFromObject(root),
@@ -109,7 +110,7 @@ export function fitAssembly(
               ),
           );
         }
-  const minDistance = Math.max(0.6, sphere.radius * 1.15 + 0.08);
+  const minDistance = Math.max(minimumDistance, sphere.radius * 1.15 + (minimumDistance>=.6 ? .08 : minimumDistance*.13));
   return {
     center,
     direction,

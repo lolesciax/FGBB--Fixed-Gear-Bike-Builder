@@ -270,7 +270,7 @@ export function Bike2D({
       data-frame-variant={configuration.frameset}
       data-cockpit-variant={configuration.cockpit}
       data-cockpit-shape={m.cockpit.type}
-      data-geometry-revision="components-v4"
+      data-geometry-revision="components-v5"
       data-frame-morphology={m.morphology?.id||'illustrative-round'}
       data-steering-profile={stack.profile}
       data-stem-style={stack.quill ? "quill" : "ahead"}
@@ -337,6 +337,7 @@ export function Bike2D({
           <path d={armPath(d.crankAngle+Math.PI)} fill={finish('crankArms')} stroke="#343d48" strokeWidth="1"/>
           <rect x={project(d.pedals[1]).x-45} y={project(d.pedals[1]).y-6} width="90" height="12" rx="4" fill="#404a58"/>
         </g>
+        <FrameFinish2D product={frameRecord.product} variant={frameRecord.variant} geometry={m} metal={metal} layer="far"/>
         <g {...interactive("wheels")} data-finish-zone="wheelset">
           {[rear, front].map((axle, i) => (
             <g key={i} data-wheel={i===0?'rear':'front'} data-spoke-count={i===0?m.wheel.rearBuild.count:m.wheel.frontBuild.count} data-lacing={i===0?m.wheel.rearBuild.lacing:m.wheel.frontBuild.lacing} transform={"translate(" + axle.x + " 0)"}>
@@ -389,12 +390,6 @@ export function Bike2D({
                 stroke={wheelFinish('hub')}
                 strokeWidth="3"
               />
-              <circle
-                r="6"
-                fill={componentPaints.wheelset ? wheelFinish('hub') : "#c0c7d1"}
-                stroke="#353e4b"
-                strokeWidth="2"
-              />
               <path
                 d={`M0 ${-m.wheel.rimInner * 1000 + 3}v16`}
                 stroke={wheelFinish('hub')}
@@ -435,6 +430,7 @@ export function Bike2D({
             variant={frameRecord.variant}
             metal={metal}
             rasterData={rasterData}
+            geometry={m}
           />
         </g>
         <g {...interactive("saddle")} data-seating-profile="shared-contour">
@@ -612,17 +608,19 @@ export function Bike2D({
           <circle cx={bb.x} cy={bb.y} r="8" fill="#a9b3c0" />
         </g>
         <g data-layer="outer-axle-hardware">
-          {[rear, front].map((p, i) => (
-            <circle
-              key={i}
-              cx={p.x}
-              cy={p.y}
-              r="7.5"
-              fill={wheelFinish('hub')}
-              stroke="#323b47"
-              strokeWidth="1"
-            />
-          ))}
+          {[rear, front].map((p, i) => {
+            const retention=i===0 ? m.rearRetention : m.frontRetention, radius=(i===0 ? m.wheel.rearAxle : m.wheel.frontAxle)*500;
+            return <g key={i} transform={`translate(${p.x} ${p.y})`} data-axle-retention={retention}>
+              {retention==='nutted' ? <>
+                <circle data-axle-washer r="9" fill="#a1aab5" stroke="#454e59" strokeWidth=".6"/>
+                <path data-axle-nut d={line(Array.from({length:6},(_,j)=>({x:Math.cos(j*Math.PI/3)*8.5,y:Math.sin(j*Math.PI/3)*8.5})),true)} fill="#b6bec8" stroke="#586270" strokeWidth=".6"/>
+                <circle r={radius} fill="#737e8d" stroke="#454e59" strokeWidth=".5"/>
+              </> : <>
+                <circle r="8" fill="#a1aab5" stroke="#454e59" strokeWidth=".6"/>
+                <path data-axle-lever d="M0 0L24 -12" stroke="#a1aab5" strokeWidth="5"/>
+              </>}
+            </g>;
+          })}
         </g>
       </g>
     </svg>

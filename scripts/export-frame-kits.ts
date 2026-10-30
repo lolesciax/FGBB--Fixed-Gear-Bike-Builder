@@ -8,6 +8,7 @@ import {
   renderFrameSpecs,
   frameMorphology,
   frameAssetSchema,
+  assemblyAnchors,
 } from "@tracklab/domain";
 import { createFrame } from "../frontend/src/features/builder/modeling/frame";
 import { disposeModel } from "../frontend/src/features/builder/modeling/primitives";
@@ -87,6 +88,7 @@ for (const product of manufacturerCatalog.filter(
           variantId: variant.id,
           source: product.source,
           geometry: variant.specs,
+          assembly: assemblyAnchors(componentGeometry({frameset:renderFrameSpecs(variant.specs,product.visual?.morphologyId)})),
           ...(product.visual?.morphologyId?{morphology:{id:product.visual.morphologyId,source:frameMorphology(product.visual.morphologyId)?.source,dimensions:'Authored illustrative sections; no proprietary section measurements claimed.'}}:{}),
           anchors: Object.fromEntries(
             group.children
@@ -112,7 +114,7 @@ for (const product of manufacturerCatalog.filter(
         rotation: [0, 0, 0],
         origin: "bottom-bracket",
         units: "metres",
-        revision: "frame-kit-v4",
+        revision: "frame-kit-v5",
         ...(product.visual?.morphologyId?{morphologyId:product.visual.morphologyId}:{}),
       }),
     );

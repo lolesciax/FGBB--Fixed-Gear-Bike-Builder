@@ -16,6 +16,74 @@ import {
   vector,
 } from "./primitives";
 
+function stemBody(g: BicycleGeometry, length: number, bore: number) {
+  const direction = new THREE.Vector3(
+      Math.cos(g.cockpit.stemAngle),
+      Math.sin(g.cockpit.stemAngle),
+      0,
+    ),
+    normal = new THREE.Vector3(-direction.y, direction.x, 0),
+    axis = vector(g.axis),
+    perpendicular = direction
+      .clone()
+      .addScaledVector(axis, -direction.dot(axis)),
+    points: number[] = [],
+    indices: number[] = [];
+  // Each longitudinal edge terminates on the outer clamp surface. The body
+  // cannot plug either bore; 0.15mm is the hidden welded/forged join allowance.
+  const corners = [
+    [-1, -1],
+    [-1, 1],
+    [1, 1],
+    [1, -1],
+  ];
+  const perimeter = corners.flatMap((a, i) =>
+    Array.from({ length: 8 }, (_, j) => [
+      a[0] + ((corners[(i + 1) % 4][0] - a[0]) * j) / 8,
+      a[1] + ((corners[(i + 1) % 4][1] - a[1]) * j) / 8,
+    ]),
+  );
+  for (const end of [0, 1])
+    for (const [y, z] of perimeter) {
+      const radius = g.steering.quill
+        ? (g.steering.upperDiameter - 0.0032) / 2
+        : bore + 0.0045;
+      const height = y * (end ? 0.017 : 0.014),
+        lateral = z * (end ? 0.016 : Math.min(0.016, radius * 0.7));
+      const offset = normal
+        .clone()
+        .multiplyScalar(height)
+        .add(new THREE.Vector3(0, 0, lateral));
+      const radial = offset.clone().addScaledVector(axis, -offset.dot(axis));
+      const A = perpendicular.lengthSq(),
+        B = 2 * perpendicular.dot(radial),
+        C = radial.lengthSq() - radius ** 2;
+      const x = end
+        ? length -
+          Math.sqrt((g.cockpit.clamp / 2 + 0.006) ** 2 - height ** 2) +
+          0.00015
+        : (-B + Math.sqrt(Math.max(0, B * B - 4 * A * C))) / (2 * A) - 0.00015;
+      points.push(x, height, lateral);
+    }
+  // Open coped ends join the clamps. A planar end fan would cut across the
+  // curved interface and could fill the steerer bore despite correct corners.
+  for (let j = 0; j < perimeter.length; j++) {
+    const a = j,
+      b = (j + 1) % perimeter.length,
+      c = a + perimeter.length,
+      d = b + perimeter.length;
+    indices.push(a, c, b, b, c, d);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(points, 3),
+  );
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
 export function createCockpit(
   g: BicycleGeometry,
   specs: Record<string, string | number | boolean>,
@@ -63,7 +131,7 @@ export function createCockpit(
       group,
       "quill_stem_shaft",
       at(s.coverHeight),
-      at(s.stemCenter + 0.012),
+      at(s.stemCenter + 0.016),
       (s.upperDiameter - 0.0032) / 2,
       metal,
     );
@@ -136,19 +204,13 @@ export function createCockpit(
     }
   }
   const stemLength = Math.hypot(
-      g.barClamp[0] - g.stemBase[0],
-      g.barClamp[1] - g.stemBase[1],
-    ),
-    body = new THREE.Shape();
-  body.moveTo(0, -0.014);
-  body.lineTo(stemLength, -0.017);
-  body.lineTo(stemLength, 0.017);
-  body.lineTo(0, 0.014);
-  body.closePath();
+    g.barClamp[0] - g.stemBase[0],
+    g.barClamp[1] - g.stemBase[1],
+  );
   const extension = mesh(
     group,
     "stem_extension",
-    extrude(body, 0.032, 0.002),
+    stemBody(g, stemLength, bore),
     metal,
     g.stemBase,
   );
@@ -180,17 +242,25 @@ export function createCockpit(
     "stem_faceplate",
     new THREE.BoxGeometry(0.007, 0.034, 0.036),
     metal,
-    [g.barClamp[0]+Math.cos(d.stemAngle)*.019,g.barClamp[1]+Math.sin(d.stemAngle)*.019,0],
+    [
+      g.barClamp[0] + Math.cos(d.stemAngle) * 0.019,
+      g.barClamp[1] + Math.sin(d.stemAngle) * 0.019,
+      0,
+    ],
   );
   plate.rotation.z = d.stemAngle;
-  const clampPoint=(x:number,y:number,z:number):Position=>[g.barClamp[0]+x*Math.cos(d.stemAngle)-y*Math.sin(d.stemAngle),g.barClamp[1]+x*Math.sin(d.stemAngle)+y*Math.cos(d.stemAngle),z];
+  const clampPoint = (x: number, y: number, z: number): Position => [
+    g.barClamp[0] + x * Math.cos(d.stemAngle) - y * Math.sin(d.stemAngle),
+    g.barClamp[1] + x * Math.sin(d.stemAngle) + y * Math.cos(d.stemAngle),
+    z,
+  ];
   for (const y of [-0.011, 0.011])
     for (const z of [-0.012, 0.012])
       cylinder(
         group,
         `stem_bolt_${y}_${z}`,
-        clampPoint(.02,y,z),
-        clampPoint(.026,y,z),
+        clampPoint(0.02, y, z),
+        clampPoint(0.026, y, z),
         0.0028,
         hardware,
         0.0028,

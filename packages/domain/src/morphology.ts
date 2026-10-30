@@ -42,6 +42,7 @@ export type FrameMorphology = {
     tipDepth: number;
   };
   rearPlate: "integrated" | "replaceable" | "double-sided-inserts";
+  steeringReference?: { upperSteererDiameter:number; lowerSteererDiameter:number; source:string };
 };
 export const morphologyBindings: Record<string, MorphologyId> = {
   "cinelli-vigorelli": "cinelli-vigorelli-alu-v1",
@@ -90,6 +91,7 @@ export const frameMorphologies: Record<MorphologyId, FrameMorphology> = {
     },
     fork: { ...carbon, rootDepth: 42 },
     rearPlate: "integrated",
+    steeringReference: {upperSteererDiameter:28.6,lowerSteererDiameter:38.1,source:'https://usa.cinelli-milano.com/products/vigorelli-track-alu-frame'},
   },
   "skream-magnum-v1": {
     id: "skream-magnum-v1",
@@ -278,7 +280,7 @@ export function tubeEnds(
       ? [g.bb, g.downJunction]
       : [g.bb, g.seat];
 }
-export function tubeSurfacePoint(
+export function rawTubeSurfacePoint(
   g: BicycleGeometry,
   region: TubeRegion,
   at: number,
@@ -290,10 +292,14 @@ export function tubeSurfacePoint(
     length = Math.hypot(dx, dy),
     d = sectionDimensions(tubeSection(g, region), at),
     [side, depth] = sectionContour(tubeSection(g, region), angle);
+  // An authored junction transition fits the mating seat tube. Mid-tube
+  // sections and the published centreline anchors are unchanged.
+  const seatWidth = sectionDimensions(tubeSection(g,'seat'),.96).width*.95;
+  const width = region==='top' ? d.width+(Math.min(d.width,seatWidth)-d.width)*Math.max(0,1-at*length/.03)**2 : d.width;
   const p: Position = [
     a[0] + dx * at + ((dy / length) * depth * d.depth) / 1000,
     a[1] + dy * at - ((dx / length) * depth * d.depth) / 1000,
-    (side * d.width) / 1000,
+    (side * width) / 1000,
   ];
   if (region === "seat" && g.morphology?.seatRelief) {
     const radius = g.nominalBsd / 2 + g.nominalClearance + 0.003,
@@ -302,6 +308,51 @@ export function tubeSurfacePoint(
       p[0] = Math.max(p[0], g.rear[0] + Math.sqrt(radius * radius - y * y));
   }
   return p;
+}
+export function headOuterRadius(g: BicycleGeometry, height: number) {
+  const length = Math.hypot(g.head[0]-g.lower[0],g.head[1]-g.lower[1]);
+  const t = Math.max(0,Math.min(1,(height-.003)/(length-.007)));
+  return g.steering.headLowerRadius*(1-t)+g.steering.headUpperRadius*t;
+}
+/** Signed outer-envelope distances used to cope only welded mating surfaces. */
+export function jointDistance(g: BicycleGeometry, receiver: 'head'|'seat'|'bb', p: Position) {
+  if(receiver==='bb')return Math.max(Math.hypot(p[0]-g.bb[0],p[1]-g.bb[1])-.023,Math.abs(p[2])-.034);
+  const a = receiver==='head' ? g.lower : g.bb, axis = receiver==='head' ? g.axis : g.seatAxis;
+  const delta = p.map((v,i)=>v-a[i]), height = delta.reduce((sum,v,i)=>sum+v*axis[i],0);
+  const depth = delta[0]*axis[1]-delta[1]*axis[0];
+  if(receiver==='head')return Math.hypot(depth,p[2])-headOuterRadius(g,height);
+  const size = sectionDimensions(tubeSection(g,'seat'),Math.max(0,Math.min(1,height/Math.hypot(g.seat[0]-g.bb[0],g.seat[1]-g.bb[1]))));
+  // Exact polygonal section contour, including the asymmetric aero section.
+  const profile = tubeSection(g,'seat'), x = p[2]*1000/size.width, y = depth*1000/size.depth;
+  let inside=false, nearest=Infinity;
+  for(let i=0;i<48;i++) {
+    const a=sectionContour(profile,i*Math.PI/24), b=sectionContour(profile,(i+1)*Math.PI/24);
+    if((a[1]>y)!==(b[1]>y) && x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])inside=!inside;
+    const dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((x-a[0])*dx+(y-a[1])*dy)/(dx*dx+dy*dy)));
+    nearest=Math.min(nearest,Math.hypot(x-a[0]-t*dx,y-a[1]-t*dy)*Math.min(size.width,size.depth)/1000);
+  }
+  return inside ? -nearest : nearest;
+}
+const copeCache = new WeakMap<BicycleGeometry,Map<string,[number,number]>>();
+export function tubeJointRange(g: BicycleGeometry, region: TubeRegion, angle: number): [number,number] {
+  let cache=copeCache.get(g);if(!cache){cache=new Map();copeCache.set(g,cache);}
+  const key=`${region}/${angle.toFixed(8)}`,found=cache.get(key);if(found)return found;
+  const receiverStart=region==='top'?'seat':'bb', receiverEnd=region==='seat'?undefined:'head';
+  const boundary=(end:boolean,receiver:'head'|'seat'|'bb')=>{
+    let inside=end?1:0,outside=.5;
+    if(jointDistance(g,receiver,rawTubeSurfacePoint(g,region,inside,angle))>0)return inside;
+    for(let i=0;i<28;i++) {
+      const t=(inside+outside)/2;
+      if(jointDistance(g,receiver,rawTubeSurfacePoint(g,region,t,angle))<-.00015)inside=t;else outside=t;
+    }
+    return inside;
+  };
+  const result:[number,number]=[boundary(false,receiverStart),receiverEnd?boundary(true,receiverEnd):1];
+  cache.set(key,result);return result;
+}
+export function tubeSurfacePoint(g: BicycleGeometry, region: TubeRegion, at: number, angle: number): Position {
+  const [a,b]=tubeJointRange(g,region,angle);
+  return rawTubeSurfacePoint(g,region,a+(b-a)*at,angle);
 }
 export function tubeSilhouette(
   g: BicycleGeometry,
@@ -345,12 +396,14 @@ export function postSilhouette(g: BicycleGeometry): Position[] {
 }
 export function forkSection(g: BicycleGeometry, t: number): [number, number] {
   const f = g.morphology?.fork;
-  return f
+  const section: [number,number] = f
     ? [
         (f.rootWidth * (1 - t) + f.tipWidth * t) / 2000,
         (f.rootDepth * (1 - t) + f.tipDepth * t) / 2000,
       ]
     : [0.009 * (1 - t) + 0.0045 * t, 0.016 * (1 - t) + 0.007 * t];
+  const blend=Math.max(0,Math.min(1,(t-.92)/.08)),smooth=blend*blend*(3-2*blend);
+  return [section[0]+(.0024-section[0])*smooth,section[1]+(Math.min(section[1],.005)-section[1])*smooth];
 }
 export function rearDropoutOutline(
   g: BicycleGeometry,

@@ -5,6 +5,7 @@ import {
   sectionContour,
   sectionDimensions,
   tubeSection,
+  staySurfacePoint,type StayRegion,
   type BicycleGeometry,
   type TubeRegion,
   type Position,
@@ -15,7 +16,7 @@ function skin(
   point: (at: number, angle: number) => Position,
   segments = 12,
   radial = 24,
-  closeEnd = true,
+  closeEnd: boolean | 'none' = true,
 ) {
   const positions: number[] = [],
     indices: number[] = [];
@@ -30,7 +31,7 @@ function skin(
         d = b + radial;
       indices.push(a, c, b, b, c, d);
     }
-  for (const end of closeEnd ? [0, segments] : [0]) {
+  for (const end of closeEnd==='none' ? [] : closeEnd ? [0, segments] : [0]) {
     const base = positions.length / 3,
       ring = Array.from({ length: radial }, (_, j) =>
         point(end / segments, (j * Math.PI * 2) / radial),
@@ -57,7 +58,8 @@ function skin(
   return geometry;
 }
 export const frameTubeGeometry = (g: BicycleGeometry, region: TubeRegion) =>
-  skin((t, a) => tubeSurfacePoint(g, region, t, a), 16, 24, region !== "seat");
+  skin((t, a) => tubeSurfacePoint(g, region, t, a), 16, 24, 'none');
+export const stayGeometry=(g:BicycleGeometry,region:StayRegion,side:number)=>skin((t,a)=>staySurfacePoint(g,region,side,t,a),region==='seatstay'?16:24,region==='seatstay'?8:10,'none');
 export function seatpostGeometry(g: BicycleGeometry) {
   const profile = postSection(g),
     a = g.seat.map((v, i) => v - g.seatAxis[i] * 0.025) as Position,

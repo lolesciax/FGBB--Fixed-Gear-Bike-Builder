@@ -8,19 +8,37 @@ export const inspectionTargets = [
   ["cockpit", "Cockpit"],
   ["saddle", "Saddle / seatpost"],
 ] as const;
-export type InspectionTarget = (typeof inspectionTargets)[number][0];
+export const developmentTargets = [
+  ['dev-head','Head tube / junctions'],['dev-headset','Headset / stem'],
+  ['dev-crown','Fork crown'],['dev-front-dropout','Front dropout'],
+  ['dev-rear-dropout','Rear track end'],['dev-front-hardware','Front axle hardware'],
+  ['dev-rear-hardware','Rear axle hardware'],['dev-stays','Stay junctions'],
+  ['dev-bb','Bottom bracket'],
+] as const;
+export type InspectionTarget = (typeof inspectionTargets)[number][0] | (typeof developmentTargets)[number][0];
 export type CameraCommand = {
   id: number;
   action:
     "zoom-in" | "zoom-out" | "pan-left" | "pan-right" | "pan-up" | "pan-down";
 };
 export function inspectionSlot(target: InspectionTarget): Slot {
-  return target === "fork" ? "frameset" : target;
+  if(target.startsWith('dev-'))return target.includes('hardware') ? 'wheels' : target==='dev-headset' ? 'cockpit' : 'frameset';
+  return target === "fork" ? "frameset" : target as Slot;
 }
 export function inspectionObject(
   root: THREE.Object3D,
   target?: InspectionTarget,
 ) {
+  const meshNames: Record<string,string> = {
+    'dev-head':'paint_head','dev-headset':'stem_steerer_clamp','dev-crown':'fork_crown',
+    'dev-front-dropout':'fork_dropout_1','dev-rear-dropout':'rear_dropout_1',
+    'dev-front-hardware':'axle_nut_1','dev-rear-hardware':'axle_nut_1',
+    'dev-stays':'paint_seatstay_1','dev-bb':'paint_bottom_bracket',
+  };
+  if(target && meshNames[target]) {
+    const scope=target==='dev-front-hardware'?root.getObjectByName('front_wheel'):target==='dev-rear-hardware'?root.getObjectByName('rear_wheel'):root;
+    return scope?.getObjectByName(meshNames[target]) || scope?.getObjectByName('through_head_1') || scope?.getObjectByName('quick-release_head_1') || root;
+  }
   return target
     ? root.getObjectByName(
         target === "fork" ? "fork_assembly" : `assembly_${target}`,

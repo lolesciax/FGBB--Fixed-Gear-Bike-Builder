@@ -3,6 +3,7 @@ import {steeringStack,type DropoutStyle} from './steering';
 import {wheelBuild} from './wheels';
 import {railInterface} from './seating';
 import {frameMorphology} from './morphology';
+import {axleInterface, axleRetention} from './interfaces';
 
 export type ComponentSpecs = Record<string, string | number | boolean>;
 export type Position = [number, number, number];
@@ -319,7 +320,7 @@ export function componentGeometry(
     cockpit = cockpitDimensions(c),
     wheel = wheelDimensions(parts.wheels, parts.tires),
     morphology=frameMorphology(f.morphologyId),
-    steering=steeringStack({...f,...(morphology?.fork.kind==='carbon-blade'?{upperSteererDiameter:28.6,lowerSteererDiameter:38.1}:{})},c,frame.frameWidth),
+    steering=steeringStack({...morphology?.steeringReference,...f},c,frame.frameWidth),
     stemBase = add(head, scale(axis, steering.stemCenter)),
     barClamp = add(stemBase, [
       Math.cos(cockpit.stemAngle) * cockpit.stemLength,
@@ -385,6 +386,11 @@ export function componentGeometry(
     downJunction:add(lower,scale(axis,Math.min((frame.frameWidth+8)*.0004,distance(head,lower)*.2))),
     crown,
     forkHalf,
+    crownStack,
+    frontInterface: axleInterface(forkHalf*2),
+    rearInterface: axleInterface(numberSpec(f,'rearSpacing',120)/1000, morphology?.rearPlate === 'double-sided-inserts' ? 'both' : morphology?.rearPlate === 'replaceable' ? 'outer' : 'none'),
+    frontRetention: axleRetention(parts.wheels || {},false,f.frontDropoutType==='through'||numberSpec(f,'frontAxleDiameter',10)>=12),
+    rearRetention: axleRetention(parts.wheels || {},true,f.rearDropoutType==='through'),
     rearHalf: numberSpec(f, "rearSpacing", 120) / 2000,
     frontDropoutDiameter: numberSpec(f, "frontAxleDiameter", 10) / 1000,
     rearDropoutDiameter: numberSpec(f, "rearAxleDiameter", 10) / 1000,
@@ -421,8 +427,9 @@ export function componentGeometry(
 export type BicycleGeometry = ReturnType<typeof componentGeometry>;
 
 export function forkBladePoints(g: BicycleGeometry, side: number): Position[] {
-  const start: Position = [g.crown[0], g.crown[1] - (g.morphology?.fork?.kind==='carbon-blade'?.025:.007), side * (g.morphology?.fork.rootHalf||35)/1000];
-  const end: Position = [g.front[0], g.front[1] + 0.014, side * g.forkHalf];
+  const rootDrop = g.morphology?.fork.kind==='carbon-blade' ? .025 : .007;
+  const start: Position = [g.crown[0]-g.axis[0]*rootDrop, g.crown[1]-g.axis[1]*rootDrop, side * (g.morphology?.fork.rootHalf||35)/1000];
+  const end: Position = [g.front[0], g.front[1] + 0.014, side * g.frontInterface.bodyCenter];
   const blend = (t: number): Position =>
     start.map((v, i) => v + (end[i] - v) * t) as Position;
   const a = blend(0.32),
