@@ -13,7 +13,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5",
+    "revision": "frame-kit-v6",
     "morphologyId": "cinelli-vigorelli-alu-v1"
   },
   {
@@ -30,7 +30,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5",
+    "revision": "frame-kit-v6",
     "morphologyId": "cinelli-vigorelli-alu-v1"
   },
   {
@@ -47,7 +47,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5",
+    "revision": "frame-kit-v6",
     "morphologyId": "cinelli-vigorelli-alu-v1"
   },
   {
@@ -64,7 +64,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5",
+    "revision": "frame-kit-v6",
     "morphologyId": "cinelli-vigorelli-alu-v1"
   },
   {
@@ -81,7 +81,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5",
+    "revision": "frame-kit-v6",
     "morphologyId": "cinelli-vigorelli-alu-v1"
   },
   {
@@ -98,7 +98,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5"
+    "revision": "frame-kit-v6"
   },
   {
     "variantId": "dosnoventa-02-la-m",
@@ -114,7 +114,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5"
+    "revision": "frame-kit-v6"
   },
   {
     "variantId": "dosnoventa-02-la-l",
@@ -130,7 +130,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5"
+    "revision": "frame-kit-v6"
   },
   {
     "variantId": "dosnoventa-03-det-s",
@@ -146,7 +146,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5"
+    "revision": "frame-kit-v6"
   },
   {
     "variantId": "dosnoventa-03-det-m",
@@ -162,7 +162,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5"
+    "revision": "frame-kit-v6"
   },
   {
     "variantId": "dosnoventa-03-det-l",
@@ -178,7 +178,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5"
+    "revision": "frame-kit-v6"
   },
   {
     "variantId": "dosnoventa-01-bcn-s",
@@ -194,7 +194,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5"
+    "revision": "frame-kit-v6"
   },
   {
     "variantId": "dosnoventa-01-bcn-m",
@@ -210,7 +210,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5"
+    "revision": "frame-kit-v6"
   },
   {
     "variantId": "dosnoventa-01-bcn-l",
@@ -226,7 +226,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5"
+    "revision": "frame-kit-v6"
   },
   {
     "variantId": "skream-magnum-xs",
@@ -242,7 +242,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5",
+    "revision": "frame-kit-v6",
     "morphologyId": "skream-magnum-v1"
   },
   {
@@ -259,7 +259,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5",
+    "revision": "frame-kit-v6",
     "morphologyId": "skream-magnum-v1"
   },
   {
@@ -276,7 +276,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5",
+    "revision": "frame-kit-v6",
     "morphologyId": "skream-magnum-v1"
   },
   {
@@ -293,7 +293,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5",
+    "revision": "frame-kit-v6",
     "morphologyId": "skream-magnum-v1"
   },
   {
@@ -310,7 +310,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5",
+    "revision": "frame-kit-v6",
     "morphologyId": "skream-magnum-v1"
   },
   {
@@ -327,7 +327,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5",
+    "revision": "frame-kit-v6",
     "morphologyId": "skream-ranger-v1"
   },
   {
@@ -344,7 +344,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5",
+    "revision": "frame-kit-v6",
     "morphologyId": "skream-ranger-v1"
   },
   {
@@ -361,7 +361,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5",
+    "revision": "frame-kit-v6",
     "morphologyId": "skream-ranger-v1"
   },
   {
@@ -378,7 +378,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5",
+    "revision": "frame-kit-v6",
     "morphologyId": "skream-ranger-v1"
   },
   {
@@ -395,7 +395,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5",
+    "revision": "frame-kit-v6",
     "morphologyId": "skream-ranger-v1"
   },
   {
@@ -412,7 +412,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5"
+    "revision": "frame-kit-v6"
   },
   {
     "variantId": "state-black-label-v3-52",
@@ -428,7 +428,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5"
+    "revision": "frame-kit-v6"
   },
   {
     "variantId": "state-black-label-v3-55",
@@ -444,7 +444,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5"
+    "revision": "frame-kit-v6"
   },
   {
     "variantId": "state-black-label-v3-58",
@@ -460,7 +460,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5"
+    "revision": "frame-kit-v6"
   },
   {
     "variantId": "state-black-label-v3-61",
@@ -476,7 +476,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5"
+    "revision": "frame-kit-v6"
   },
   {
     "variantId": "8bar-krzberg-v8-s",
@@ -492,7 +492,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5",
+    "revision": "frame-kit-v6",
     "morphologyId": "8bar-krzberg-v8-v1"
   },
   {
@@ -509,7 +509,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5",
+    "revision": "frame-kit-v6",
     "morphologyId": "8bar-krzberg-v8-v1"
   },
   {
@@ -526,7 +526,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5",
+    "revision": "frame-kit-v6",
     "morphologyId": "8bar-krzberg-v8-v1"
   },
   {
@@ -543,7 +543,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5",
+    "revision": "frame-kit-v6",
     "morphologyId": "8bar-krzberg-v8-v1"
   },
   {
@@ -560,7 +560,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5"
+    "revision": "frame-kit-v6"
   },
   {
     "variantId": "wabi-prism-51",
@@ -576,7 +576,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5"
+    "revision": "frame-kit-v6"
   },
   {
     "variantId": "wabi-prism-54",
@@ -592,7 +592,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5"
+    "revision": "frame-kit-v6"
   },
   {
     "variantId": "wabi-prism-57",
@@ -608,7 +608,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5"
+    "revision": "frame-kit-v6"
   },
   {
     "variantId": "wabi-prism-60",
@@ -624,7 +624,7 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5"
+    "revision": "frame-kit-v6"
   },
   {
     "variantId": "wabi-prism-62",
@@ -640,6 +640,6 @@
     ],
     "origin": "bottom-bracket",
     "units": "metres",
-    "revision": "frame-kit-v5"
+    "revision": "frame-kit-v6"
   }
 ]

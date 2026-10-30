@@ -44,9 +44,9 @@ export async function importCatalog() {
     for(const variant of data.variants) if(variant.asset3D) await ProductModel.updateOne({_id:data.id,'data.source':data.source,'data.status':'published','data.variants':{$elemMatch:{id:variant.id,specs:variant.specs,asset3D:{$exists:false}}}},{$set:{'data.variants.$.asset3D':variant.asset3D}});
     // Replace only exact original older rendering registrations, never technical
     // dimensions, custom transforms, archived records or another asset's provenance.
-    for (const variant of data.variants) if (variant.asset3D?.revision === 'frame-kit-v5') {
+    for (const variant of data.variants) if (variant.asset3D?.revision === 'frame-kit-v6') {
       const legacy={...variant.asset3D};delete legacy.morphologyId;
-      for(const revision of ['frame-kit-v1','frame-kit-v2','frame-kit-v3','frame-kit-v4'])await ProductModel.updateOne({_id:data.id,'data.source':data.source,'data.status':'published','data.variants':{$elemMatch:{id:variant.id,specs:variant.specs,color:variant.color,asset3D:{...(revision==='frame-kit-v4'?variant.asset3D:legacy),revision}}}},{$set:{'data.variants.$.asset3D':variant.asset3D}});
+      for(const revision of ['frame-kit-v1','frame-kit-v2','frame-kit-v3','frame-kit-v4','frame-kit-v5'])await ProductModel.updateOne({_id:data.id,'data.source':data.source,'data.status':'published','data.variants':{$elemMatch:{id:variant.id,specs:variant.specs,color:variant.color,asset3D:{...((revision==='frame-kit-v4'||revision==='frame-kit-v5')?variant.asset3D:legacy),revision}}}},{$set:{'data.variants.$.asset3D':variant.asset3D}});
     }
     // Append reviewed finish records/variants after exact legacy asset upgrades.
     // Never rewrite existing variants, archived records, admin colorways or builds.

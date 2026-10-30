@@ -1,5 +1,6 @@
 import type { Position, BicycleGeometry } from "./components";
 import { jointDistance } from "./morphology";
+import {rearJunction} from './construction';
 export function chainstayPoints(g: BicycleGeometry, side: number): Position[] {
   return [
     [g.bb[0], g.bb[1], side * 0.024],
@@ -9,16 +10,12 @@ export function chainstayPoints(g: BicycleGeometry, side: number): Position[] {
       side * Math.max(0.031, g.nominalClearance / 2 + 0.012),
     ],
     [g.rear[0] + 0.12, g.rear[1] - 0.012, side * g.rearInterface.bodyCenter],
-    [g.rear[0] + 0.012, g.rear[1] - 0.008, side * g.rearInterface.bodyCenter],
+    rearJunction(g.rear,g.construction.rear,'chainstay',side*g.rearInterface.bodyCenter),
   ];
 }
 export function seatstayPoints(g: BicycleGeometry, side: number): Position[] {
   const a: Position = [g.stayJunction[0], g.stayJunction[1], 0];
-  const b: Position = [
-    g.rear[0] + 0.012,
-    g.rear[1] + 0.008,
-    side * g.rearInterface.bodyCenter,
-  ];
+  const b=rearJunction(g.rear,g.construction.rear,'seatstay',side*g.rearInterface.bodyCenter);
   return [
     a,
     ...[0.3, 0.65].map(

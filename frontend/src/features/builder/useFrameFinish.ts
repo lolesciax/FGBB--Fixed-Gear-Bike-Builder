@@ -19,6 +19,7 @@ export function useFrameFinish(
     renderFrameSpecs(
       variant?.specs || {},
       product && variant ? renderMorphologyId(product, variant) : undefined,
+      product?.id,
     ),
   );
   const materials = useMemo(

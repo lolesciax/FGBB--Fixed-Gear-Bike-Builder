@@ -234,7 +234,7 @@ export default function Bike3D(props: Props) {
           variantById(props.catalog, show.cockpit)?.variant.specs.shape ||
           "unknown"
         }
-        data-geometry-revision="components-v5"
+        data-geometry-revision="components-v6"
         data-frame-morphology={
           (record && renderMorphologyId(record.product, record.variant)) ||
           "illustrative-round"

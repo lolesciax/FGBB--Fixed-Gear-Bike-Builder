@@ -1,9 +1,10 @@
 import { assemblyGeometry, type Point } from "./visual";
-import {steeringStack,type DropoutStyle} from './steering';
-import {wheelBuild} from './wheels';
-import {railInterface} from './seating';
-import {frameMorphology} from './morphology';
-import {axleInterface, axleRetention} from './interfaces';
+import { steeringStack, type DropoutStyle } from "./steering";
+import { wheelBuild } from "./wheels";
+import { railInterface } from "./seating";
+import { frameMorphology } from "./morphology";
+import { axleInterface, axleRetention } from "./interfaces";
+import { constructionProfile } from "./construction";
 
 export type ComponentSpecs = Record<string, string | number | boolean>;
 export type Position = [number, number, number];
@@ -160,7 +161,8 @@ export function wheelDimensions(
     tireHeight = numberSpec(tire, "sectionHeight", width * 1000) / 1000,
     rimDepth = clamp(numberSpec(wheel, "rimDepth", 25), 10, 90) / 1000,
     rimWidth = clamp(numberSpec(wheel, "rimWidth", 20), 14, 40) / 1000,
-    frontBuild=wheelBuild(wheel,false),rearBuild=wheelBuild(wheel,true);
+    frontBuild = wheelBuild(wheel, false),
+    rearBuild = wheelBuild(wheel, true);
   return {
     bsd,
     width,
@@ -170,13 +172,14 @@ export function wheelDimensions(
     rimInner: bsd / 2 + 0.003 - rimDepth,
     rimDepth,
     rimWidth,
-    spokes:frontBuild.count,
-    frontBuild,rearBuild,
+    spokes: frontBuild.count,
+    frontBuild,
+    rearBuild,
     frontSpacing: numberSpec(wheel, "frontSpacing", 100) / 1000,
     rearSpacing: numberSpec(wheel, "rearSpacing", 120) / 1000,
     frontAxle: numberSpec(wheel, "frontAxleDiameter", 10) / 1000,
     rearAxle: numberSpec(wheel, "rearAxleDiameter", 10) / 1000,
-    chainline:numberSpec(wheel,'chainline',42)/1000,
+    chainline: numberSpec(wheel, "chainline", 42) / 1000,
     sidewall: tire.sidewall === "tan" ? "tan" : "black",
   };
 }
@@ -187,13 +190,14 @@ export function spokeEndpoints(
   const hubRadius = rear ? 0.028 : 0.022,
     flange = rear ? 0.032 : 0.028,
     rimRadius = wheel.rimInner + 0.002;
-  const {count,crossings}=rear?wheel.rearBuild:wheel.frontBuild;
+  const { count, crossings } = rear ? wheel.rearBuild : wheel.frontBuild;
   return Array.from({ length: count }, (_, i) => {
     const side = i % 2 === 0 ? 1 : -1,
       index = Math.floor(i / 2),
       angle =
         (index * 4 * Math.PI) / count +
-        (side === 1 ? 0 : (2 * Math.PI) / count) + Math.PI/count,
+        (side === 1 ? 0 : (2 * Math.PI) / count) +
+        Math.PI / count,
       lead = index % 2 === 0 ? 1 : -1,
       hubAngle = angle + (lead * crossings * 4 * Math.PI) / count;
     return {
@@ -214,13 +218,31 @@ export function spokeEndpoints(
 export function pitchRadius(teeth: number, pitch = 0.0127) {
   return pitch / (2 * Math.sin(Math.PI / teeth));
 }
-export function crankArmOutline(length:number):[number,number][]{
- const points:[number,number][]=[];
- for(let i=0;i<=12;i++){const t=i/12;points.push([t*length,-(.016*(1-t)+.011*t)*(1-.2*Math.sin(Math.PI*t))]);}
- for(let i=1;i<=12;i++){const a=-Math.PI/2+i*Math.PI/12;points.push([length+.011*Math.cos(a),.011*Math.sin(a)]);}
- for(let i=11;i>=0;i--){const t=i/12;points.push([t*length,(.016*(1-t)+.011*t)*(1-.2*Math.sin(Math.PI*t))]);}
- for(let i=1;i<=12;i++){const a=Math.PI/2+i*Math.PI/12;points.push([.016*Math.cos(a),.016*Math.sin(a)]);}
- return points;
+export function crankArmOutline(length: number): [number, number][] {
+  const points: [number, number][] = [];
+  for (let i = 0; i <= 12; i++) {
+    const t = i / 12;
+    points.push([
+      t * length,
+      -(0.016 * (1 - t) + 0.011 * t) * (1 - 0.2 * Math.sin(Math.PI * t)),
+    ]);
+  }
+  for (let i = 1; i <= 12; i++) {
+    const a = -Math.PI / 2 + (i * Math.PI) / 12;
+    points.push([length + 0.011 * Math.cos(a), 0.011 * Math.sin(a)]);
+  }
+  for (let i = 11; i >= 0; i--) {
+    const t = i / 12;
+    points.push([
+      t * length,
+      (0.016 * (1 - t) + 0.011 * t) * (1 - 0.2 * Math.sin(Math.PI * t)),
+    ]);
+  }
+  for (let i = 1; i <= 12; i++) {
+    const a = Math.PI / 2 + (i * Math.PI) / 12;
+    points.push([0.016 * Math.cos(a), 0.016 * Math.sin(a)]);
+  }
+  return points;
 }
 export function chainGeometry(
   rear: Position,
@@ -319,8 +341,13 @@ export function componentGeometry(
     seatAxis = scale(add(seat, scale(bb, -1)), 1 / distance(seat, bb)),
     cockpit = cockpitDimensions(c),
     wheel = wheelDimensions(parts.wheels, parts.tires),
-    morphology=frameMorphology(f.morphologyId),
-    steering=steeringStack({...morphology?.steeringReference,...f},c,frame.frameWidth),
+    morphology = frameMorphology(f.morphologyId),
+    construction = constructionProfile(f),
+    steering = steeringStack(
+      { ...morphology?.steeringReference, ...f },
+      c,
+      frame.frameWidth,
+    ),
     stemBase = add(head, scale(axis, steering.stemCenter)),
     barClamp = add(stemBase, [
       Math.cos(cockpit.stemAngle) * cockpit.stemLength,
@@ -329,10 +356,23 @@ export function componentGeometry(
     ]),
     saddlePost = add(
       seat,
-      scale(seatAxis, numberSpec(s, "extension",morphology?.post.exposure||clamp(numberSpec(f,'seatTube',555)*.2,90,135)) / 1000),
+      scale(
+        seatAxis,
+        numberSpec(
+          s,
+          "extension",
+          morphology?.post.exposure ||
+            clamp(numberSpec(f, "seatTube", 555) * 0.2, 90, 135),
+        ) / 1000,
+      ),
     ),
     saddleClamp = add(saddlePost, [0, 0.012, 0]);
-  let crownStack = 0.012;
+  let crownStack =
+    steering.headsetType === "integrated"
+      ? 0.003
+      : steering.headsetType === "zero-stack"
+        ? 0.005
+        : 0.012;
   const forkLength = numberSpec(f, "forkLength", 0) / 1000;
   if (forkLength) {
     const a = add(lower, scale(front, -1)),
@@ -373,29 +413,65 @@ export function componentGeometry(
     cockpit,
     steering,
     morphology,
-    nominalClearance:numberSpec(f,'tireClearance',28)/1000,
-    nominalBsd:numberSpec(f,'wheelBsd',622)/1000,
-    seatJunction:add(seat,scale(seatAxis,-(morphology?.seatJunction||0)/1000)),
-    stayJunction:add(seat,scale(seatAxis,-(morphology?.stayJunction||0)/1000)),
+    construction,
+    nominalClearance: numberSpec(f, "tireClearance", 28) / 1000,
+    nominalBsd: numberSpec(f, "wheelBsd", 622) / 1000,
+    seatJunction: add(
+      seat,
+      scale(seatAxis, -(morphology?.seatJunction || 0) / 1000),
+    ),
+    stayJunction: add(
+      seat,
+      scale(seatAxis, -(morphology?.stayJunction || 0) / 1000),
+    ),
     stemBase,
     barClamp,
     steererTop: add(head, scale(axis, steering.steererEnd)),
-    stemTop:add(head,scale(axis,steering.stemTop)),
-    capTop:add(head,scale(axis,steering.capTop)),
-    topJunction:add(head,scale(axis,-Math.min(frame.frameWidth*.0004,distance(head,lower)*.16))),
-    downJunction:add(lower,scale(axis,Math.min((frame.frameWidth+8)*.0004,distance(head,lower)*.2))),
+    stemTop: add(head, scale(axis, steering.stemTop)),
+    capTop: add(head, scale(axis, steering.capTop)),
+    topJunction: add(
+      head,
+      scale(
+        axis,
+        -Math.min(frame.frameWidth * 0.0004, distance(head, lower) * 0.16),
+      ),
+    ),
+    downJunction: add(
+      lower,
+      scale(
+        axis,
+        Math.min((frame.frameWidth + 8) * 0.0004, distance(head, lower) * 0.2),
+      ),
+    ),
     crown,
     forkHalf,
     crownStack,
-    frontInterface: axleInterface(forkHalf*2),
-    rearInterface: axleInterface(numberSpec(f,'rearSpacing',120)/1000, morphology?.rearPlate === 'double-sided-inserts' ? 'both' : morphology?.rearPlate === 'replaceable' ? 'outer' : 'none'),
-    frontRetention: axleRetention(parts.wheels || {},false,f.frontDropoutType==='through'||numberSpec(f,'frontAxleDiameter',10)>=12),
-    rearRetention: axleRetention(parts.wheels || {},true,f.rearDropoutType==='through'),
+    frontInterface: axleInterface(forkHalf * 2),
+    rearInterface: axleInterface(
+      numberSpec(f, "rearSpacing", 120) / 1000,
+      construction.rear.inserts,
+    ),
+    frontRetention: axleRetention(
+      parts.wheels || {},
+      false,
+      f.frontDropoutType === "through" ||
+        numberSpec(f, "frontAxleDiameter", 10) >= 12,
+    ),
+    rearRetention: axleRetention(
+      parts.wheels || {},
+      true,
+      f.rearDropoutType === "through",
+    ),
     rearHalf: numberSpec(f, "rearSpacing", 120) / 2000,
     frontDropoutDiameter: numberSpec(f, "frontAxleDiameter", 10) / 1000,
     rearDropoutDiameter: numberSpec(f, "rearAxleDiameter", 10) / 1000,
-    frontDropoutStyle:(f.frontDropoutType==='through'||numberSpec(f,'frontAxleDiameter',10)>=12?'through':'open-vertical') as DropoutStyle,
-    rearDropoutStyle:(f.rearDropoutType==='through'?'through':'rearward-track') as DropoutStyle,
+    frontDropoutStyle: (f.frontDropoutType === "through" ||
+    numberSpec(f, "frontAxleDiameter", 10) >= 12
+      ? "through"
+      : "open-vertical") as DropoutStyle,
+    rearDropoutStyle: (f.rearDropoutType === "through"
+      ? "through"
+      : "rearward-track") as DropoutStyle,
     forkProfile: String(f.forkProfile || "illustrative curved blades"),
     forkLength,
     renderedForkLength: distance(crown, front),
@@ -404,10 +480,12 @@ export function componentGeometry(
     saddle: {
       length: numberSpec(s, "length", s.shape === "comfort" ? 265 : 275) / 1000,
       width: numberSpec(s, "width", s.shape === "comfort" ? 175 : 142) / 1000,
-      postDiameter: numberSpec(s,'postDiameter',numberSpec(f, "seatpost", 27.2)) / 1000,
-      padding:numberSpec(s,'paddingHeight',s.shape==='comfort'?14:8)/1000,
-      railWidth:(railInterface(s)?.width||7)/1000,
-      railHeight:(railInterface(s)?.height||7)/1000,
+      postDiameter:
+        numberSpec(s, "postDiameter", numberSpec(f, "seatpost", 27.2)) / 1000,
+      padding:
+        numberSpec(s, "paddingHeight", s.shape === "comfort" ? 14 : 8) / 1000,
+      railWidth: (railInterface(s)?.width || 7) / 1000,
+      railHeight: (railInterface(s)?.height || 7) / 1000,
     },
     drivetrain: {
       chainline,
@@ -427,16 +505,25 @@ export function componentGeometry(
 export type BicycleGeometry = ReturnType<typeof componentGeometry>;
 
 export function forkBladePoints(g: BicycleGeometry, side: number): Position[] {
-  const rootDrop = g.morphology?.fork.kind==='carbon-blade' ? .025 : .007;
-  const start: Position = [g.crown[0]-g.axis[0]*rootDrop, g.crown[1]-g.axis[1]*rootDrop, side * (g.morphology?.fork.rootHalf||35)/1000];
-  const end: Position = [g.front[0], g.front[1] + 0.014, side * g.frontInterface.bodyCenter];
+  const rootDrop = g.construction.fork.rootDrop / 1000;
+  const start: Position = [
+    g.crown[0] - g.axis[0] * rootDrop,
+    g.crown[1] - g.axis[1] * rootDrop,
+    (side * g.construction.fork.rootHalf) / 1000,
+  ];
+  const end: Position = [
+    g.front[0],
+    g.front[1] + 0.010,
+    side * g.frontInterface.bodyCenter,
+  ];
   const blend = (t: number): Position =>
     start.map((v, i) => v + (end[i] - v) * t) as Position;
-  const a = blend(0.32),
+  const span = distance(start, end);
+  const a = add(start, scale(g.axis, -span * 0.28)),
     b = blend(0.76);
-  if (!g.forkProfile.startsWith("straight")&&g.morphology?.fork.kind!=='alloy-straight') {
-    a[0] -= 0.012;
-    b[0] -= 0.024;
+  b[2] = end[2];
+  if (!g.construction.fork.straight) {
+    b[0] -= 0.008;
   }
   return [start, a, b, end];
 }

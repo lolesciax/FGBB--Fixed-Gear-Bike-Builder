@@ -574,7 +574,7 @@ export function BuilderPage() {
           b.set({ turntable: false });
           setResetKey((k) => k + 1);
         }}
-        onClose={() => setInspectPanel(false)}
+        onClose={() => {setInspectPanel(false);setInspection(undefined);}}
       />
     ) : (
       <PartsInspector
@@ -793,6 +793,7 @@ export function BuilderPage() {
                 aria-pressed={inspectPanel}
                 onClick={() => {
                   setInspectPanel((v) => !v);
+                  if(inspectPanel)setInspection(undefined);
                   b.set({ turntable: false });
                   if (compact) setSheetOpen(true);
                 }}

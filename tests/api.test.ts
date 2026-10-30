@@ -354,7 +354,7 @@ describe('API boundaries', () => {
   });
   it("upgrades only the original illustrative asset registration without overwriting edited technical data", async () => {
     const product = seedCatalog.find(
-        (p) => p.variants[0].asset3D?.revision === "frame-kit-v5",
+        (p) => p.variants[0].asset3D?.revision === "frame-kit-v6",
       )!,
       variant = product.variants[0];
     await ProductModel.updateOne(
@@ -363,15 +363,17 @@ describe('API boundaries', () => {
     );
     await importCatalog();
     let stored = await ProductModel.findById(product.id).lean();
-    expect(stored!.data.variants[0].asset3D.revision).toBe("frame-kit-v5");
+    expect(stored!.data.variants[0].asset3D.revision).toBe("frame-kit-v6");
     expect(stored!.data.variants[0].specs).toEqual(variant.specs);
-    await ProductModel.updateOne({_id:product.id},{$set:{'data.variants.0.asset3D':{...variant.asset3D,revision:'frame-kit-v4'}}});
-    await importCatalog();stored=await ProductModel.findById(product.id).lean();expect(stored!.data.variants[0].asset3D).toEqual(variant.asset3D);
+    for(const revision of ['frame-kit-v4','frame-kit-v5']){
+      await ProductModel.updateOne({_id:product.id},{$set:{'data.variants.0.asset3D':{...variant.asset3D,revision}}});
+      await importCatalog();stored=await ProductModel.findById(product.id).lean();expect(stored!.data.variants[0].asset3D).toEqual(variant.asset3D);
+    }
     await ProductModel.updateOne({_id:product.id},{$set:{'data.variants.0.asset3D.revision':'frame-kit-v2','data.variants.0.asset3D.rotation':[.1,0,0]},$unset:{'data.variants.0.asset3D.morphologyId':1}});
     await importCatalog();stored=await ProductModel.findById(product.id).lean();expect(stored!.data.variants[0].asset3D.revision).toBe('frame-kit-v2');
     const legacy={...variant.asset3D,revision:'frame-kit-v2'};delete legacy.morphologyId;
     await ProductModel.updateOne({_id:product.id},{$set:{'data.variants.0.asset3D':legacy}});
-    await importCatalog();stored=await ProductModel.findById(product.id).lean();expect(stored!.data.variants[0].asset3D.revision).toBe('frame-kit-v5');
+    await importCatalog();stored=await ProductModel.findById(product.id).lean();expect(stored!.data.variants[0].asset3D.revision).toBe('frame-kit-v6');
     await ProductModel.updateOne(
       { _id: product.id },
       {

@@ -227,6 +227,7 @@ export function finishAnchors(specs: Variant["specs"]) {
   } as Record<PaintZone, [Position, Position]>;
 }
 export function zoneForMesh(name: string): PaintZone | undefined {
+  if(name.startsWith('rear_dropout_'))return 'chainstay';
   if (name.startsWith("fork_blade")) return "fork";
   if (name === "fork_crown") return "crown";
   if (name === "paint_bottom_bracket") return "bb";
@@ -238,7 +239,7 @@ export const graphicUrl = (g: GraphicLayer) =>
   g.raster
     ? `/api/colorway-assets/${g.raster.reviewId}/${g.raster.sha256}`
     : undefined;
-export function renderFrameSpecs(specs: Variant["specs"],morphologyId?:string) {
+export function renderFrameSpecs(specs: Variant["specs"],morphologyId?:string,renderFamily?:string) {
   const keys = [
     "geometry",
     "material",
@@ -263,5 +264,5 @@ export function renderFrameSpecs(specs: Variant["specs"],morphologyId?:string) {
   ];
   return {...Object.fromEntries(
     keys.filter((k) => specs[k] !== undefined).map((k) => [k, specs[k]]),
-  ),...(morphologyId?{morphologyId}:{})};
+  ),...(morphologyId?{morphologyId}:{}),...(renderFamily?{renderFamily}:{})};
 }

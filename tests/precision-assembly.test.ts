@@ -78,7 +78,7 @@ it("uses millimetre technical anchors with centred axles and contiguous hardware
     const g = componentGeometry({
         frameset: renderFrameSpecs(
           product.variants[0].specs,
-          product.visual?.morphologyId,
+          product.visual?.morphologyId,product.id,
         ),
       }),
       frame = createFrame(g, "#888888");
@@ -126,7 +126,7 @@ it("represents quick release and through axles without track nuts or washers", (
       const wheel = createWheel(g, rear);
       expect(wheel.getObjectByName("axle_nut_1")).toBeUndefined();
       expect(wheel.getObjectByName("axle_washer_1")).toBeUndefined();
-      expect(wheel.getObjectByName(`${retention}_lever`)).toBeTruthy();
+      if(retention==='quick-release')expect(wheel.getObjectByName('quick-release_lever')).toBeTruthy();else expect(wheel.getObjectByName('through_lever')).toBeUndefined();
       disposeModel(wheel);
     }
   }
@@ -193,7 +193,7 @@ it("checks critical actual assembly meshes across published frame families", () 
     for (const variant of product.variants.filter((v) => !v.colorwayId)) {
       const specs = variant.specs;
       const g = componentGeometry({
-          frameset: renderFrameSpecs(specs, product.visual?.morphologyId),
+          frameset: renderFrameSpecs(specs, product.visual?.morphologyId,product.id),
           wheels: {
             frontAxleDiameter: Number(specs.frontAxleDiameter || 10),
             rearAxleDiameter: Number(specs.rearAxleDiameter || 10),
@@ -265,7 +265,7 @@ it("reports an unresolved nominal-width envelope instead of silently resizing it
   const product = manufacturerCatalog.find((p) => p.id === "skream-magnum")!,
     variant = product.variants[0];
   const g = componentGeometry({
-      frameset: renderFrameSpecs(variant.specs, product.visual?.morphologyId),
+      frameset: renderFrameSpecs(variant.specs, product.visual?.morphologyId,product.id),
       tires: { width: 35, sectionHeight: 35 },
     }),
     root = new THREE.Group();

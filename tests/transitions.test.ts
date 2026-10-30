@@ -69,6 +69,7 @@ function assembly(configuration: Configuration) {
   specs.frameset = renderFrameSpecs(
     r.variant.specs,
     renderMorphologyId(r.product, r.variant),
+    r.product.id,
   );
   const g = componentGeometry(specs),
     root = new THREE.Group();

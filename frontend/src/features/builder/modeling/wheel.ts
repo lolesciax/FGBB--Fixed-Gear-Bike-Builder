@@ -160,18 +160,34 @@ export function createWheel(g: BicycleGeometry, rear: boolean) {
     axleRadius = (rear ? w.rearAxle : w.frontAxle) / 2,
     retention = rear ? g.rearRetention : g.frontRetention,
     frameInterface = rear ? g.rearInterface : g.frontInterface,
-    mount = axleInterface(spacing, frameInterface.outerFace-frameInterface.bodyInner>.0051 ? (frameInterface.bodyInner-frameInterface.innerFace>.001 ? 'both' : 'outer') : 'none'),
-    hardware = material('#a1aab5',.82,.28);
-  hardware.name = 'axle_hardware';
+    mount = axleInterface(
+      spacing,
+      frameInterface.outerFace - frameInterface.bodyInner > 0.0051
+        ? frameInterface.bodyInner - frameInterface.innerFace > 0.001
+          ? "both"
+          : "outer"
+        : "none",
+    ),
+    hardware = material("#a1aab5", 0.82, 0.28);
+  hardware.name = "axle_hardware";
   mesh(
     group,
     "hub_shell",
     revolved([
-      [0.01, -flange],
-      [0.015, -flange + 0.007],
-      [0.012, 0],
-      [0.015, flange - 0.007],
-      [0.01, flange],
+      [axleRadius + 0.0002, -spacing / 2 + 0.003],
+      [0.0085, -spacing / 2 + 0.003],
+      [0.009, -spacing / 2 + 0.006],
+      [0.0175, -flange],
+      [0.0175, -flange + 0.003],
+      [0.013, -flange + 0.009],
+      [0.0115, 0],
+      [0.013, flange - 0.009],
+      [0.0175, flange - 0.003],
+      [0.0175, flange],
+      [0.009, spacing / 2 - 0.006],
+      [0.0085, spacing / 2 - 0.003],
+      [axleRadius + 0.0002, spacing / 2 - 0.003],
+      [axleRadius + 0.0002, -spacing / 2 + 0.003],
     ]),
     alloy,
   );
@@ -204,43 +220,126 @@ export function createWheel(g: BicycleGeometry, rear: boolean) {
       alloy,
       [0, 0, side * flange],
     );
-    cylinder(
-      group,
-      `hub_shoulder_${side}`,
-      [0, 0, side * flange],
-      [0, 0, side * (spacing / 2 - 0.006)],
-      0.01,
-      alloy,
-      0.009,
-    );
-    axle(
+    mesh(
       group,
       `hub_endcap_${side}`,
+      extrude(annulus(0.0085, axleRadius + 0.0002), 0.006, 0),
+      alloy,
       [0, 0, side * (spacing / 2 - 0.003)],
-      0.009,
-      0.006,
-      alloy,
     );
-    axle(
-      group,
-      `hub_bearing_seat_${side}`,
-      [0, 0, side * (flange - 0.004)],
-      0.017,
-      0.006,
-      alloy,
-      28,
-    );
-    if(retention === 'nutted') {
-      mesh(group,`axle_washer_${side}`,extrude(annulus(.009,axleRadius+.00025),mount.washerThickness,0),hardware,[0,0,side*mount.washerCenter]);
-      const nut = new THREE.Shape(Array.from({length:6},(_,i)=>new THREE.Vector2(Math.cos(i*Math.PI/3)*.0085,Math.sin(i*Math.PI/3)*.0085)));
-      const hole = new THREE.Path();hole.absarc(0,0,axleRadius+.00015,0,Math.PI*2,true);nut.holes.push(hole);
-      mesh(group,`axle_nut_${side}`,extrude(nut,mount.nutThickness,0),hardware,[0,0,side*mount.nutCenter]);
+    if (retention === "nutted") {
+      mesh(
+        group,
+        `axle_washer_${side}`,
+        extrude(annulus(0.009, axleRadius + 0.00025), mount.washerThickness, 0),
+        hardware,
+        [0, 0, side * mount.washerCenter],
+      );
+      const nutRadius = (mount.nutAcrossFlats - 0.001) / Math.sqrt(3);
+      const nut = new THREE.Shape(
+        Array.from(
+          { length: 6 },
+          (_, i) =>
+            new THREE.Vector2(
+              Math.cos((i * Math.PI) / 3) * nutRadius,
+              Math.sin((i * Math.PI) / 3) * nutRadius,
+            ),
+        ),
+      );
+      const hole = new THREE.Path();
+      hole.absarc(0, 0, axleRadius + 0.00015, 0, Math.PI * 2, true);
+      nut.holes.push(hole);
+      mesh(
+        group,
+        `axle_nut_${side}`,
+        extrude(nut, mount.nutThickness - 0.001, 0.0005),
+        hardware,
+        [0, 0, side * mount.nutCenter],
+      );
     } else {
-      mesh(group,`${retention}_head_${side}`,extrude(annulus(.008,retention==='through' ? .0025 : .002),.003,0),hardware,[0,0,side*(mount.outerFace+.0015)]);
-      if(side===1) cylinder(group,`${retention}_lever`,[0,0,mount.outerFace+.004],[.024,.012,mount.outerFace+.004],.0025,hardware);
+      if (retention === "quick-release") {
+        mesh(
+          group,
+          `quick-release_head_${side}`,
+          revolved([
+            [0.0026, -0.002],
+            [side === 1 ? 0.007 : 0.0055, -0.002],
+            [side === 1 ? 0.007 : 0.0045, 0.002],
+            [0.0026, 0.002],
+            [0.0026, -0.002],
+          ]),
+          hardware,
+          [0, 0, side * (mount.outerFace + 0.002)],
+        );
+        if (side === 1) {
+          cylinder(
+            group,
+            "quick-release_cam_pivot",
+            [-0.004, 0, mount.outerFace + 0.004],
+            [0.004, 0, mount.outerFace + 0.004],
+            0.003,
+            hardware,
+          );
+          cylinder(
+            group,
+            "quick-release_lever",
+            [0, 0, mount.outerFace + 0.006],
+            [0.027, 0.012, mount.outerFace + 0.009],
+            0.0022,
+            hardware,
+          );
+        }
+      } else if (side === 1) {
+        const head = annulus(0.008, 0.003);
+        mesh(group, "through_head_1", extrude(head, 0.003, 0), hardware, [
+          0,
+          0,
+          mount.outerFace + 0.0015,
+        ]);
+      }
     }
   }
-  axle(group, "axle", [0, 0, 0], retention==='quick-release' ? .0025 : axleRadius, retention==='nutted' ? mount.axleEnd*2 : (mount.outerFace+.003)*2, hardware);
+  axle(
+    group,
+    "axle",
+    [0, 0, 0],
+    retention === "quick-release" ? 0.0025 : axleRadius,
+    retention === "nutted"
+      ? mount.axleEnd * 2
+      : retention === "through"
+        ? mount.outerFace * 2
+        : (mount.outerFace + 0.003) * 2,
+    hardware,
+  );
+  if (retention === "quick-release")
+    mesh(
+      group,
+      "quick-release_hollow_spindle",
+      revolved([
+        [axleRadius, -mount.outerFace],
+        [axleRadius, mount.outerFace],
+        [0.0026, mount.outerFace],
+        [0.0026, -mount.outerFace],
+        [axleRadius, -mount.outerFace],
+      ]),
+      hardware,
+    );
+  const hub = new THREE.Group();
+  hub.name = "hub_body";
+  const retentionGroup = new THREE.Group();
+  retentionGroup.name = "axle_retention";
+  for (const child of [...group.children]) {
+    if (child.name.startsWith("hub_")) hub.add(child);
+    else if (
+      child.name === "axle" ||
+      child.name.startsWith("axle_") ||
+      child.name.startsWith("quick-release_") ||
+      child.name.startsWith("through_")
+    )
+      retentionGroup.add(child);
+  }
+  hub.add(retentionGroup);
+  group.add(hub);
   const spokes = spokeEndpoints(w, rear);
   instancedSegments(
     group,
@@ -280,7 +379,8 @@ export function createWheel(g: BicycleGeometry, rear: boolean) {
     rimDrilling: rear ? w.rearBuild.count : w.frontBuild.count,
     axleSpacing: spacing,
     retention,
-    hardwareFidelity: 'Illustrative retention geometry; unspecified dimensions are not manufacturer verified.',
+    hardwareFidelity:
+      "Illustrative retention geometry; unspecified dimensions are not manufacturer verified.",
   };
   return group;
 }

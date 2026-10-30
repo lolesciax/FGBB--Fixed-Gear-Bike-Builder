@@ -1,7 +1,12 @@
 import { z } from "zod";
 import { dropoutOutline } from "./steering";
+import { trackEndOutline, frontEndOutline } from "./construction";
 import type { Product, Variant } from "./index";
-import type { BicycleGeometry, Position } from "./components";
+import {
+  forkBladePoints,
+  type BicycleGeometry,
+  type Position,
+} from "./components";
 export const morphologyIdSchema = z.enum([
   "cinelli-vigorelli-alu-v1",
   "skream-magnum-v1",
@@ -42,7 +47,12 @@ export type FrameMorphology = {
     tipDepth: number;
   };
   rearPlate: "integrated" | "replaceable" | "double-sided-inserts";
-  steeringReference?: { upperSteererDiameter:number; lowerSteererDiameter:number; source:string };
+  steeringReference?: {
+    upperSteererDiameter: number;
+    lowerSteererDiameter: number;
+    source: string;
+    headset?: string;
+  };
 };
 export const morphologyBindings: Record<string, MorphologyId> = {
   "cinelli-vigorelli": "cinelli-vigorelli-alu-v1",
@@ -90,8 +100,13 @@ export const frameMorphologies: Record<MorphologyId, FrameMorphology> = {
       exposure: 110,
     },
     fork: { ...carbon, rootDepth: 42 },
-    rearPlate: "integrated",
-    steeringReference: {upperSteererDiameter:28.6,lowerSteererDiameter:38.1,source:'https://usa.cinelli-milano.com/products/vigorelli-track-alu-frame'},
+    rearPlate: "replaceable",
+    steeringReference: {
+      upperSteererDiameter: 28.6,
+      lowerSteererDiameter: 38.1,
+      headset: "IS42/28.6 | IS52/40",
+      source: "https://usa.cinelli-milano.com/blogs/news/shop-talk-9-vigorelli",
+    },
   },
   "skream-magnum-v1": {
     id: "skream-magnum-v1",
@@ -294,8 +309,14 @@ export function rawTubeSurfacePoint(
     [side, depth] = sectionContour(tubeSection(g, region), angle);
   // An authored junction transition fits the mating seat tube. Mid-tube
   // sections and the published centreline anchors are unchanged.
-  const seatWidth = sectionDimensions(tubeSection(g,'seat'),.96).width*.95;
-  const width = region==='top' ? d.width+(Math.min(d.width,seatWidth)-d.width)*Math.max(0,1-at*length/.03)**2 : d.width;
+  const seatWidth =
+    sectionDimensions(tubeSection(g, "seat"), 0.96).width * 0.95;
+  const width =
+    region === "top"
+      ? d.width +
+        (Math.min(d.width, seatWidth) - d.width) *
+          Math.max(0, 1 - (at * length) / 0.03) ** 2
+      : d.width;
   const p: Position = [
     a[0] + dx * at + ((dy / length) * depth * d.depth) / 1000,
     a[1] + dy * at - ((dx / length) * depth * d.depth) / 1000,
@@ -310,49 +331,120 @@ export function rawTubeSurfacePoint(
   return p;
 }
 export function headOuterRadius(g: BicycleGeometry, height: number) {
-  const length = Math.hypot(g.head[0]-g.lower[0],g.head[1]-g.lower[1]);
-  const t = Math.max(0,Math.min(1,(height-.003)/(length-.007)));
-  return g.steering.headLowerRadius*(1-t)+g.steering.headUpperRadius*t;
+  const length = Math.hypot(g.head[0] - g.lower[0], g.head[1] - g.lower[1]);
+  const t = Math.max(0, Math.min(1, (height - 0.003) / (length - 0.007)));
+  return g.steering.headLowerRadius * (1 - t) + g.steering.headUpperRadius * t;
 }
 /** Signed outer-envelope distances used to cope only welded mating surfaces. */
-export function jointDistance(g: BicycleGeometry, receiver: 'head'|'seat'|'bb', p: Position) {
-  if(receiver==='bb')return Math.max(Math.hypot(p[0]-g.bb[0],p[1]-g.bb[1])-.023,Math.abs(p[2])-.034);
-  const a = receiver==='head' ? g.lower : g.bb, axis = receiver==='head' ? g.axis : g.seatAxis;
-  const delta = p.map((v,i)=>v-a[i]), height = delta.reduce((sum,v,i)=>sum+v*axis[i],0);
-  const depth = delta[0]*axis[1]-delta[1]*axis[0];
-  if(receiver==='head')return Math.hypot(depth,p[2])-headOuterRadius(g,height);
-  const size = sectionDimensions(tubeSection(g,'seat'),Math.max(0,Math.min(1,height/Math.hypot(g.seat[0]-g.bb[0],g.seat[1]-g.bb[1]))));
+export function jointDistance(
+  g: BicycleGeometry,
+  receiver: "head" | "seat" | "bb",
+  p: Position,
+) {
+  if (receiver === "bb")
+    return Math.max(
+      Math.hypot(p[0] - g.bb[0], p[1] - g.bb[1]) - 0.023,
+      Math.abs(p[2]) - 0.034,
+    );
+  const a = receiver === "head" ? g.lower : g.bb,
+    axis = receiver === "head" ? g.axis : g.seatAxis;
+  const delta = p.map((v, i) => v - a[i]),
+    height = delta.reduce((sum, v, i) => sum + v * axis[i], 0);
+  const depth = delta[0] * axis[1] - delta[1] * axis[0];
+  if (receiver === "head")
+    return Math.hypot(depth, p[2]) - headOuterRadius(g, height);
+  const size = sectionDimensions(
+    tubeSection(g, "seat"),
+    Math.max(
+      0,
+      Math.min(
+        1,
+        height / Math.hypot(g.seat[0] - g.bb[0], g.seat[1] - g.bb[1]),
+      ),
+    ),
+  );
   // Exact polygonal section contour, including the asymmetric aero section.
-  const profile = tubeSection(g,'seat'), x = p[2]*1000/size.width, y = depth*1000/size.depth;
-  let inside=false, nearest=Infinity;
-  for(let i=0;i<48;i++) {
-    const a=sectionContour(profile,i*Math.PI/24), b=sectionContour(profile,(i+1)*Math.PI/24);
-    if((a[1]>y)!==(b[1]>y) && x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])inside=!inside;
-    const dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((x-a[0])*dx+(y-a[1])*dy)/(dx*dx+dy*dy)));
-    nearest=Math.min(nearest,Math.hypot(x-a[0]-t*dx,y-a[1]-t*dy)*Math.min(size.width,size.depth)/1000);
+  const profile = tubeSection(g, "seat"),
+    x = (p[2] * 1000) / size.width,
+    y = (depth * 1000) / size.depth;
+  let inside = false,
+    nearest = Infinity;
+  for (let i = 0; i < 48; i++) {
+    const a = sectionContour(profile, (i * Math.PI) / 24),
+      b = sectionContour(profile, ((i + 1) * Math.PI) / 24);
+    if (
+      a[1] > y !== b[1] > y &&
+      x < ((b[0] - a[0]) * (y - a[1])) / (b[1] - a[1]) + a[0]
+    )
+      inside = !inside;
+    const dx = b[0] - a[0],
+      dy = b[1] - a[1],
+      t = Math.max(
+        0,
+        Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / (dx * dx + dy * dy)),
+      );
+    nearest = Math.min(
+      nearest,
+      (Math.hypot(x - a[0] - t * dx, y - a[1] - t * dy) *
+        Math.min(size.width, size.depth)) /
+        1000,
+    );
   }
   return inside ? -nearest : nearest;
 }
-const copeCache = new WeakMap<BicycleGeometry,Map<string,[number,number]>>();
-export function tubeJointRange(g: BicycleGeometry, region: TubeRegion, angle: number): [number,number] {
-  let cache=copeCache.get(g);if(!cache){cache=new Map();copeCache.set(g,cache);}
-  const key=`${region}/${angle.toFixed(8)}`,found=cache.get(key);if(found)return found;
-  const receiverStart=region==='top'?'seat':'bb', receiverEnd=region==='seat'?undefined:'head';
-  const boundary=(end:boolean,receiver:'head'|'seat'|'bb')=>{
-    let inside=end?1:0,outside=.5;
-    if(jointDistance(g,receiver,rawTubeSurfacePoint(g,region,inside,angle))>0)return inside;
-    for(let i=0;i<28;i++) {
-      const t=(inside+outside)/2;
-      if(jointDistance(g,receiver,rawTubeSurfacePoint(g,region,t,angle))<-.00015)inside=t;else outside=t;
+const copeCache = new WeakMap<BicycleGeometry, Map<string, [number, number]>>();
+export function tubeJointRange(
+  g: BicycleGeometry,
+  region: TubeRegion,
+  angle: number,
+): [number, number] {
+  let cache = copeCache.get(g);
+  if (!cache) {
+    cache = new Map();
+    copeCache.set(g, cache);
+  }
+  const key = `${region}/${angle.toFixed(8)}`,
+    found = cache.get(key);
+  if (found) return found;
+  const receiverStart = region === "top" ? "seat" : "bb",
+    receiverEnd = region === "seat" ? undefined : "head";
+  const boundary = (end: boolean, receiver: "head" | "seat" | "bb") => {
+    let inside = end ? 1 : 0,
+      outside = 0.5;
+    if (
+      jointDistance(
+        g,
+        receiver,
+        rawTubeSurfacePoint(g, region, inside, angle),
+      ) > 0
+    )
+      return inside;
+    for (let i = 0; i < 28; i++) {
+      const t = (inside + outside) / 2;
+      if (
+        jointDistance(g, receiver, rawTubeSurfacePoint(g, region, t, angle)) <
+        -0.00015
+      )
+        inside = t;
+      else outside = t;
     }
     return inside;
   };
-  const result:[number,number]=[boundary(false,receiverStart),receiverEnd?boundary(true,receiverEnd):1];
-  cache.set(key,result);return result;
+  const result: [number, number] = [
+    boundary(false, receiverStart),
+    receiverEnd ? boundary(true, receiverEnd) : 1,
+  ];
+  cache.set(key, result);
+  return result;
 }
-export function tubeSurfacePoint(g: BicycleGeometry, region: TubeRegion, at: number, angle: number): Position {
-  const [a,b]=tubeJointRange(g,region,angle);
-  return rawTubeSurfacePoint(g,region,a+(b-a)*at,angle);
+export function tubeSurfacePoint(
+  g: BicycleGeometry,
+  region: TubeRegion,
+  at: number,
+  angle: number,
+): Position {
+  const [a, b] = tubeJointRange(g, region, angle);
+  return rawTubeSurfacePoint(g, region, a + (b - a) * at, angle);
 }
 export function tubeSilhouette(
   g: BicycleGeometry,
@@ -395,45 +487,37 @@ export function postSilhouette(g: BicycleGeometry): Position[] {
   ];
 }
 export function forkSection(g: BicycleGeometry, t: number): [number, number] {
-  const f = g.morphology?.fork;
-  const section: [number,number] = f
-    ? [
-        (f.rootWidth * (1 - t) + f.tipWidth * t) / 2000,
-        (f.rootDepth * (1 - t) + f.tipDepth * t) / 2000,
-      ]
-    : [0.009 * (1 - t) + 0.0045 * t, 0.016 * (1 - t) + 0.007 * t];
-  const blend=Math.max(0,Math.min(1,(t-.92)/.08)),smooth=blend*blend*(3-2*blend);
-  return [section[0]+(.0024-section[0])*smooth,section[1]+(Math.min(section[1],.005)-section[1])*smooth];
+  const f = g.construction.fork;
+  const section: [number, number] = [
+    (f.rootWidth * (1 - t) + 9 * t) / 2000,
+    (f.rootDepth * (1 - t) + 13 * t) / 2000,
+  ];
+  const blend = Math.max(0, Math.min(1, (t - 0.92) / 0.08)),
+    smooth = blend * blend * (3 - 2 * blend);
+  return [
+    section[0] + (0.0024 - section[0]) * smooth,
+    section[1] + (Math.min(section[1], 0.002) - section[1]) * smooth,
+  ];
 }
 export function rearDropoutOutline(
   g: BicycleGeometry,
   insert = false,
 ): [number, number][] {
-  if (
-    !g.morphology ||
-    g.morphology.rearPlate === "integrated" ||
-    g.rearDropoutStyle === "through"
-  )
+  if (g.rearDropoutStyle === "through")
     return dropoutOutline(g.rearDropoutStyle, g.rearDropoutDiameter);
-  const r = g.rearDropoutDiameter / 2 + 0.0006,
-    x = insert ? 0.021 : 0.028,
-    y = insert ? 0.014 : 0.019,
-    left = insert ? -0.018 : -0.022;
-  return [
-    [x - 0.002, y],
-    [x, -y * 0.55],
-    [0.012, -y],
-    [left, -y * 0.85],
-    [left, -r],
-    [0, -r],
-    ...Array.from({ length: 13 }, (_, i): [number, number] => {
-      const a = -Math.PI / 2 + (i * Math.PI) / 12;
-      return [Math.cos(a) * r, Math.sin(a) * r];
-    }),
-    [left, r],
-    [left, y * 0.7],
-    [0.006, y * 1.1],
-  ];
+  return trackEndOutline(g.construction.rear, g.rearDropoutDiameter, insert);
+}
+export function frontDropoutOutline(g: BicycleGeometry) {
+  const [, , control, end] = forkBladePoints(g, 1);
+  // Follow the actual terminal tangent up to the lug's 12 mm upper tip.
+  const lean =
+    ((0.012 - (end[1] - g.front[1])) * 1000 * (end[0] - control[0])) /
+    (end[1] - control[1]);
+  return frontEndOutline(
+    g.frontDropoutDiameter,
+    g.frontDropoutStyle === "through",
+    lean,
+  );
 }
 export function renderMorphologyId(product: Product, variant: Variant) {
   const id = product.visual?.morphologyId;

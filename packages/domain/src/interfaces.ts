@@ -1,4 +1,5 @@
 import type { BicycleGeometry, ComponentSpecs, Position } from "./components";
+import {rearJunction} from './construction';
 
 export type AxleRetention = "nutted" | "quick-release" | "through";
 /** All dimensions here are authored illustration dimensions in metres, not product specifications. */
@@ -15,7 +16,7 @@ export function axleInterface(
   const bodyCenter = bodyInner + bodyThickness / 2;
   const outerFace = bodyInner + bodyThickness + outerInsert;
   const washerThickness = 0.0015,
-    nutThickness = 0.007;
+    nutThickness = 0.006;
   return {
     spacing,
     bodyThickness,
@@ -29,6 +30,8 @@ export function axleInterface(
     washerThickness,
     washerCenter: outerFace + washerThickness / 2,
     nutThickness,
+    nutAcrossFlats:.015,
+    washerRadius:.009,
     nutCenter: outerFace + washerThickness + nutThickness / 2,
     axleEnd: outerFace + washerThickness + nutThickness + 0.002,
   };
@@ -81,6 +84,10 @@ export function assemblyAnchors(g: BicycleGeometry) {
     rearWasher: paired(g.rear, g.rearInterface.washerCenter)[1],
     frontNut: paired(g.front, g.frontInterface.nutCenter)[1],
     rearNut: paired(g.rear, g.rearInterface.nutCenter)[1],
+    rearSeatstayLeft:rearJunction(g.rear,g.construction.rear,'seatstay',-g.rearInterface.bodyCenter),
+    rearSeatstayRight:rearJunction(g.rear,g.construction.rear,'seatstay',g.rearInterface.bodyCenter),
+    rearChainstayLeft:rearJunction(g.rear,g.construction.rear,'chainstay',-g.rearInterface.bodyCenter),
+    rearChainstayRight:rearJunction(g.rear,g.construction.rear,'chainstay',g.rearInterface.bodyCenter),
   };
   return {
     units: "mm" as const,
@@ -94,5 +101,6 @@ export function assemblyAnchors(g: BicycleGeometry) {
     ),
     steeringAxis: g.axis,
     axleAxis: [0, 0, 1] as Position,
+    construction:{rear:g.construction.rear.id,fork:g.construction.fork.id,fidelity:g.construction.fidelity},
   };
 }

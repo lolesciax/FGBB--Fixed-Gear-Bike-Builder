@@ -79,7 +79,7 @@ describe("shared structural steering assembly", () => {
     const front = fork.getObjectByName("fork_dropout_1")!,
       rear = frame.getObjectByName("rear_dropout_1")!;
     expect(hit(front, g.front[0], -0.01)).toBe(0);
-    expect(hit(front, g.front[0] + 0.011, 0.012)).toBeGreaterThan(0);
+    expect(hit(front, g.front[0] + 0.008, 0.005)).toBeGreaterThan(0);
     expect(hit(rear, -0.01, 0)).toBe(0);
     expect(hit(rear, 0.012, 0.009)).toBeGreaterThan(0);
     expect(dropoutOutline("open-vertical", 0.01)).not.toEqual(

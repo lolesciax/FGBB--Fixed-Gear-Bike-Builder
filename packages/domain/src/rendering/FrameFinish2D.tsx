@@ -1,11 +1,16 @@
 import React, { useId } from "react";
-import { componentGeometry, forkBladePoints, type BicycleGeometry } from "../components";
+import {
+  componentGeometry,
+  forkBladePoints,
+  type BicycleGeometry,
+} from "../components";
 import {
   tubeSilhouette,
   sectionDimensions,
   tubeSection,
   forkSection,
   rearDropoutOutline,
+  frontDropoutOutline,
   renderMorphologyId,
 } from "../morphology";
 import {
@@ -16,7 +21,6 @@ import {
   type PaintZone,
 } from "../colorways";
 import type { Product, Variant } from "../index";
-import { dropoutOutline, type DropoutStyle } from "../steering";
 import { staySilhouette } from "../paths";
 import { forkCrownSilhouette } from "../forks";
 export function FrameFinish2D({
@@ -25,24 +29,27 @@ export function FrameFinish2D({
   metal = "#697482",
   rasterData = {},
   geometry,
-  layer = 'near',
+  layer = "near",
 }: {
   product: Product;
   variant: Variant;
   metal?: string;
   rasterData?: Record<string, string>;
   geometry?: BicycleGeometry;
-  layer?: 'far'|'near';
+  layer?: "far" | "near";
 }) {
   const uid = useId().replace(/:/g, ""),
-    g = geometry || componentGeometry({
-      frameset: {
-        ...variant.specs,
-        ...(renderMorphologyId(product, variant)
-          ? { morphologyId: renderMorphologyId(product, variant) }
-          : {}),
-      },
-    }),
+    g =
+      geometry ||
+      componentGeometry({
+        frameset: {
+          ...variant.specs,
+          renderFamily: product.id,
+          ...(renderMorphologyId(product, variant)
+            ? { morphologyId: renderMorphologyId(product, variant) }
+            : {}),
+        },
+      }),
     c = selectedColorway(product, variant),
     anchors = finishAnchors({
       ...variant.specs,
@@ -106,19 +113,35 @@ export function FrameFinish2D({
     width: number;
     filled?: boolean;
   }[] = [
-    { zone: "seatstay", d: polygon(staySilhouette(g,'seatstay')), width: 0, filled:true },
-    { zone: "chainstay", d: polygon(staySilhouette(g,'chainstay')), width: 0, filled:true },
+    {
+      zone: "seatstay",
+      d: polygon(staySilhouette(g, "seatstay")),
+      width: 0,
+      filled: true,
+    },
+    {
+      zone: "chainstay",
+      d: polygon(staySilhouette(g, "chainstay")),
+      width: 0,
+      filled: true,
+    },
     {
       zone: "top",
-      d: polygon(tubeSilhouette(g, "top")), width: 0, filled: true,
+      d: polygon(tubeSilhouette(g, "top")),
+      width: 0,
+      filled: true,
     },
     {
       zone: "seat",
-      d: polygon(tubeSilhouette(g, "seat")), width: 0, filled: true,
+      d: polygon(tubeSilhouette(g, "seat")),
+      width: 0,
+      filled: true,
     },
     {
       zone: "down",
-      d: polygon(tubeSilhouette(g, "down")), width: 0, filled: true,
+      d: polygon(tubeSilhouette(g, "down")),
+      width: 0,
+      filled: true,
     },
     {
       zone: "head",
@@ -139,9 +162,27 @@ export function FrameFinish2D({
     !c && (zone === "fork" || zone === "crown")
       ? metal
       : `url(#${uid}-${zone})`;
-  if(layer==='far')return <g data-layer="far-frame-fork" aria-hidden="true" pointerEvents="none">
-    {paths.filter(p=>['seatstay','chainstay','fork','crown'].includes(p.zone)).map(({zone,d,width,filled})=><path key={zone} d={d} fill={filled ? stopsFor(c,zone,variant.color)[0].color : 'none'} stroke={filled ? '#242b35' : stopsFor(c,zone,variant.color)[0].color} strokeWidth={filled ? 1 : width} strokeLinecap="round"/>)}
-  </g>;
+  if (layer === "far")
+    return (
+      <g data-layer="far-frame-fork" aria-hidden="true" pointerEvents="none">
+        {paths
+          .filter((p) =>
+            ["seatstay", "chainstay", "fork", "crown"].includes(p.zone),
+          )
+          .map(({ zone, d, width, filled }) => (
+            <path
+              key={zone}
+              d={d}
+              fill={filled ? stopsFor(c, zone, variant.color)[0].color : "none"}
+              stroke={
+                filled ? "#242b35" : stopsFor(c, zone, variant.color)[0].color
+              }
+              strokeWidth={filled ? 1 : width}
+              strokeLinecap="round"
+            />
+          ))}
+      </g>
+    );
   return (
     <g
       data-colorway-id={c?.id || "legacy"}
@@ -240,19 +281,33 @@ export function FrameFinish2D({
         strokeLinejoin="round"
       >
         {paths.map(({ zone, d, width, filled }) => (
-          <React.Fragment key={zone}><path
-            key={zone}
-            data-paint-zone={zone}
-            d={d}
-            fill={filled ? paint(zone) : "none"}
-            stroke={filled ? "none" : paint(zone)}
-            strokeWidth={width}
-          />{g.morphology && ['top','down','seat'].includes(zone) && <path data-layer="surface-shading" d={d} fill={`url(#${uid}-surface-${zone})`}/>}</React.Fragment>
+          <React.Fragment key={zone}>
+            <path
+              key={zone}
+              data-paint-zone={zone}
+              d={d}
+              fill={filled ? paint(zone) : "none"}
+              stroke={filled ? "none" : paint(zone)}
+              strokeWidth={width}
+            />
+            {g.morphology && ["top", "down", "seat"].includes(zone) && (
+              <path
+                data-layer="surface-shading"
+                d={d}
+                fill={`url(#${uid}-surface-${zone})`}
+              />
+            )}
+          </React.Fragment>
         ))}
       </g>
       <path
         data-lower-headset
-        d={polygon([side(g.lower,g.steering.headLowerRadius+.001),side(g.crown,g.steering.headLowerRadius-.001),side(g.crown,-g.steering.headLowerRadius+.001),side(g.lower,-g.steering.headLowerRadius-.001)])}
+        d={polygon([
+          side(g.lower, g.steering.headLowerRadius + 0.001),
+          side(g.crown, g.steering.headLowerRadius - 0.001),
+          side(g.crown, -g.steering.headLowerRadius + 0.001),
+          side(g.lower, -g.steering.headLowerRadius - 0.001),
+        ])}
         fill={metal}
       />
       {g.morphology &&
@@ -285,12 +340,10 @@ export function FrameFinish2D({
         ] as const
       ).map(([center, style, diameter], i) => {
         const outline = (
-          i === 1
-            ? rearDropoutOutline(g)
-            : dropoutOutline(style as DropoutStyle, diameter)
+          i === 1 ? rearDropoutOutline(g) : frontDropoutOutline(g)
         ).map(([x, y]) => [center[0] + x, center[1] + y, 0]);
         const a = p(center),
-          r = (diameter / 2 + 0.0006) * 1000,
+          r = (diameter / 2 + 0.00035) * 1000,
           hole =
             style === "through"
               ? ` M${a.x - r} ${a.y}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0Z`
@@ -301,32 +354,57 @@ export function FrameFinish2D({
               data-dropout-style={style}
               data-dropout-plate={
                 i === 1
-                  ? g.morphology?.rearPlate || "illustrative"
+                  ? g.construction.rear.inserts === "both"
+                    ? "double-sided-inserts"
+                    : g.construction.rear.inserts === "outer"
+                      ? "replaceable"
+                      : "integrated"
                   : "illustrative"
               }
+              data-construction-profile={
+                i === 1 ? g.construction.rear.id : g.construction.fork.id
+              }
               d={polygon(outline) + hole}
-              fill={metal}
+              fill={i === 1 ? paint("chainstay") : metal}
               fillRule="evenodd"
               stroke="#3a4350"
               strokeWidth=".7"
             />
+            {i === 1 && g.construction.rear.inserts !== "none" && (
+              <path
+                data-visible-insert
+                d={polygon(
+                  rearDropoutOutline(g, true).map(([x, y]) => [
+                    center[0] + x,
+                    center[1] + y,
+                    0,
+                  ]),
+                )}
+                fill="#adb6c2"
+                stroke="#566170"
+                strokeWidth=".6"
+              />
+            )}
             {i === 1 &&
-              g.morphology &&
-              g.morphology.rearPlate !== "integrated" && (
-                <path
-                  data-visible-insert
-                  d={polygon(
-                    rearDropoutOutline(g, true).map(([x, y]) => [
-                      center[0] + x,
-                      center[1] + y,
-                      0,
-                    ]),
-                  )}
-                  fill="#adb6c2"
-                  stroke="#566170"
-                  strokeWidth=".6"
-                />
-              )}
+              g.construction.rear.inserts !== "none" &&
+              g.construction.rear.fasteners.map(([x, y], n) => (
+                <g
+                  key={n}
+                  data-plate-fastener={n}
+                  transform={`translate(${a.x + x} ${a.y - y})`}
+                >
+                  <circle
+                    r="2.1"
+                    fill="#a4adb8"
+                    stroke="#48515c"
+                    strokeWidth=".3"
+                  />
+                  <path
+                    d="M-.8 -.45L0 -.9L.8 -.45V.45L0 .9L-.8 .45Z"
+                    fill="#424a56"
+                  />
+                </g>
+              ))}
           </g>
         );
       })}

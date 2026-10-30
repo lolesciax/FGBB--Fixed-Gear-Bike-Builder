@@ -46,7 +46,13 @@ for (const product of manufacturerCatalog.filter(
     const v = (p: { x: number; y: number }, z = 0) =>
       new THREE.Vector3((p.x - g.bb.x) / 1000, (g.bb.y - p.y) / 1000, z);
     const model = createFrame(
-      componentGeometry({ frameset: renderFrameSpecs(variant.specs,product.visual?.morphologyId) }),
+      componentGeometry({
+        frameset: renderFrameSpecs(
+          variant.specs,
+          product.visual?.morphologyId,
+          product.id,
+        ),
+      }),
       variant.color,
     );
     model.position.set(-g.bb.x / 1000, g.bb.y / 1000, 0);
@@ -71,10 +77,28 @@ for (const product of manufacturerCatalog.filter(
       license: "CC0-1.0",
       units: "metres",
       origin: "bottom-bracket",
-      ...(product.visual?.morphologyId?{morphologyId:product.visual.morphologyId,surfaceSource:frameMorphology(product.visual.morphologyId)?.source}:{}),
+      ...(product.visual?.morphologyId
+        ? {
+            morphologyId: product.visual.morphologyId,
+            surfaceSource: frameMorphology(product.visual.morphologyId)?.source,
+          }
+        : {}),
       assumptions:
         "Tube profiles, widths and fork shapes are approximations; no manufacturer graphics.",
     };
+    // Paint uses world-space regions and graphics have their own projected UVs.
+    // Omit unused UV buffers instead of independently welding each size: welding
+    // split normals by floating-point values changes indices and defeats morphs.
+    group.traverse((node) => {
+      if (!(node instanceof THREE.Mesh)) return;
+      const materials = Array.isArray(node.material)
+        ? node.material
+        : [node.material];
+      const textured = materials.some((m) =>
+        Object.values(m).some((value) => value instanceof THREE.Texture),
+      );
+      if (!textured) node.geometry.deleteAttribute("uv");
+    });
     const buffer = await new GLTFExporter().parseAsync(group, { binary: true });
     await writeFile(
       new URL(`${variant.id}.glb`, out),
@@ -88,8 +112,25 @@ for (const product of manufacturerCatalog.filter(
           variantId: variant.id,
           source: product.source,
           geometry: variant.specs,
-          assembly: assemblyAnchors(componentGeometry({frameset:renderFrameSpecs(variant.specs,product.visual?.morphologyId)})),
-          ...(product.visual?.morphologyId?{morphology:{id:product.visual.morphologyId,source:frameMorphology(product.visual.morphologyId)?.source,dimensions:'Authored illustrative sections; no proprietary section measurements claimed.'}}:{}),
+          assembly: assemblyAnchors(
+            componentGeometry({
+              frameset: renderFrameSpecs(
+                variant.specs,
+                product.visual?.morphologyId,
+                product.id,
+              ),
+            }),
+          ),
+          ...(product.visual?.morphologyId
+            ? {
+                morphology: {
+                  id: product.visual.morphologyId,
+                  source: frameMorphology(product.visual.morphologyId)?.source,
+                  dimensions:
+                    "Authored illustrative sections; no proprietary section measurements claimed.",
+                },
+              }
+            : {}),
           anchors: Object.fromEntries(
             group.children
               .filter((c) => c.name.startsWith("anchor"))
@@ -114,8 +155,10 @@ for (const product of manufacturerCatalog.filter(
         rotation: [0, 0, 0],
         origin: "bottom-bracket",
         units: "metres",
-        revision: "frame-kit-v5",
-        ...(product.visual?.morphologyId?{morphologyId:product.visual.morphologyId}:{}),
+        revision: "frame-kit-v6",
+        ...(product.visual?.morphologyId
+          ? { morphologyId: product.visual.morphologyId }
+          : {}),
       }),
     );
     disposeModel(group);

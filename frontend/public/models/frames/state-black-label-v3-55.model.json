@@ -181,12 +181,32 @@
       "frontNut": [
         1010,
         0,
-        60.00000000000001
+        59.50000000000001
       ],
       "rearNut": [
         0,
         0,
-        70
+        69.5
+      ],
+      "rearSeatstayLeft": [
+        14,
+        23,
+        -62.5
+      ],
+      "rearSeatstayRight": [
+        14,
+        23,
+        62.5
+      ],
+      "rearChainstayLeft": [
+        29,
+        -10,
+        -62.5
+      ],
+      "rearChainstayRight": [
+        29,
+        -10,
+        62.5
       ]
     },
     "steeringAxis": [
@@ -198,7 +218,12 @@
       0,
       0,
       1
-    ]
+    ],
+    "construction": {
+      "rear": "illustrative-track",
+      "fork": "conventional-alloy",
+      "fidelity": "illustrative"
+    }
   },
   "anchors": {
     "anchor_rear": [
@@ -234,14 +259,14 @@
   },
   "bounds": {
     "min": [
-      -0.4238910107200419,
+      -0.43139101101806515,
       -0.023000000044703484,
-      -0.07207668572664261
+      -0.07187748700380325
     ],
     "max": [
-      0.615108988445493,
+      0.6118093824128235,
       0.5440329723358155,
-      0.07207668572664261
+      0.07187748700380325
     ]
   },
   "fidelity": "illustrative",

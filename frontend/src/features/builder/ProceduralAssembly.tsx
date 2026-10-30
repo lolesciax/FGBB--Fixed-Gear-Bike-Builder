@@ -120,7 +120,7 @@ export function ProceduralAssembly({
       slots.map((slot) => [
         slot,
         slot === "frameset"
-          ? renderFrameSpecs(get("frameset")?.specs || {}, morphologyId)
+          ? renderFrameSpecs(get("frameset")?.specs || {}, morphologyId, frameRecord?.product.id)
           : get(slot as Slot)?.specs,
       ]),
     ),
@@ -135,7 +135,7 @@ export function ProceduralAssembly({
         slots.map((slot) => [
           slot,
           slot === "frameset"
-            ? renderFrameSpecs(get(slot)?.specs || {}, morphologyId)
+            ? renderFrameSpecs(get(slot)?.specs || {}, morphologyId, frameRecord?.product.id)
             : get(slot)?.specs,
         ]),
       ),
@@ -148,7 +148,7 @@ export function ProceduralAssembly({
     wheels: useOwnedModel(key("frameset", "wheels"), wheels),
     tires: useOwnedModel(
       JSON.stringify({
-        frameset: renderFrameSpecs(get("frameset")?.specs || {}, morphologyId),
+        frameset: renderFrameSpecs(get("frameset")?.specs || {}, morphologyId, frameRecord?.product.id),
         wheels: {
           bsd: get("wheels")?.specs.bsd,
           rimWidth: get("wheels")?.specs.rimWidth,
@@ -174,7 +174,7 @@ export function ProceduralAssembly({
   const group = useRef<THREE.Group>(null),
     modelKey = slots.map((slot) => configuration[slot]).join("|");
   const rootData = useMemo(
-    () => ({ geometryRevision: "components-v5", cockpit: g.cockpit.type }),
+    () => ({ geometryRevision: "components-v6", cockpit: g.cockpit.type }),
     [g.cockpit.type],
   );
   const settledShadow=useRef(0),transition=coordinator.getSnapshot();

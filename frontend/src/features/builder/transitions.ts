@@ -45,6 +45,7 @@ export function geometryIdentity(
           ? renderFrameSpecs(
               v?.specs || {},
               record && renderMorphologyId(record.product, record.variant),
+              record?.product.id,
             )
           : v?.specs || {};
       return [
@@ -93,8 +94,8 @@ export function transitionPlan(
     a.product.id === b.product.id &&
     a.product.status === "published" &&
     b.product.status === "published" &&
-    a.variant.asset3D?.revision === "frame-kit-v5" &&
-    b.variant.asset3D?.revision === "frame-kit-v5" &&
+    a.variant.asset3D?.revision === "frame-kit-v6" &&
+    b.variant.asset3D?.revision === "frame-kit-v6" &&
     renderMorphologyId(a.product, a.variant) ===
       renderMorphologyId(b.product, b.variant);
   const paintA = a && selectedColorway(a.product, a.variant),
@@ -126,7 +127,7 @@ export function transitionPlan(
     seconds: simplified ? 0.18 : changed.includes("frameset") ? 0.92 : 0.48,
     ...(morph
       ? {
-          family: `${a.product.id}/frame-kit-v5/${renderMorphologyId(a.product, a.variant) || "round"}`,
+          family: `${a.product.id}/frame-kit-v6/${renderMorphologyId(a.product, a.variant) || "round"}`,
         }
       : {}),
   };
