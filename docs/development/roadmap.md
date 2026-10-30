@@ -12,6 +12,11 @@ TrackLab remains local. GitHub pushes save development milestones and run checks
 
 The initial commit records the existing working development baseline together. Future work is split into reviewable task commits. A pushed milestone is not a claim that every release criterion for its phase is finished.
 
+## Task · Saved-build editor handoff — verified locally, 30 October 2026
+
+- The complete geometry regression run passed 42/43 workflows and exposed an existing creation-to-editor race: the browser URL changed while the new saved build still had no editor lease, permitting an immediate PATCH that correctly received EDITOR_LOCKED. The saved route now owns the pending handoff, and Save requires the current saved route and a real lease. Backend lease and ownership checks remain enforced.
+- The regression deliberately holds the lease response, verifies disabled Save/part controls and zero PATCH requests, then completes manual save, autosave, retry, garage duplicate/delete and export. It passes locally. TypeScript, lint and the web build pass. The full normal/development/PWA matrix and GitHub CI are checked after this follow-up push.
+
 ## Task · Precision assembly core — verified locally, 30 October 2026
 
 - Corrected shared dropout/hub/insert/hardware contact planes, hollow retention hardware, source-specific steering, coped head/seat/BB/stem/stay junctions and flattened dropout tongues. Both viewers share the same surfaces and canonical state. Fixed a real large-steel-frame clearance failure caused by an underdetermined fixed stack fallback; published anchors remain unchanged and derived anchors are labeled illustrative.

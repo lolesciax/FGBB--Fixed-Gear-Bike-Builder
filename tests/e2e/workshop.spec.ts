@@ -30,6 +30,10 @@ test('3D authorization loads a real canvas and both views retain the finish', as
   expect(errors).toEqual([]);
 });
 test('register, save, edit existing build, then duplicate and delete in the garage', async ({ page }) => {
+  let leaseRequested=false,holdLease=true,patches=0;let releaseLease!:()=>void;
+  const leaseGate=new Promise<void>(resolve=>{releaseLease=resolve;});
+  await page.route('**/api/builds/*/lease',async route=>{if(route.request().method()==='POST'&&holdLease){leaseRequested=true;await leaseGate;}await route.continue();});
+  page.on('request',request=>{if(request.method()==='PATCH'&&/\/api\/builds\/[a-f0-9]{24}$/.test(request.url()))patches++;});
   await page.goto('/builder'); await page.getByRole('button', { name: 'Studio Track Acid finish' }).click();
   await page.getByRole('button', {name:'Cockpit',exact:true}).click();
   await page.getByLabel('Handlebar type').selectOption('flat');
@@ -40,7 +44,13 @@ test('register, save, edit existing build, then duplicate and delete in the gara
   await dialog.getByLabel('Your name').fill('Browser Rider'); await dialog.getByLabel('Email address').fill(`browser-${Date.now()}@example.com`); await dialog.getByLabel('Password', { exact: true }).fill('my-browser-test-passphrase'); await dialog.getByRole('button', { name: 'Create your account', exact: true }).click();
   await expect(dialog).not.toBeVisible(); await expect(page.getByRole('button', { name: 'Studio Track Acid finish' })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('textbox', { name: 'Build name', exact: true })).toHaveValue('Morning ride'); await page.getByRole('button', { name: 'Save build', exact: true }).click(); await expect(page).toHaveURL(/\/builder\/[a-f0-9]{24}/);
-  await expect(page.getByRole('button', { name: 'Studio Track Forest finish' })).toBeEnabled(); await page.getByRole('button', { name: 'Studio Track Forest finish' }).click();
+  await expect.poll(()=>leaseRequested).toBe(true);
+  await expect(page.getByRole('button',{name:'Save build',exact:true})).toBeDisabled();
+  await expect(page.getByRole('button',{name:'Studio Track Forest finish'})).toBeDisabled();
+  expect(patches).toBe(0);holdLease=false;releaseLease();
+  await expect(page.getByRole('button', { name: 'Studio Track Forest finish' })).toBeEnabled();
+  await page.unroute('**/api/builds/*/lease');
+  await page.getByRole('button', { name: 'Studio Track Forest finish' }).click();
   const update = page.waitForResponse(r => /\/api\/builds\/[a-f0-9]{24}$/.test(r.url()) && r.request().method() === 'PATCH');
   await page.getByRole('button', { name: 'Save build', exact: true }).click(); expect((await update).ok()).toBe(true);
   await expect(page.getByTitle('No unsaved changes')).toBeVisible();

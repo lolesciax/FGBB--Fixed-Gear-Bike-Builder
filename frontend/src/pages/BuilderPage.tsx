@@ -196,6 +196,7 @@ export function BuilderPage() {
     session.developmentUnlimited,
   ]);
   const hasEditorLease = Boolean(b.editorToken);
+  const editorReady = !b.saved || (id === b.saved._id && hasEditorLease);
   const activeLeases = useRef(new Map<string, string>());
   useEffect(() => {
     if (!compact) setSheetOpen(false);
@@ -486,7 +487,7 @@ export function BuilderPage() {
       auth("register");
       return;
     }
-    if (!b.configuration || saving) return;
+    if (!b.configuration || saving || b.pending || !editorReady) return;
     setSaveFailed(false);
     setSaving(true);
     setActionError("");
@@ -505,11 +506,13 @@ export function BuilderPage() {
           },
         },
       );
-      b.set({ saved, dirty: false });
+      b.set({ saved, dirty: false, ...(!id ? {pending:true,editorToken:''} : {}) });
+      // Keep edits locked throughout the route handoff. The saved route acquires
+      // its editor lease before reopening the same canonical configuration.
+      if (!id) navigate(`/builder/${saved._id}`, { replace: true });
       await refresh();
       await client.invalidateQueries({ queryKey: ["builds"] });
       notify("Build saved to your garage.");
-      if (!id) navigate(`/builder/${saved._id}`, { replace: true });
     } catch (error) {
       setAutoSave(false);
       setSaveFailed(true);
@@ -709,7 +712,7 @@ export function BuilderPage() {
           <button
             className="button primary"
             onClick={() => void save()}
-            disabled={saving || b.pending || !b.configuration || !b.name.trim()}
+            disabled={saving || b.pending || !editorReady || !b.configuration || !b.name.trim()}
           >
             <Save size={17} />
             {saving
