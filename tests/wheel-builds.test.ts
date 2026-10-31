@@ -270,4 +270,34 @@ describe("complete wheel build variants", () => {
     expect(svg).toContain('data-spoke-count="20"');
     expect(svg).toContain('data-spoke-count="24"');
   });
+  it("uses tapered end caps seated symmetrically against both hub contact faces", () => {
+    for (const isRear of [false, true]) {
+      const g = componentGeometry({ wheels: specs });
+      const root = createWheel(g, isRear);
+      const spacing = isRear ? g.wheel.rearSpacing : g.wheel.frontSpacing;
+      root.updateWorldMatrix(true, true);
+      for (const side of [-1, 1]) {
+        const cap = root.getObjectByName(`hub_endcap_${side}`) as THREE.Mesh;
+        const bounds = new THREE.Box3().setFromObject(cap);
+        expect(side * (side === 1 ? bounds.max.z : bounds.min.z) -
+          (isRear ? g.rear[2] : g.front[2])).toBeCloseTo(spacing / 2, 6);
+        expect(bounds.max.x - bounds.min.x).toBeCloseTo(0.019, 5);
+        const z = cap.geometry.getAttribute("position");
+        const radii = Array.from({ length: z.count }, (_, i) =>
+          Math.hypot(z.getX(i), z.getY(i)),
+        );
+        expect(Math.max(...radii)).toBeGreaterThan(0.009);
+        expect(Math.min(...radii)).toBeGreaterThan(0.002);
+      }
+      const rim = root.getObjectByName("rim_profile") as THREE.Mesh;
+      const vertices = rim.geometry.getAttribute("position");
+      const radii = Array.from({ length: vertices.count }, (_, i) =>
+        Math.hypot(vertices.getX(i), vertices.getY(i)),
+      );
+      expect(Math.min(...radii)).toBeCloseTo(g.wheel.rimInner, 5);
+      expect(Math.max(...radii)).toBeCloseTo(g.wheel.rimOuter, 5);
+      disposeModel(root);
+    }
+  });
+
 });

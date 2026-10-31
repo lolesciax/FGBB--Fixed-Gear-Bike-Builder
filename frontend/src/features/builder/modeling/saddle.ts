@@ -89,17 +89,22 @@ export function createSaddle(g: BicycleGeometry) {
     "seatpost_head",
     (() => {
       const shape = new THREE.Shape();
-      shape.moveTo(-0.022, -0.008);
-      shape.lineTo(0.022, -0.008);
-      shape.lineTo(0.018, 0.009);
-      shape.lineTo(-0.018, 0.009);
+      // The rail clamps are centred at z = +/-22 mm. The old 32 mm wide
+      // post head ended 6 mm *inside* each clamp, leaving an unsupported,
+      // floating-looking connection when seen from the front or rear.
+      // A low, gently tapered 54 mm saddle cradle supports both clamp jaws.
+      shape.moveTo(-0.019, -0.008);
+      shape.lineTo(0.019, -0.008);
+      shape.lineTo(0.017, 0.008);
+      shape.lineTo(-0.017, 0.008);
       shape.closePath();
-      return extrude(shape, 0.032, 0.0025);
+      return extrude(shape, 0.054, 0.001);
     })(),
     metal,
     g.saddlePost,
   );
   head.position.y += 0.004;
+  head.userData.interface = "two-rail-cradle";
   for (const side of [-1, 1]) {
     const rail: Position[] = saddleRailPoints(g.saddle, side).map((p) => [
       p[0] + g.saddlePost[0],

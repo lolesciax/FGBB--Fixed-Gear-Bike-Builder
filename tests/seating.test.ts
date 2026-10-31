@@ -105,4 +105,20 @@ describe("separate post and saddle interfaces", () => {
       disposeModel(root);
     }
   });
+  it("supports the actual two-rail clamp footprint with the post head", () => {
+    for (const railInterface of ["round-7", "oval-7x9"]) {
+      const g = componentGeometry({ saddle: { railInterface } });
+      const root = createSaddle(g);
+      root.updateWorldMatrix(true, true);
+      const head = root.getObjectByName("seatpost_head")!;
+      const bounds = new THREE.Box3().setFromObject(head);
+      const railOuter = 0.022 + g.saddle.railWidth / 2;
+      expect(bounds.min.z).toBeLessThan(-railOuter);
+      expect(bounds.max.z).toBeGreaterThan(railOuter);
+      expect(bounds.max.y).toBeGreaterThan(g.saddleClamp[1] - 0.002);
+      expect(head.userData.interface).toBe("two-rail-cradle");
+      disposeModel(root);
+    }
+  });
+
 });

@@ -133,12 +133,21 @@ export function createWheel(g: BicycleGeometry, rear: boolean) {
   alloy.userData.finishRegion = "hub";
   rim.userData.finishRegion = "rim";
   spokeMetal.userData.finishRegion = "spokes";
+  // An open, hollow rim section: the spoke bed is narrow, the sidewalls
+  // expand smoothly and the tire-side bridge is broad. A straight diagonal
+  // from one bead to the opposite bead looked like a solid disc at oblique
+  // angles, especially on 60–90 mm deep rims.
+  const shoulder = Math.min(0.008, (w.rimOuter - w.rimInner) * 0.32);
   const profile: [number, number][] = [
     [w.rimInner, -w.rimWidth * 0.35],
-    [w.rimOuter - 0.008, -w.rimWidth * 0.5],
-    [w.rimOuter - 0.001, -w.rimWidth * 0.51],
-    [w.rimOuter, w.rimWidth * 0.51],
-    [w.rimOuter - 0.008, w.rimWidth * 0.5],
+    [w.rimInner + 0.0015, -w.rimWidth * 0.43],
+    [w.rimOuter - shoulder, -w.rimWidth * 0.49],
+    [w.rimOuter - 0.002, -w.rimWidth * 0.50],
+    [w.rimOuter, -w.rimWidth * 0.45],
+    [w.rimOuter, w.rimWidth * 0.45],
+    [w.rimOuter - 0.002, w.rimWidth * 0.50],
+    [w.rimOuter - shoulder, w.rimWidth * 0.49],
+    [w.rimInner + 0.0015, w.rimWidth * 0.43],
     [w.rimInner, w.rimWidth * 0.35],
   ];
   mesh(group, "rim_profile", revolved(profile), rim);
@@ -154,6 +163,8 @@ export function createWheel(g: BicycleGeometry, rear: boolean) {
       ]),
       rim,
     );
+  // Each hub end cap is an axial shoulder, not a second large circular
+  // washer next to the actual axle washer and track nut.
   const hubRadius = rear ? 0.028 : 0.022,
     flange = rear ? 0.032 : 0.028,
     spacing = rear ? w.rearSpacing : w.frontSpacing,
@@ -220,12 +231,28 @@ export function createWheel(g: BicycleGeometry, rear: boolean) {
       alloy,
       [0, 0, side * flange],
     );
+    const capInner = spacing / 2 - 0.006;
+    const capOuter = spacing / 2;
+    const capSection: [number, number][] = [
+      [axleRadius + 0.0002, capInner],
+      [0.0095, capInner],
+      [0.0095, capInner + 0.0015],
+      [0.0080, capOuter - 0.001],
+      [0.0076, capOuter],
+      [axleRadius + 0.0002, capOuter],
+      [axleRadius + 0.0002, capInner],
+    ];
+    // Reverse profile order as well as the axis: both end caps have outward
+    // normals and end precisely at the published OLD contact faces.
     mesh(
       group,
       `hub_endcap_${side}`,
-      extrude(annulus(0.0085, axleRadius + 0.0002), 0.006, 0),
+      revolved(
+        side === 1
+          ? capSection
+          : [...capSection].reverse().map(([r, z]) => [r, -z]),
+      ),
       alloy,
-      [0, 0, side * (spacing / 2 - 0.003)],
     );
     if (retention === "nutted") {
       mesh(
@@ -348,6 +375,9 @@ export function createWheel(g: BicycleGeometry, rear: boolean) {
     0.00085,
     spokeMetal,
   );
+  const nippleMetal = material("#a3aebc", 0.85, 0.24);
+  nippleMetal.name = "finish_wheelset";
+  nippleMetal.userData.finishRegion = "spokes";
   instancedSegments(
     group,
     "spoke_nipples",
@@ -356,7 +386,7 @@ export function createWheel(g: BicycleGeometry, rear: boolean) {
       b: s.rim,
     })),
     0.0015,
-    spokeMetal,
+    nippleMetal,
   );
   cylinder(
     group,
